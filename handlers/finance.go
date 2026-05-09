@@ -216,6 +216,63 @@ type JournalPosting struct {
 
 func GetJournalEntries(c *gin.Context) {
     tenantID := middleware.GetTenantIDFromContext(c)
+    userEmail := c.GetString("user_email")
+    userRole := c.GetString("role")
+    
+    // Для владельца пропускаем проверку tenant_id и показываем ВСЕ записи
+    if userEmail == "dev@businesstack.ru" || userRole == "owner" {
+        query := `
+            SELECT id, operation_date, document_number, document_type,
+                   counterparty_name, counterparty_inn, debit_amount, credit_amount, 
+                   description, created_at, updated_at
+            FROM journal_entries
+            ORDER BY operation_date DESC
+            LIMIT 100
+        `
+        rows, err := database.Pool.Query(c.Request.Context(), query)
+        if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+            return
+        }
+        defer rows.Close()
+
+        var entries []gin.H
+        for rows.Next() {
+            var id uuid.UUID
+            var opDate time.Time
+            var docNumber, docType, counterpartyName, counterpartyINN, description string
+            var debit, credit float64
+            var createdAt, updatedAt time.Time
+
+            err := rows.Scan(&id, &opDate, &docNumber, &docType, &counterpartyName, &counterpartyINN,
+                &debit, &credit, &description, &createdAt, &updatedAt)
+            if err != nil {
+                continue
+            }
+
+            entries = append(entries, gin.H{
+                "id":                id,
+                "operation_date":    opDate.Format("2006-01-02"),
+                "document_number":   docNumber,
+                "document_type":     docType,
+                "counterparty_name": counterpartyName,
+                "counterparty_inn":  counterpartyINN,
+                "debit_amount":      debit,
+                "credit_amount":     credit,
+                "description":       description,
+                "created_at":        createdAt.Format("2006-01-02 15:04:05"),
+                "updated_at":        updatedAt.Format("2006-01-02 15:04:05"),
+            })
+        }
+        c.JSON(http.StatusOK, gin.H{
+            "success": true,
+            "entries": entries,
+            "total":   len(entries),
+        })
+        return
+    }
+    
+    // Для обычных пользователей - проверяем tenantID
     if tenantID == uuid.Nil {
         c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
         return

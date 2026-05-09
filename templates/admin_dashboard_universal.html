@@ -577,7 +577,20 @@
     async function savePayroll() { await fetch('/api/hr/payroll/calculate', { method: 'POST' }); alert('✅ Расчёт сохранён'); closePayrollModal(); loadHRStats(); }
     function closePayrollModal() { document.getElementById('payrollModal').style.display = 'none'; }
     
-    function loadAllData() { loadDashboardData(); loadOrders(); loadFeatures(); loadUsers(); loadFinanceData(); loadHRStats(); loadEmployees(); loadCandidates(); loadVacancies(); loadPayouts(); }
+    function loadAllData() { 
+    loadDashboardData(); 
+    loadOrders(); 
+    loadFeatures(); 
+    loadUsers(); 
+    loadFinanceData(); 
+    loadHRStats(); 
+    loadEmployees(); 
+    loadCandidates(); 
+    loadVacancies(); 
+    loadPayouts();
+    loadJournalEntries();
+    console.log("✅ Все данные обновлены");
+}
     loadAllData();
     setInterval(loadAllData, 30000);
 

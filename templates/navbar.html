@@ -181,63 +181,94 @@
         };
     })();
     
-    // Отображение меню пользователя
-    function renderUserMenu() {
-        const token = localStorage.getItem('token');
-        const userName = localStorage.getItem('user_name') || 'Аккаунт';
-        const isРазработчик = localStorage.getItem('is_Разработчик') === 'true';
-        const menuContainer = document.getElementById('userMenuNav');
-        
-        if (!menuContainer) return;
-        
-        if (token) {
-            const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+   function renderUserMenu() {
+    const token = localStorage.getItem('token');
+    const userName = localStorage.getItem('user_name') || 'Аккаунт';
+    const menuContainer = document.getElementById('userMenuNav');
+    
+    if (!menuContainer) return;
+    
+    if (token) {
+        // Получаем роль из JWT токена
+        let userRole = 'Пользователь';
+        let roleIcon = '👤';
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const role = payload.role;
             
-            menuContainer.innerHTML = `
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" style="padding: 5px 10px; border-radius: 50px; background: rgba(255,255,255,0.05); transition: all 0.3s;" onmouseover="this.style.background='rgba(167,139,250,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
-                        <div class="d-flex align-items-center gap-2">
-                            <div style="width: 35px; height: 35px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; color: white; box-shadow: 0 2px 10px rgba(102,126,234,0.4);">
+            // Определяем отображение роли
+            switch(role) {
+                case 'owner':
+                    userRole = 'Владелец 👑';
+                    roleIcon = '👑';
+                    break;
+                case 'admin':
+                    userRole = 'Администратор 🛠️';
+                    roleIcon = '🛠️';
+                    break;
+                case 'developer':
+                    userRole = 'Разработчик 💻';
+                    roleIcon = '💻';
+                    break;
+                case 'client':
+                    userRole = 'Клиент 👤';
+                    roleIcon = '👤';
+                    break;
+                default:
+                    userRole = role || 'Пользователь';
+            }
+        } catch(e) {
+            console.error('Ошибка парсинга токена:', e);
+        }
+        
+        const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+        
+        menuContainer.innerHTML = `
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" style="padding: 5px 10px; border-radius: 50px; background: rgba(255,255,255,0.05); transition: all 0.3s;" onmouseover="this.style.background='rgba(167,139,250,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                    <div class="d-flex align-items-center gap-2">
+                        <div style="width: 35px; height: 35px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; color: white; box-shadow: 0 2px 10px rgba(102,126,234,0.4);">
+                            ${initials || 'U'}
+                        </div>
+                        <div class="text-start">
+                            <div style="font-size: 14px; font-weight: 600; color: #fff; line-height: 1.2;">${userName}</div>
+                            <div style="font-size: 10px; color: rgba(255,255,255,0.5);">${userRole}</div>
+                        </div>
+                        <i class="fas fa-chevron-down" style="font-size: 10px; color: rgba(255,255,255,0.5);"></i>
+                    </div>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end" style="background: linear-gradient(135deg, #1a1a2e, #16213e); border: 1px solid rgba(167,139,250,0.3); min-width: 280px; padding: 10px 0;">
+                    <li class="dropdown-header" style="color: #fff; padding: 10px 20px;">
+                        <div class="d-flex align-items-center gap-3">
+                            <div style="width: 45px; height: 45px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; color: white;">
                                 ${initials || 'U'}
                             </div>
-                            <div class="text-start">
-                                <div style="font-size: 14px; font-weight: 600; color: #fff; line-height: 1.2;">${userName}</div>
-                                <div style="font-size: 10px; color: rgba(255,255,255,0.5);">${isРазработчик ? 'Разработчик' : 'Пользователь'}</div>
+                            <div>
+                                <div style="font-weight: 700; color: #fff;">${userName}</div>
+                                <div style="font-size: 11px; color: rgba(255,255,255,0.5);">${localStorage.getItem('user_email') || 'user@saaspro.ru'}</div>
+                                <span class="badge mt-1" style="background: linear-gradient(135deg, #667eea, #764ba2); font-size: 10px;">${userRole}</span>
                             </div>
-                            <i class="fas fa-chevron-down" style="font-size: 10px; color: rgba(255,255,255,0.5);"></i>
                         </div>
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end" style="background: linear-gradient(135deg, #1a1a2e, #16213e); border: 1px solid rgba(167,139,250,0.3); border-radius: 16px; padding: 10px 0; min-width: 260px; box-shadow: 0 10px 30px rgba(0,0,0,0.4);">
-                        <li class="px-3 py-2 border-bottom" style="border-bottom-color: rgba(255,255,255,0.1) !important;">
-                            <div class="d-flex align-items-center gap-3">
-                                <div style="width: 45px; height: 45px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; color: white;">
-                                    ${initials || 'U'}
-                                </div>
-                                <div>
-                                    <div style="font-weight: 700; color: #fff;">${userName}</div>
-                                    <div style="font-size: 11px; color: rgba(255,255,255,0.5);">${localStorage.getItem('user_email') || 'user@saaspro.ru'}</div>
-                                    ${isРазработчик ? '<span class="badge mt-1" style="background: linear-gradient(135deg, #10b981, #059669); font-size: 10px;">👑 Разработчик</span>' : ''}
-                                </div>
-                            </div>
-                        </li>
-                        <li><a class="dropdown-item" href="/profile" style="color: #fff; padding: 10px 20px;"><i class="fas fa-user me-2"></i> Профиль</a></li>
-                        <li><a class="dropdown-item" href="/settings" style="color: #fff; padding: 10px 20px;"><i class="fas fa-cog me-2"></i> Настройки</a></li>
-                        <li><a class="dropdown-item" href="/my-subscriptions" style="color: #fff; padding: 10px 20px;"><i class="fas fa-wallet me-2"></i> Мои подписки</a></li>
-                        <li><a class="dropdown-item" href="/security-center" style="color: #fff; padding: 10px 20px;"><i class="fas fa-shield-alt me-2"></i> Безопасность</a></li>
-                        <li><a class="dropdown-item" href="/my-keys" style="color: #fff; padding: 10px 20px;"><i class="fas fa-key me-2"></i> API ключи</a></li>
-                        <li><hr class="dropdown-divider" style="border-color: rgba(255,255,255,0.1);"></li>
-                        <li><a class="dropdown-item text-danger" href="#" onclick="logout()" style="padding: 10px 20px;"><i class="fas fa-sign-out-alt me-2"></i> Выйти</a></li>
-                    </ul>
-                </li>
-            `;
-        } else {
-            menuContainer.innerHTML = `
-                <li class="nav-item"><a class="nav-link" href="/login" style="color: #fff;"><i class="fas fa-sign-in-alt"></i> Вход</a></li>
-                <li class="nav-item"><a class="nav-link" href="/register" style="color: #fff;"><i class="fas fa-user-plus"></i> Регистрация</a></li>
-            `;
-        }
+                    </li>
+                    <li><hr class="dropdown-divider" style="border-color: rgba(255,255,255,0.1);"></li>
+                    <li><a class="dropdown-item" href="/profile" style="color: #fff; padding: 10px 20px;"><i class="fas fa-user me-2"></i> Профиль</a></li>
+                    <li><a class="dropdown-item" href="/settings" style="color: #fff; padding: 10px 20px;"><i class="fas fa-cog me-2"></i> Настройки</a></li>
+                    <li><a class="dropdown-item" href="/my-subscriptions" style="color: #fff; padding: 10px 20px;"><i class="fas fa-wallet me-2"></i> Мои подписки</a></li>
+                    <li><a class="dropdown-item" href="/security-center" style="color: #fff; padding: 10px 20px;"><i class="fas fa-shield-alt me-2"></i> Безопасность</a></li>
+                    <li><a class="dropdown-item" href="/my-keys" style="color: #fff; padding: 10px 20px;"><i class="fas fa-key me-2"></i> API ключи</a></li>
+                    <li><hr class="dropdown-divider" style="border-color: rgba(255,255,255,0.1);"></li>
+                    <li><a class="dropdown-item" href="#" onclick="logout(); return false;" style="color: #f87171; padding: 10px 20px;"><i class="fas fa-sign-out-alt me-2"></i> Выйти</a></li>
+                </ul>
+            </li>
+        `;
+    } else {
+        menuContainer.innerHTML = `
+            <li class="nav-item"><a class="nav-link" href="/login" style="color: #fff;"><i class="fas fa-sign-in-alt"></i> Вход</a></li>
+            <li class="nav-item"><a class="nav-link" href="/register" style="color: #fff;"><i class="fas fa-user-plus"></i> Регистрация</a></li>
+        `;
     }
-    
+}
+
     function logout() {
         localStorage.removeItem('token');
         localStorage.removeItem('user_email');

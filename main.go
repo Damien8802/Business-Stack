@@ -782,7 +782,7 @@ r.GET("/qr/approve-page", handlers.QRApprovePageHandler)
     r.DELETE("/api/journal-entries/:id", handlers.DeleteJournalEntry)
 
     r.GET("/api/admin/create-inventory-tables", handlers.CreateInventoryTables)
-    r.GET("/api/current-user", handlers.GetCurrentUserID)
+    r.GET("/api/current-user", middleware.AuthMiddleware(cfg), handlers.GetCurrentUserID)
 
     r.GET("/api/admin/create-vpn-tables", handlers.CreateVPNTables)
 
@@ -1458,22 +1458,23 @@ protected.Use(middleware.AuthMiddleware(cfg))
     protected.GET("/calendar", handlers.CalendarHandler)
 }
 
-// Профиль - доступен только разработчику
 r.GET("/profile", middleware.AuthMiddleware(cfg), func(c *gin.Context) {
     role := c.GetString("role")
-    if role == "developer" || role == "admin" {
+    // Владельцы, админы и разработчики видят profile.html
+    if role == "owner" || role == "admin" || role == "developer" {
         c.HTML(200, "profile.html", gin.H{
-            "title": "Профиль разработчика | SaaSPro",
+            "title": "Панель управления | BusinessStack",
         })
     } else {
-        c.Redirect(302, "/client-profile")
+        c.HTML(200, "client_profile.html", gin.H{
+            "title": "Мой кабинет | SaaSPro",
+        })
     }
 })
-
 // Клиентский профиль (для обычных пользователей)
 r.GET("/client-profile", middleware.AuthMiddleware(cfg), func(c *gin.Context) {
     role := c.GetString("role")
-    if role == "developer" || role == "admin" {
+    if role == "developer" || role == "admin" || role == "owner" {
         c.Redirect(302, "/profile") // разработчиков отправляем на их профиль
         return
     }
@@ -1638,7 +1639,13 @@ api.DELETE("/webhooks/:id", func(c *gin.Context) {
     c.JSON(200, gin.H{"success": true})
 })
     api.Use(middleware.AuthMiddleware(cfg))
-    {
+
+  {
+
+// ========== АВАТАРКИ ==========
+    api.POST("/avatar/upload", handlers.UploadAvatar)
+    api.DELETE("/avatar", handlers.DeleteAvatar)
+    api.GET("/avatar/:id", handlers.GetUserAvatar)
         api.GET("/notifications/settings", handlers.GetNotificationSettings)
         api.PUT("/notifications/settings", handlers.UpdateNotificationSettings)
         api.GET("/health", handlers.HealthHandler)
@@ -2344,18 +2351,16 @@ r.GET("/admin/orders-view", func(c *gin.Context) {
     })
 })
 
-// Админ-панель разработчика (видит всё)
 r.GET("/developer/admin", middleware.AuthMiddleware(cfg), func(c *gin.Context) {
     role := c.GetString("role")
-    if role != "developer" && role != "admin" {
-        c.String(403, "⛔ Доступ только для разработчиков")
+    if role != "developer" && role != "admin" && role != "owner" {
+        c.String(403, "⛔ Доступ только для разработчиков, администраторов и владельца")
         return
     }
     c.HTML(200, "admin_dashboard_universal.html", gin.H{
-        "title": "Админ-панель разработчика",
+        "title": "Админ-панель",
     })
 })
-
 // ========== API ДЛЯ ПОЛУЧЕНИЯ ДАННЫХ КЛИЕНТА ==========
 // Получить данные текущего клиента
 r.GET("/api/client/data", middleware.AuthMiddleware(cfg), func(c *gin.Context) {

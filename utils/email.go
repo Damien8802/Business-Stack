@@ -93,3 +93,18 @@ func (s *EmailService) SendVerificationEmail(to, name, code string) error {
     
     return s.SendEmail(to, subject, body)
 }
+
+// SendVerificationLink отправляет письмо со ссылкой для подтверждения email
+func (s *EmailService) SendVerificationLink(to, name, link string) error {
+    subject := "Подтверждение регистрации — SaaSPro"
+    
+    body := fmt.Sprintf(`
+        <h2>Добро пожаловать в SaaSPro, %s!</h2>
+        <p>Для подтверждения email перейдите по ссылке:</p>
+        <p><a href="%s" style="background: #4f46e5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px;">Подтвердить email</a></p>
+        <p>Ссылка действительна 24 часа.</p>
+        <p>Если вы не регистрировались — проигнорируйте письмо.</p>
+    `, name, link)
+    
+    return s.SendEmail(to, subject, body)
+}

@@ -109,6 +109,7 @@
             justify-content: center;
             font-weight: bold;
             font-size: 14px;
+            overflow: hidden;
         }
         .user-name-text {
             font-weight: 500;
@@ -149,6 +150,7 @@
             font-size: 24px;
             font-weight: bold;
             color: #667eea;
+            overflow: hidden;
         }
         .user-details {
             flex: 1;
@@ -831,23 +833,67 @@
                 if (ok) token = localStorage.getItem('token');
             }
             const userEmail = localStorage.getItem('user_email') || '';
-            const userName = localStorage.getItem('user_name') || userEmail.split('@')[0] || 'Пользователь';
-            const isDeveloper = localStorage.getItem('is_developer') === 'true';
-            const role = isDeveloper ? 'Разработчик' : 'Клиент';
-            const roleColor = isDeveloper ? '#10b981' : '#667eea';
+            let userName = localStorage.getItem('user_name') || userEmail.split('@')[0] || 'Пользователь';
+            
+            // Убираем роль из имени если есть
+            const rolePrefixes = ['Владелец', 'Администратор', 'Разработчик'];
+            for (const prefix of rolePrefixes) {
+                if (userName.startsWith(prefix + ' ')) {
+                    userName = userName.substring(prefix.length + 1);
+                    break;
+                }
+            }
+
+            // Получаем роль и аватарку
+            let role = 'Клиент';
+            let roleColor = '#667eea';
+            let avatarUrl = '';
+            
+            if (token) {
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    const roleMap = {
+                        'owner': 'Владелец',
+                        'admin': 'Администратор',
+                        'developer': 'Разработчик',
+                        'client': 'Клиент'
+                    };
+                    role = roleMap[payload.role] || 'Клиент';
+                    
+                    if (role === 'Владелец') roleColor = '#f59e0b';
+                    else if (role === 'Администратор') roleColor = '#10b981';
+                    else if (role === 'Разработчик') roleColor = '#6366f1';
+                    else roleColor = '#667eea';
+                    
+                    // Получаем аватарку
+                    const avatarRes = await fetch(`/api/avatar/${payload.user_id}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const avatarData = await avatarRes.json();
+                    if (avatarData.avatar_url) {
+                        avatarUrl = avatarData.avatar_url;
+                    }
+                } catch(e) {
+                    console.error('Ошибка:', e);
+                }
+            }
             
             if (token) {
                 container.innerHTML = `
                     <div class="user-menu">
                         <button class="user-menu-btn" id="userMenuBtn">
-                            <div class="user-avatar">${userName.charAt(0).toUpperCase()}</div>
+                            <div class="user-avatar" style="overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                                ${avatarUrl ? `<img src="${avatarUrl}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">` : `<span style="font-size: 14px; font-weight: bold;">${(userName[0] || 'U').toUpperCase()}</span>`}
+                            </div>
                             <span class="user-name-text">${userName}</span>
                             <span class="user-role" style="background: ${roleColor};">${role}</span>
                             <i class="fas fa-chevron-down"></i>
                         </button>
                         <div class="user-menu-dropdown" id="userMenuDropdown">
                             <div class="user-info">
-                                <div class="user-avatar-large">${userName.charAt(0).toUpperCase()}</div>
+                                <div class="user-avatar-large" style="overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                                    ${avatarUrl ? `<img src="${avatarUrl}" style="width: 56px; height: 56px; border-radius: 50%; object-fit: cover;">` : `<span style="font-size: 24px; font-weight: bold;">${(userName[0] || 'U').toUpperCase()}</span>`}
+                                </div>
                                 <div class="user-details">
                                     <div class="user-name-full">${userName}</div>
                                     <div class="user-email-full">${userEmail}</div>
@@ -859,7 +905,7 @@
                                 <div class="storage-bar"><div class="storage-used" style="width: 32%"></div></div>
                             </div>
                             <div class="dropdown-divider"></div>
-                            <a href="${isDeveloper ? '/profile' : '/client-profile'}"><i class="fas fa-user"></i> Личные данные</a>
+                            <a href="/profile"><i class="fas fa-user"></i> Личные данные</a>
                             <a href="/settings"><i class="fas fa-lock"></i> Пароль и безопасность</a>
                             <a href="/my-subscriptions"><i class="fas fa-credit-card"></i> Мои подписки</a>
                             <a href="/cloud"><i class="fas fa-cloud-upload-alt"></i> Облачное хранилище</a>

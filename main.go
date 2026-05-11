@@ -1581,6 +1581,7 @@ platformGroup.Use(middleware.AuthMiddleware(cfg), middleware.RequirePlatformAcce
     
     // Выдача прямого доступа к модулям (для клиентов)
     platformGroup.POST("/grant-access", handlers.GrantModuleAccess)
+    platformGroup.POST("/staff", handlers.AddPlatformStaff)
 }
 
 // ========== АДМИНКА ОРГАНИЗАЦИИ (ДЛЯ КЛИЕНТОВ) ==========

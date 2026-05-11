@@ -4,9 +4,10 @@ import (
     "net/http"
     "time"
     "github.com/gin-gonic/gin"
+    "github.com/google/uuid"
+    "golang.org/x/crypto/bcrypt"
     "subscription-system/database"
 )
-
 // ========== НОВЫЕ ФУНКЦИИ ДЛЯ ПЛАТФОРМЫ (ТОЛЬКО ДЛЯ ВЛАДЕЛЬЦА) ==========
 
 // GetPlatformStaff - список помощников платформы
@@ -231,4 +232,48 @@ func TenantGrantModuleAccess(c *gin.Context) {
         "success": true,
         "message": "Функция в разработке",
     })
+}
+
+// AddPlatformStaff - добавить сотрудника платформы (админа или разработчика)
+func AddPlatformStaff(c *gin.Context) {
+    var req struct {
+        Email      string `json:"email" binding:"required"`
+        Password   string `json:"password" binding:"required"`
+        Role       string `json:"role"`
+        FirstName  string `json:"first_name"`
+        LastName   string `json:"last_name"`
+        MiddleName string `json:"middle_name"`
+        Phone      string `json:"phone"`
+        BirthDate  string `json:"birth_date"`
+        Address    string `json:"address"`
+    }
+
+    if err := c.BindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    if req.Role == "" {
+        req.Role = "admin"
+    }
+
+    // Хешируем пароль
+    hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+        return
+    }
+
+    userID := uuid.New()
+    _, err = database.Pool.Exec(c.Request.Context(), `
+        INSERT INTO users (id, email, password_hash, role, first_name, last_name, middle_name, phone, birth_date, address, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+    `, userID, req.Email, string(hashedPassword), req.Role, req.FirstName, req.LastName, req.MiddleName, req.Phone, req.BirthDate, req.Address)
+
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{"success": true, "user_id": userID})
 }

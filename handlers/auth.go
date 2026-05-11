@@ -7,6 +7,7 @@ import (
     "fmt"
     "log"
     "net/http"
+    "os"  
     "time"
 
     "github.com/gin-gonic/gin"
@@ -144,7 +145,6 @@ func LoginHandler(c *gin.Context) {
     var isDeveloper bool
     var developerLevel int
 
-    // Загружаем ВСЕ данные пользователя из БД
     err := database.Pool.QueryRow(c.Request.Context(),
         `SELECT id, email, password_hash, name, role, 
                 COALESCE(tenant_id, '11111111-1111-1111-1111-111111111111') as tenant_id,
@@ -161,13 +161,11 @@ func LoginHandler(c *gin.Context) {
     }
     user.TenantID = tenantID
 
-    // Проверка пароля
     if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
         c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
         return
     }
 
-    // ✅ КРИТИЧЕСКИ ВАЖНО: ЕЩЕ РАЗ ПЕРЕЗАГРУЖАЕМ РОЛЬ (на случай если она изменилась)
     var actualRole string
     err = database.Pool.QueryRow(c.Request.Context(),
         "SELECT role FROM users WHERE email = $1", req.Email).Scan(&actualRole)
@@ -176,13 +174,11 @@ func LoginHandler(c *gin.Context) {
         log.Printf("[LOGIN] 🔄 Обновлена роль для %s: %s", req.Email, user.Role)
     }
 
-    // Если разработчик и роль не owner - даем права admin
     if isDeveloper && user.Role != "owner" {
         user.Role = "admin"
         log.Printf("[LOGIN] 🔧 Разработчик %s получил роль admin", req.Email)
     }
 
-    // Для конкретного email - принудительно устанавливаем owner
     if req.Email == "dev@businesstack.ru" {
         user.Role = "owner"
         log.Printf("[LOGIN] 👑 ВЛАДЕЛЕЦ %s авторизован", req.Email)
@@ -197,7 +193,6 @@ func LoginHandler(c *gin.Context) {
         refreshExpiry = 24 * time.Hour
     }
 
-    // Генерируем НОВЫЙ токен с ПРАВИЛЬНОЙ ролью
     accessToken, refreshToken, err := utils.GenerateTokensWithExpiry(
         user.ID.String(), user.Name, user.Email, user.Role, accessExpiry, refreshExpiry)
     if err != nil {
@@ -205,10 +200,8 @@ func LoginHandler(c *gin.Context) {
         return
     }
 
-    // Устанавливаем новую куку
     c.SetCookie("token", accessToken, int(accessExpiry.Seconds()), "/", "", false, true)
 
-    // Сохраняем refresh token
     _, err = database.Pool.Exec(c.Request.Context(),
         `INSERT INTO user_tokens (user_id, token, expires_at, created_at, tenant_id) 
          VALUES ($1, $2, NOW() + $3 * interval '1 second', NOW(), $4)`,
@@ -217,7 +210,6 @@ func LoginHandler(c *gin.Context) {
         log.Printf("⚠️ Failed to save refresh token: %v", err)
     }
 
-    // Записываем историю входа
     database.Pool.Exec(context.Background(),
         `INSERT INTO login_history (user_id, ip_address, user_agent, login_time, tenant_id) 
          VALUES ($1, $2, $3, NOW(), $4)`,
@@ -459,20 +451,22 @@ func RegisterHandler(c *gin.Context) {
         return
     }
 
-    // Проверяем, нет ли уже в основной таблице
+    log.Printf("📝 Попытка регистрации: email=%s, name=%s", req.Email, req.Name)
+
     var exists bool
     database.Pool.QueryRow(c.Request.Context(),
         "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)", req.Email).Scan(&exists)
     if exists {
+        log.Printf("❌ Регистрация отклонена: email %s уже существует", req.Email)
         c.JSON(http.StatusConflict, gin.H{"error": "Пользователь с таким email уже зарегистрирован"})
         return
     }
 
-    // Генерируем уникальный токен
     token := uuid.New().String()
     hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 
-    // Сохраняем во временную таблицу
+    log.Printf("📝 Сохранение в pending_users: email=%s, token=%s", req.Email, token)
+
     _, err := database.Pool.Exec(c.Request.Context(),
         `INSERT INTO pending_users (email, password_hash, name, token, expires_at)
          VALUES ($1, $2, $3, $4, NOW() + INTERVAL '24 hours')
@@ -481,21 +475,43 @@ func RegisterHandler(c *gin.Context) {
         req.Email, string(hashedPassword), req.Name, token)
 
     if err != nil {
+        log.Printf("❌ Ошибка сохранения в pending_users: %v", err)
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка сохранения"})
         return
     }
 
-    // Формируем ссылку
-    verifyLink := fmt.Sprintf("https://businesstack.ru/verify-email?token=%s", token)
+   // Используем DOMAIN или BASE_URL из настроек
+// НОВЫЙ КОД (работает с .env)
+baseURL := os.Getenv("BASE_URL")
+if baseURL == "" {
+    baseURL = "http://localhost:8080"
+}
 
-    // Отправляем письмо
+verifyLink := fmt.Sprintf("%s/verify-email?token=%s", baseURL, token)
+    log.Printf("📧 Ссылка для подтверждения: %s", verifyLink)
+
     emailService := utils.NewEmailService(config.Load())
+    log.Printf("📧 Отправка письма на %s...", req.Email)
+
     if err := emailService.SendVerificationLink(req.Email, req.Name, verifyLink); err != nil {
-        // Удаляем временную запись, если письмо не ушло
+        log.Printf("❌ Ошибка отправки письма: %v", err)
         database.Pool.Exec(c.Request.Context(), "DELETE FROM pending_users WHERE email = $1", req.Email)
         c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный email или проблема с отправкой"})
         return
     }
+    log.Printf("✅ Письмо успешно отправлено на %s", req.Email)
+
+    go func() {
+        adminEmail := config.Load().EmailFrom
+        if adminEmail != "" {
+            log.Printf("📧 Отправка уведомления админу на %s...", adminEmail)
+            if err := emailService.SendAdminNotification(req.Name, req.Email); err != nil {
+                log.Printf("❌ Ошибка отправки уведомления админу: %v", err)
+            } else {
+                log.Printf("✅ Уведомление админу отправлено на %s", adminEmail)
+            }
+        }
+    }()
 
     c.JSON(http.StatusOK, gin.H{
         "message": "На вашу почту отправлена ссылка для подтверждения",
@@ -506,7 +522,10 @@ func RegisterHandler(c *gin.Context) {
 // VerifyEmailHandler подтверждает email по токену
 func VerifyEmailHandler(c *gin.Context) {
     token := c.Query("token")
+    log.Printf("📝 Попытка подтверждения email с токеном: %s", token)
+
     if token == "" {
+        log.Printf("❌ Токен отсутствует")
         c.JSON(http.StatusBadRequest, gin.H{"error": "Токен отсутствует"})
         return
     }
@@ -519,31 +538,34 @@ func VerifyEmailHandler(c *gin.Context) {
         token).Scan(&email, &passwordHash, &name, &expiresAt)
 
     if err != nil {
+        log.Printf("❌ Неверный токен: %v", err)
         c.String(http.StatusBadRequest, "Неверная или просроченная ссылка")
         return
     }
 
     if time.Now().After(expiresAt) {
+        log.Printf("❌ Токен просрочен: %s", token)
         database.Pool.Exec(c.Request.Context(), "DELETE FROM pending_users WHERE token = $1", token)
         c.String(http.StatusBadRequest, "Ссылка просрочена. Зарегистрируйтесь заново.")
         return
     }
 
-    // Создаём пользователя
+    log.Printf("✅ Токен валиден, создаём пользователя: email=%s, name=%s", email, name)
+
     _, err = database.Pool.Exec(c.Request.Context(),
         `INSERT INTO users (email, password_hash, name, role, email_verified)
          VALUES ($1, $2, $3, 'client', true)`,
         email, passwordHash, name)
 
     if err != nil {
+        log.Printf("❌ Ошибка при создании пользователя: %v", err)
         c.String(http.StatusInternalServerError, "Ошибка при создании пользователя")
         return
     }
 
-    // Удаляем временную запись
     database.Pool.Exec(c.Request.Context(), "DELETE FROM pending_users WHERE token = $1", token)
+    log.Printf("✅ Пользователь %s успешно подтверждён и зарегистрирован!", email)
 
-    // Успешная страница
     c.Header("Content-Type", "text/html")
     c.String(http.StatusOK, `
         <html>
@@ -569,14 +591,12 @@ func ForgotPasswordHandler(c *gin.Context) {
         return
     }
 
-    // Проверяем существует ли пользователь
     var user models.User
     err := database.Pool.QueryRow(c.Request.Context(),
         `SELECT id, name FROM users WHERE email = $1`,
         req.Email).Scan(&user.ID, &user.Name)
 
     if err != nil {
-        // Для безопасности не говорим, что email не найден
         c.JSON(http.StatusOK, gin.H{
             "success": true,
             "message": "Если пользователь существует, ссылка для сброса отправлена",
@@ -584,10 +604,8 @@ func ForgotPasswordHandler(c *gin.Context) {
         return
     }
 
-    // Генерируем токен сброса
     resetToken := uuid.New().String()
 
-    // Сохраняем в БД
     _, err = database.Pool.Exec(c.Request.Context(), `
         INSERT INTO password_resets (user_id, reset_token, expires_at, method)
         VALUES ($1, $2, NOW() + INTERVAL '24 hours', 'email')
@@ -601,10 +619,8 @@ func ForgotPasswordHandler(c *gin.Context) {
         return
     }
 
-    // Формируем ссылку для сброса
     resetLink := fmt.Sprintf("https://businesstack.ru/reset-password?token=%s", resetToken)
 
-    // Отправляем email
     emailService := utils.NewEmailService(config.Load())
     go func() {
         if err := emailService.SendPasswordResetEmail(req.Email, user.Name, resetLink); err != nil {
@@ -631,7 +647,6 @@ func SendResetCodeHandler(c *gin.Context) {
         return
     }
 
-    // Проверяем существует ли пользователь
     var user models.User
     err := database.Pool.QueryRow(c.Request.Context(),
         `SELECT id, name FROM users WHERE phone = $1`,
@@ -645,14 +660,12 @@ func SendResetCodeHandler(c *gin.Context) {
         return
     }
 
-    // Генерируем 6-значный код
     code := fmt.Sprintf("%06d", time.Now().UnixNano()%1000000)
     if code[0] == '0' {
         code = "1" + code[1:]
     }
     resetToken := uuid.New().String()
 
-    // Сохраняем в БД
     _, err = database.Pool.Exec(c.Request.Context(), `
         INSERT INTO password_resets (user_id, reset_token, code, expires_at, method)
         VALUES ($1, $2, $3, NOW() + INTERVAL '15 minutes', 'phone')
@@ -666,7 +679,6 @@ func SendResetCodeHandler(c *gin.Context) {
         return
     }
 
-    // Здесь должна быть отправка SMS
     log.Printf("📱 Код для сброса пароля для %s: %s", req.Phone, code)
 
     c.JSON(http.StatusOK, gin.H{
@@ -707,7 +719,6 @@ func VerifyResetCodeHandler(c *gin.Context) {
         return
     }
 
-    // Помечаем как подтвержденный
     _, err = database.Pool.Exec(c.Request.Context(), `
         UPDATE password_resets SET verified = true WHERE reset_token = $1
     `, req.ResetToken)
@@ -754,14 +765,12 @@ func ResetPasswordHandler(c *gin.Context) {
         return
     }
 
-    // Хешируем новый пароль
     hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обработки пароля"})
         return
     }
 
-    // Обновляем пароль
     _, err = database.Pool.Exec(c.Request.Context(), `
         UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2
     `, string(hashedPassword), userID)
@@ -771,7 +780,6 @@ func ResetPasswordHandler(c *gin.Context) {
         return
     }
 
-    // Помечаем токен как использованный
     _, err = database.Pool.Exec(c.Request.Context(), `
         UPDATE password_resets SET used = true WHERE reset_token = $1
     `, req.ResetToken)
@@ -780,7 +788,6 @@ func ResetPasswordHandler(c *gin.Context) {
         log.Printf("⚠️ Ошибка обновления статуса токена: %v", err)
     }
 
-    // Удаляем все сессии пользователя (опционально)
     _, _ = database.Pool.Exec(c.Request.Context(), `
         DELETE FROM user_tokens WHERE user_id = $1
     `, userID)
@@ -808,15 +815,12 @@ func GenerateResetQRHandler(c *gin.Context) {
         return
     }
 
-    // Для мобильного приложения (ссылка, которую перехватывает приложение)
     deeplink := fmt.Sprintf("saaspro://reset-password?token=%s", qrToken)
-    
-    // Для отображения QR кода в браузере (используем API генератора QR)
     qrImageUrl := fmt.Sprintf("https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=%s", deeplink)
 
     c.JSON(http.StatusOK, gin.H{
         "session_token": qrToken,
-        "qr_data_url":   qrImageUrl,  
+        "qr_data_url":   qrImageUrl,
         "deeplink":      deeplink,
         "expires_in":    300,
     })
@@ -851,7 +855,6 @@ func CheckResetQRStatusHandler(c *gin.Context) {
     }
 
     if status == "approved" && userID != "" {
-        // Генерируем новый токен для сброса
         resetToken := uuid.New().String()
         _, err = database.Pool.Exec(c.Request.Context(), `
             INSERT INTO password_resets (user_id, reset_token, expires_at, method, verified)
@@ -882,7 +885,6 @@ func ConfirmResetQRHandler(c *gin.Context) {
         return
     }
 
-    // Проверяем существование сессии
     var expiresAt time.Time
     err := database.Pool.QueryRow(c.Request.Context(), `
         SELECT expires_at FROM qr_reset_sessions 
@@ -899,7 +901,6 @@ func ConfirmResetQRHandler(c *gin.Context) {
         return
     }
 
-    // Обновляем статус
     _, err = database.Pool.Exec(c.Request.Context(), `
         UPDATE qr_reset_sessions 
         SET status = 'approved', user_id = $1 
@@ -916,4 +917,3 @@ func ConfirmResetQRHandler(c *gin.Context) {
         "message": "Сброс пароля подтвержден",
     })
 }
-

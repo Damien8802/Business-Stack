@@ -96,14 +96,117 @@ func (s *EmailService) SendVerificationEmail(to, name, code string) error {
 
 // SendVerificationLink отправляет письмо со ссылкой для подтверждения email
 func (s *EmailService) SendVerificationLink(to, name, link string) error {
-    subject := "Подтверждение регистрации — SaaSPro"
+    subject := "✅ Подтверждение регистрации — SaaSPro"
     
     body := fmt.Sprintf(`
-        <h2>Добро пожаловать в SaaSPro, %s!</h2>
-        <p>Для подтверждения email перейдите по ссылке:</p>
-        <p><a href="%s" style="background: #4f46e5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px;">Подтвердить email</a></p>
-        <p>Ссылка действительна 24 часа.</p>
-        <p>Если вы не регистрировались — проигнорируйте письмо.</p>
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    background: #f5f5f5;
+                    padding: 40px;
+                    margin: 0;
+                }
+                .container {
+                    max-width: 550px;
+                    margin: 0 auto;
+                    background: white;
+                    border-radius: 16px;
+                    overflow: hidden;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+                }
+                .header {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    padding: 30px;
+                    text-align: center;
+                }
+                .header h1 {
+                    color: white;
+                    margin: 0;
+                    font-size: 28px;
+                }
+                .header p {
+                    color: rgba(255,255,255,0.8);
+                    margin: 5px 0 0;
+                }
+                .content {
+                    padding: 30px;
+                }
+                .greeting {
+                    font-size: 16px;
+                    color: #333;
+                    margin-bottom: 20px;
+                }
+                .button {
+                    text-align: center;
+                    margin: 30px 0;
+                }
+                .btn {
+                    display: inline-block;
+                    padding: 14px 35px;
+                    background: linear-gradient(135deg, #10b981, #059669);
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 50px;
+                    font-weight: 600;
+                    font-size: 16px;
+                }
+                .warning {
+                    background: #fef3c7;
+                    padding: 15px;
+                    border-radius: 8px;
+                    margin: 20px 0;
+                    font-size: 13px;
+                    color: #92400e;
+                    text-align: center;
+                }
+                .footer {
+                    text-align: center;
+                    padding: 20px;
+                    background: #f8f9fa;
+                    font-size: 12px;
+                    color: #999;
+                    border-top: 1px solid #eee;
+                }
+                .footer a {
+                    color: #667eea;
+                    text-decoration: none;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🚀 SaaSPro</h1>
+                    <p>Платформа управления подписками</p>
+                </div>
+                <div class="content">
+                    <div class="greeting">
+                        <strong>Здравствуйте, %s!</strong>
+                    </div>
+                    <p>Спасибо за регистрацию на платформе <strong>SaaSPro</strong>!</p>
+                    <p>Для завершения регистрации, пожалуйста, подтвердите ваш email адрес:</p>
+                    <div class="button">
+                        <a href="%s" class="btn">✅ Подтвердить регистрацию</a>
+                    </div>
+                    <div class="warning">
+                        <strong>⚠️ Внимание!</strong><br>
+                        Если вы не подтвердите email в течение 24 часов, регистрация будет автоматически отменена.
+                    </div>
+                    <p style="font-size: 13px; color: #666; text-align: center;">
+                        Если вы не регистрировались на SaaSPro, просто проигнорируйте это письмо.
+                    </p>
+                </div>
+                <div class="footer">
+                    <p>© 2025 SaaSPro. Все права защищены.</p>
+                    <p>Вопросы? Напишите нам: <a href="mailto:dev@businesstack.ru">dev@businesstack.ru</a></p>
+                </div>
+            </div>
+        </body>
+        </html>
     `, name, link)
     
     return s.SendEmail(to, subject, body)
@@ -143,3 +246,107 @@ func (s *EmailService) SendPasswordResetEmail(to, name, resetLink string) error 
     
     return s.SendEmail(to, subject, body)
 }
+
+// SendAdminNotification - уведомление админу о новом пользователе
+func (s *EmailService) SendAdminNotification(userName, userEmail string) error {
+    subject := "🆕 Новый пользователь зарегистрировался!"
+    
+    body := fmt.Sprintf(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+        </head>
+        <body style="font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; padding: 40px;">
+            <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; text-align: center;">
+                    <h1 style="color: white; margin: 0; font-size: 24px;">🆕 Новый пользователь!</h1>
+                </div>
+                <div style="padding: 30px;">
+                    <p>Здравствуйте!</p>
+                    <p>На платформе SaaSPro зарегистрировался новый пользователь:</p>
+                    <table style="width: 100%%; margin: 20px 0; border-collapse: collapse;">
+                        <tr style="background: #f8f9fa;">
+                            <td style="padding: 12px; border: 1px solid #ddd;"><strong>Имя:</strong></td>
+                            <td style="padding: 12px; border: 1px solid #ddd;">%s</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px; border: 1px solid #ddd;"><strong>Email:</strong></td>
+                            <td style="padding: 12px; border: 1px solid #ddd;">%s</td>
+                        </tr>
+                        <tr style="background: #f8f9fa;">
+                            <td style="padding: 12px; border: 1px solid #ddd;"><strong>Дата:</strong></td>
+                            <td style="padding: 12px; border: 1px solid #ddd;">%s</td>
+                        </tr>
+                    </table>
+                    <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+                    <p style="font-size: 12px; color: #999; text-align: center;">© 2025 SaaSPro</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `, userName, userEmail, time.Now().Format("02.01.2006 15:04:05"))
+    
+    return s.SendEmail(s.config.EmailFrom, subject, body)
+}
+
+// SendNewOrderNotification - уведомление о новой заявке
+func (s *EmailService) SendNewOrderNotification(orderName, orderContact, orderDescription string) error {
+    subject := "📦 Новая заявка на разработку!"
+    
+    body := fmt.Sprintf(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+        </head>
+        <body style="font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; padding: 40px;">
+            <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                <div style="background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); padding: 30px; text-align: center;">
+                    <h1 style="color: white; margin: 0; font-size: 24px;">📦 Новая заявка!</h1>
+                </div>
+                <div style="padding: 30px;">
+                    <p><strong>Клиент:</strong> %s</p>
+                    <p><strong>Контакт:</strong> %s</p>
+                    <p><strong>Описание:</strong></p>
+                    <p style="background: #f8f9fa; padding: 15px; border-radius: 8px;">%s</p>
+                    <hr style="margin: 20px 0;">
+                    <p style="font-size: 12px; color: #999;">Перейдите в админ-панель для обработки</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `, orderName, orderContact, orderDescription)
+    
+    return s.SendEmail(s.config.EmailFrom, subject, body)
+}
+
+// SendNewIdeaNotification - уведомление о новой идее
+func (s *EmailService) SendNewIdeaNotification(title, description, userEmail string) error {
+    subject := "💡 Новая идея от пользователя!"
+    
+    body := fmt.Sprintf(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+        </head>
+        <body style="font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; padding: 40px;">
+            <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                <div style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); padding: 30px; text-align: center;">
+                    <h1 style="color: white; margin: 0; font-size: 24px;">💡 Новая идея!</h1>
+                </div>
+                <div style="padding: 30px;">
+                    <p><strong>От:</strong> %s</p>
+                    <p><strong>Название:</strong> %s</p>
+                    <p><strong>Описание:</strong></p>
+                    <p style="background: #f8f9fa; padding: 15px; border-radius: 8px;">%s</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `, userEmail, title, description)
+    
+    return s.SendEmail(s.config.EmailFrom, subject, body)
+}
+

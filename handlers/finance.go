@@ -12,6 +12,7 @@ import (
     "subscription-system/database"
     "subscription-system/middleware"
 )
+
 func getCurrentUserID(c *gin.Context) string {
     userID := c.GetString("user_id")
     if userID == "" || userID == "00000000-0000-0000-0000-000000000000" {
@@ -19,6 +20,7 @@ func getCurrentUserID(c *gin.Context) string {
     }
     return userID
 }
+
 // ChartOfAccount структура счета
 type ChartOfAccount struct {
     ID          uuid.UUID  `json:"id"`
@@ -231,12 +233,19 @@ func GetJournalEntries(c *gin.Context) {
         `
         rows, err := database.Pool.Query(c.Request.Context(), query)
         if err != nil {
-            c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+            c.JSON(http.StatusOK, gin.H{
+                "success": true,
+                "entries": []interface{}{},
+                "total":   0,
+                "error":   err.Error(),
+            })
             return
         }
         defer rows.Close()
 
-        var entries []gin.H
+        // ИСПРАВЛЕНО: инициализируем как пустой массив, а не nil
+        entries := make([]gin.H, 0)
+
         for rows.Next() {
             var id uuid.UUID
             var opDate time.Time
@@ -312,12 +321,17 @@ func GetJournalEntries(c *gin.Context) {
 
     rows, err := database.Pool.Query(c.Request.Context(), query, args...)
     if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        c.JSON(http.StatusOK, gin.H{
+            "success": true,
+            "entries": []interface{}{},
+            "total":   0,
+        })
         return
     }
     defer rows.Close()
 
-    var entries []gin.H
+    entries := make([]gin.H, 0)
+
     for rows.Next() {
         var id uuid.UUID
         var opDate time.Time
@@ -352,6 +366,7 @@ func GetJournalEntries(c *gin.Context) {
         "total":   len(entries),
     })
 }
+
 // GetJournalEntry - получить проводку по ID
 func GetJournalEntry(c *gin.Context) {
     userID := getUserID(c)
@@ -1044,5 +1059,56 @@ func UpdateJournalEntry(c *gin.Context) {
         return
     }
 
+    c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+// UpdateJournalEntrySimple - обновление записи в журнале проводок
+func UpdateJournalEntrySimple(c *gin.Context) {
+    tenantID := middleware.GetTenantIDFromContext(c)
+    entryID := c.Param("id")
+    
+    var req struct {
+        OperationDate    string  `json:"operation_date"`
+        DocumentNumber   string  `json:"document_number"`
+        DocumentType     string  `json:"document_type"`
+        CounterpartyName string  `json:"counterparty_name"`
+        CounterpartyINN  string  `json:"counterparty_inn"`
+        DebitAmount      float64 `json:"debit_amount"`
+        CreditAmount     float64 `json:"credit_amount"`
+        Description      string  `json:"description"`
+    }
+    
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    
+    operationDate, err := time.Parse("2006-01-02", req.OperationDate)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат даты"})
+        return
+    }
+    
+    _, err = database.Pool.Exec(c.Request.Context(), `
+        UPDATE journal_entries
+        SET operation_date = $1,
+            document_number = $2,
+            document_type = $3,
+            counterparty_name = $4,
+            counterparty_inn = $5,
+            debit_amount = $6,
+            credit_amount = $7,
+            description = $8,
+            updated_at = NOW()
+        WHERE id = $9 AND tenant_id = $10
+    `, operationDate, req.DocumentNumber, req.DocumentType,
+        req.CounterpartyName, req.CounterpartyINN, req.DebitAmount, req.CreditAmount,
+        req.Description, entryID, tenantID)
+
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    
     c.JSON(http.StatusOK, gin.H{"success": true})
 }

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Добро пожаловать | BusinessStack</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Анимированные фоновые элементы */
+        .bg-shape {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.3;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .shape-1 {
+            background: #667eea;
+            top: -100px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .shape-2 {
+            background: #764ba2;
+            bottom: -100px;
+            right: -100px;
+            animation-delay: 5s;
+        }
+
+        .shape-3 {
+            background: #f093fb;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 500px;
+            height: 500px;
+            animation-delay: 10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+
+        .auth-container {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 500px;
+            margin: 20px;
+            animation: slideUp 0.8s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .auth-card {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            border-radius: 56px;
+            overflow: hidden;
+            box-shadow: 0 40px 60px -20px rgba(0, 0, 0, 0.4);
+            transition: transform 0.3s ease;
+        }
+
+        .auth-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .auth-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 50px 40px 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 8s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(1.2); opacity: 0.5; }
+        }
+
+        .logo-icon {
+            width: 90px;
+            height: 90px;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            font-size: 48px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: bounce 2s ease infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .auth-header h1 {
+            font-size: 32px;
+            font-weight: 800;
+            color: white;
+            letter-spacing: -0.5px;
+            margin-bottom: 10px;
+        }
+
+        .auth-header p {
+            color: rgba(255,255,255,0.9);
+            font-size: 14px;
+        }
+
+        .auth-body {
+            padding: 40px;
+        }
+
+        .module-badge {
+            background: linear-gradient(135deg, #f0f2ff, #e8ecff);
+            border-radius: 24px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            border: 1px solid rgba(102,126,234,0.2);
+        }
+
+        .module-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .module-name {
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        .feature-item {
+            background: #f8f9ff;
+            padding: 12px;
+            border-radius: 20px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .feature-item:hover {
+            background: #e8ecff;
+            transform: translateY(-2px);
+        }
+
+        .feature-item i {
+            font-size: 24px;
+            color: #667eea;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .feature-item span {
+            font-size: 12px;
+            color: #334155;
+            font-weight: 500;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            text-decoration: none;
+            margin-bottom: 12px;
+            box-shadow: 0 10px 25px -5px rgba(102,126,234,0.4);
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px -5px rgba(102,126,234,0.5);
+        }
+
+        .btn-register {
+            width: 100%;
+            padding: 16px;
+            background: transparent;
+            color: #667eea;
+            border: 2px solid #667eea;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .btn-register:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .benefits {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .benefits p {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-bottom: 10px;
+        }
+
+        .benefits .icons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .benefits .icons i {
+            font-size: 20px;
+            color: #cbd5e1;
+            transition: color 0.3s;
+        }
+
+        .benefits .icons i:hover {
+            color: #667eea;
+        }
+
+        @media (max-width: 480px) {
+            .auth-header {
+                padding: 35px 25px;
+            }
+            .auth-body {
+                padding: 30px 25px;
+            }
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+            .logo-icon {
+                width: 70px;
+                height: 70px;
+                font-size: 36px;
+            }
+            .auth-header h1 {
+                font-size: 26px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-shape shape-1"></div>
+    <div class="bg-shape shape-2"></div>
+    <div class="bg-shape shape-3"></div>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="logo-icon">
+                    <i class="fas fa-rocket"></i>
+                </div>
+                <h1>🌟 Добро пожаловать!</h1>
+                <p>Войдите в свой аккаунт, чтобы продолжить</p>
+            </div>
+
+            <div class="auth-body">
+                <div class="module-badge">
+                    <div class="module-icon">
+                        <i class="fas {{.module_icon}}"></i>
+                    </div>
+                    <div class="module-name">{{.module_name}}</div>
+                    <p style="font-size: 13px; color: #64748b; margin-top: 8px;">{{.module_description}}</p>
+                </div>
+
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Безопасность</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Аналитика 24/7</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-headset"></i>
+                        <span>Поддержка</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <span>Облачное хранилище</span>
+                    </div>
+                </div>
+
+                <a href="/login?redirect={{.redirect_url}}" class="btn-login">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Войти в аккаунт
+                </a>
+
+                <a href="/register" class="btn-register">
+                    <i class="fas fa-user-plus"></i>
+                    Создать новый аккаунт
+                </a>
+
+                <div class="benefits">
+                    <p>🔐 Безопасный вход • 🚀 Мгновенный доступ • 💎 Премиум функции</p>
+                    <div class="icons">
+                        <i class="fab fa-telegram"></i>
+                        <i class="fab fa-whatsapp"></i>
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

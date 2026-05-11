@@ -205,6 +205,24 @@ if err != nil {
 } else {
     log.Println("✅ Таблица feature_requests готова")
 }
+
+// ========== ТАБЛИЦА ОЖИДАЮЩИХ ПОДТВЕРЖДЕНИЯ ПОЛЬЗОВАТЕЛЕЙ ==========
+_, err = database.Pool.Exec(ctx, `
+    CREATE TABLE IF NOT EXISTS pending_users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        name VARCHAR(255),
+        token VARCHAR(255) NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+    )
+`)
+if err != nil {
+    log.Printf("⚠️ Ошибка создания pending_users: %v", err)
+} else {
+    log.Println("✅ Таблица pending_users готова")
+}
     
     handlers.InitVPNWithDB(database.Pool)
     // Инициализация Stealth VPN сервиса
@@ -405,19 +423,17 @@ r.GET("/scrum", func(c *gin.Context) {
 })
 
 // Страница налоговой отчётности
-r.GET("/tax-reports", func(c *gin.Context) {
+r.GET("/tax-reports", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("tax-reporting"), func(c *gin.Context) {
     c.HTML(http.StatusOK, "tax_reports", gin.H{
         "title": "Налоговая отчётность | SaaSPro",
     })
 })
-
 // Страница расчёта зарплаты
-r.GET("/payroll", func(c *gin.Context) {
+r.GET("/payroll", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("payroll"), func(c *gin.Context) {
     c.HTML(http.StatusOK, "payroll.html", gin.H{
         "title": "Расчёт зарплаты | SaaSPro",
     })
 })
-
 // ========== СТРАНИЦЫ ДОКУМЕНТОВ ==========
 r.GET("/offer", func(c *gin.Context) {
     c.HTML(http.StatusOK, "offer.html", gin.H{
@@ -461,24 +477,30 @@ r.GET("/docs", func(c *gin.Context) {
     r.GET("/referral", handlers.ReferralPageHandler)
     r.GET("/ai-settings", handlers.AISettingsPageHandler)
     r.GET("/transcriptions", handlers.TranscriptionsPage)
-    r.GET("/ai-agents", handlers.AIAgentsPage)
+    r.GET("/ai-agents", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("ai-agents"), handlers.AIAgentsPage)
     r.GET("/advanced-analytics", handlers.AdvancedAnalyticsPage)
 // Акты сверки
-r.POST("/api/reconciliation/generate", middleware.AuthMiddleware(cfg), handlers.GenerateReconciliationAct)
-r.GET("/api/reconciliation/acts", middleware.AuthMiddleware(cfg), handlers.GetReconciliationActs)
-r.GET("/api/reconciliation/act/:id", middleware.AuthMiddleware(cfg), handlers.GetReconciliationAct)
-r.GET("/api/reconciliation/download/:id", middleware.AuthMiddleware(cfg), handlers.DownloadReconciliationAct)
-r.DELETE("/api/reconciliation/delete/:id", middleware.AuthMiddleware(cfg), handlers.DeleteReconciliationAct)
-r.PUT("/api/reconciliation/update/:id", middleware.AuthMiddleware(cfg), handlers.UpdateReconciliationAct)
+reconciliationAPI := r.Group("/api/reconciliation")
+reconciliationAPI.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("reconciliation"))
+{
+    reconciliationAPI.POST("/generate", handlers.GenerateReconciliationAct)
+    reconciliationAPI.GET("/acts", handlers.GetReconciliationActs)
+    reconciliationAPI.GET("/act/:id", handlers.GetReconciliationAct)
+    reconciliationAPI.GET("/download/:id", handlers.DownloadReconciliationAct)
+    reconciliationAPI.DELETE("/delete/:id", handlers.DeleteReconciliationAct)
+    reconciliationAPI.PUT("/update/:id", handlers.UpdateReconciliationAct)
+}
 
-// Журнал операций (бухгалтерия)
-r.POST("/api/journal/entry", middleware.AuthMiddleware(cfg), handlers.CreateJournalEntry)
-r.GET("/api/journal/entries", middleware.AuthMiddleware(cfg), handlers.GetJournalEntries)
-r.PUT("/api/journal/entry/:id", middleware.AuthMiddleware(cfg), handlers.UpdateJournalEntry)
-r.DELETE("/api/journal/entry/:id", middleware.AuthMiddleware(cfg), handlers.DeleteJournalEntry)
+journalAPI := r.Group("/api/journal")
+journalAPI.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("journal"))
+{
+    journalAPI.POST("/entry", handlers.CreateJournalEntry)
+    journalAPI.GET("/entries", handlers.GetJournalEntries)
+    journalAPI.PUT("/entry/:id", handlers.UpdateJournalEntry)
+    journalAPI.DELETE("/entry/:id", handlers.DeleteJournalEntry)
+}
 
-
-    r.GET("/marketplace", handlers.MarketplacePageHandler)
+    r.GET("/marketplace", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("marketplace"), handlers.MarketplacePageHandler)
         // ========== НОВЫЕ РОУТЫ ==========
     
     // Universal AI Assistant - страница
@@ -727,16 +749,16 @@ r.GET("/api/qr/reset-status", handlers.QRResetStatusWebSocket)
     r.GET("/api/user/usage", handlers.GetAPIUsage)  
 
     // Инвентаризация
-    r.GET("/inventory", handlers.InventoryPageHandler)
-    r.GET("/api/inventory/products", handlers.GetProducts)
-    r.POST("/api/inventory/products", handlers.CreateProduct)
-    r.PUT("/api/inventory/products/:id", handlers.UpdateProduct)
-    r.DELETE("/api/inventory/products/:id", handlers.DeleteProduct)
-    r.GET("/api/inventory/orders", handlers.GetOrders)
-    r.POST("/api/inventory/orders", handlers.CreateOrder)
-    r.GET("/api/inventory/orders/:id", handlers.GetOrderDetails)
-    r.GET("/api/inventory/stats", handlers.GetInventoryStats)
-    r.GET("/api/inventory/products/export/csv", handlers.ExportProductsCSV)
+    r.GET("/inventory", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("inventory"), handlers.InventoryPageHandler)
+    //r.GET("/api/inventory/products", handlers.GetProducts)
+    //r.POST("/api/inventory/products", handlers.CreateProduct)
+    //r.PUT("/api/inventory/products/:id", handlers.UpdateProduct)
+    //r.DELETE("/api/inventory/products/:id", handlers.DeleteProduct)
+    //r.GET("/api/inventory/orders", handlers.GetOrders)
+    //r.POST("/api/inventory/orders", handlers.CreateOrder)
+    //r.GET("/api/inventory/orders/:id", handlers.GetOrderDetails)
+    //r.GET("/api/inventory/stats", handlers.GetInventoryStats)
+    //r.GET("/api/inventory/products/export/csv", handlers.ExportProductsCSV)
 
     // Поставщики
     r.GET("/api/suppliers", handlers.GetSuppliers)
@@ -764,7 +786,7 @@ r.GET("/api/qr/reset-status", handlers.QRResetStatusWebSocket)
     r.PUT("/api/chart-of-accounts/:id", handlers.UpdateChartOfAccount)
     r.DELETE("/api/chart-of-accounts/:id", handlers.DeleteChartOfAccount)
 
-    r.GET("/finance", func(c *gin.Context) {
+    r.GET("/finance", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("fincore"), func(c *gin.Context) {
         c.HTML(http.StatusOK, "finance.html", gin.H{
             "title": "Финансовый учет | SaaSPro",
         })
@@ -778,8 +800,9 @@ r.GET("/api/qr/reset-status", handlers.QRResetStatusWebSocket)
     r.POST("/api/cash-operations", handlers.CreateCashOperation)
     r.GET("/api/journal-entries", handlers.GetJournalEntries)
     r.GET("/api/journal-entries/:id", handlers.GetJournalEntry)
-    r.POST("/api/journal-entries", handlers.CreateJournalEntry)
+    r.POST("/api/journal-entries", handlers.CreateJournalEntrySimple)
     r.POST("/api/journal-entries/:id/post", handlers.PostJournalEntry)
+    r.PUT("/api/journal-entries/:id", handlers.UpdateJournalEntrySimple)
     r.DELETE("/api/journal-entries/:id", handlers.DeleteJournalEntry)
 
     r.GET("/api/admin/create-inventory-tables", handlers.CreateInventoryTables)
@@ -875,12 +898,18 @@ r.GET("/developer-portal", middleware.AuthMiddleware(cfg), handlers.DeveloperPor
     r.GET("/api/reports/dashboard-stats", handlers.GetDashboardStats)
     r.GET("/api/reports/sales-chart", handlers.GetSalesChart)
 
-    r.GET("/reports", func(c *gin.Context) {
+    r.GET("/reports", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("reports-analytics"), func(c *gin.Context) {
         c.HTML(http.StatusOK, "reports.html", gin.H{
             "title": "Отчеты и аналитика | SaaSPro",
         })
     })
 
+// Страница журнала проводок
+r.GET("/journal", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("journal"), func(c *gin.Context) {
+    c.HTML(http.StatusOK, "journal_entries.html", gin.H{
+        "title": "Журнал проводок | FinCore",
+    })
+})
     // ========== ИНТЕГРАЦИЯ С 1С ==========
     r.GET("/api/1c/export/products", handlers.ExportProductsTo1C)
     r.GET("/api/1c/export/orders", handlers.ExportOrdersTo1C)
@@ -912,7 +941,7 @@ r.GET("/developer-portal", middleware.AuthMiddleware(cfg), handlers.DeveloperPor
     r.POST("/api/bitrix/webhook", handlers.BitrixWebhookHandler)
 
     // TeamSphere - Bitrix24 Alternative
-    r.GET("/teamsphere", func(c *gin.Context) {
+    r.GET("/teamsphere", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("teamsphere"), func(c *gin.Context) {
         c.HTML(http.StatusOK, "teamsphere_welcome.html", gin.H{
             "title": "TeamSphere | Добро пожаловать",
         })
@@ -922,10 +951,11 @@ r.GET("/developer-portal", middleware.AuthMiddleware(cfg), handlers.DeveloperPor
     r.GET("/integrations", handlers.IntegrationsHandler)
     
     // Projects page
-    r.GET("/projects", handlers.ProjectsPageHandler)
+    r.GET("/projects", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("projects"), handlers.ProjectsPageHandler)
 
  // HR маршруты
 hr := r.Group("/hr")
+hr.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("hr"))
 {
     hr.GET("/", handlers.HRDashboardHandler)
     
@@ -1064,7 +1094,7 @@ responsesAPI.Use(middleware.AuthMiddleware(cfg))
     r.GET("/webhook/whatsapp", handlers.WhatsAppWebhook)
 
     // Страница WhatsApp
-    r.GET("/whatsapp", func(c *gin.Context) {
+    r.GET("/whatsapp", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("whatsapp"), func(c *gin.Context) {
         c.HTML(http.StatusOK, "whatsapp.html", gin.H{
             "title": "WhatsApp Business | SaaSPro",
         })
@@ -1118,30 +1148,28 @@ responsesAPI.Use(middleware.AuthMiddleware(cfg))
     }
     
     // Страница бэкапов
-    r.GET("/backup", func(c *gin.Context) {
+    r.GET("/backup", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("backup"), func(c *gin.Context) {
         c.HTML(http.StatusOK, "backup.html", gin.H{
             "title": "Резервное копирование | SaaSPro",
         })
     })
 
     // Страница банк-клиента
-    r.GET("/bank", func(c *gin.Context) {
-        c.HTML(http.StatusOK, "bank_integration.html", gin.H{
-            "title": "Банк-клиент | SaaSPro",
-        })
+    r.GET("/bank", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("bank-client"), func(c *gin.Context) {
+    c.HTML(http.StatusOK, "bank_integration.html", gin.H{
+        "title": "Банк-клиент | SaaSPro",
     })
+})
 
 // Страница актов сверки
-r.GET("/reconciliation-acts", func(c *gin.Context) {
+r.GET("/reconciliation-acts", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("reconciliation"), func(c *gin.Context) {
     c.HTML(http.StatusOK, "reconciliation_acts", gin.H{
         "title": "Акты сверки | FinCore",
     })
 })
-
-    // ========== РАСЧЁТ ЗАРПЛАТЫ ==========
    // ========== РАСШИРЕННЫЙ ЗУП ==========
 payrollAPI := r.Group("/api/payroll")
-payrollAPI.Use(middleware.AuthMiddleware(cfg))
+payrollAPI.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("payroll"))
 {
     payrollAPI.GET("/employees", handlers.GetEmployeesForPayroll)
     payrollAPI.POST("/calculate", handlers.CalculatePayroll)
@@ -1224,7 +1252,7 @@ scrumAPI.Use(middleware.AuthMiddleware(cfg))
     }
 // ========== НАЛОГОВАЯ ОТЧЁТНОСТЬ API ==========
 taxAPI := r.Group("/api/tax")
-taxAPI.Use(middleware.AuthMiddleware(cfg))
+taxAPI.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("tax-reporting"))
 {
     taxAPI.POST("/generate/usn", handlers.GenerateUSN)
     taxAPI.POST("/generate/ndfl", handlers.GenerateNDFL)
@@ -1236,7 +1264,6 @@ taxAPI.Use(middleware.AuthMiddleware(cfg))
     taxAPI.POST("/send/:id", handlers.SendTaxReport)      
     taxAPI.POST("/create-tables", handlers.CreateTaxTables)
 }
-
     // Страница email-маркетинга
     r.GET("/email-marketing", func(c *gin.Context) {
         c.HTML(http.StatusOK, "email_marketing.html", gin.H{
@@ -1358,7 +1385,7 @@ vpnAlias.Use(middleware.AuthMiddleware(cfg))
     }
 
     // Страница миграции
-    r.GET("/migration", func(c *gin.Context) {
+    r.GET("/migration", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("migration"), func(c *gin.Context) {
         c.HTML(http.StatusOK, "migration.html", gin.H{
             "title": "Миграция данных 3 фазы | SaaSPro",
         })
@@ -1524,17 +1551,27 @@ adminGroup.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), 
     }
 }
 
-  // Дашборды
-dashboards := r.Group("/")
-dashboards.Use(middleware.AuthMiddleware(cfg))
+// ========== МОДУЛИ И ПОДПИСКИ ==========
+modulesGroup := r.Group("/api/modules")
+modulesGroup.Use(middleware.AuthMiddleware(cfg))
 {
-    dashboards.GET("/dashboard-improved", handlers.DashboardImprovedHandler)
-    dashboards.GET("/realtime-dashboard", handlers.RealtimeDashboardHandler)
-    dashboards.GET("/revenue-dashboard", handlers.RevenueDashboardHandler)
-    dashboards.GET("/partner-dashboard", handlers.PartnerDashboardHandler)
-    dashboards.GET("/unified-dashboard", handlers.UnifiedDashboardHandler)
-    dashboards.GET("/dashboard-stats", handlers.DashboardStatsHandler)
+    modulesGroup.GET("", handlers.GetModules)
+    modulesGroup.GET("/my-subscriptions", handlers.GetMyModuleSubscriptions)
+    modulesGroup.POST("/start-trial", handlers.StartModuleTrial)
+    modulesGroup.GET("/check/:module", handlers.CheckModuleAccess)
 }
+
+    // Дашборды
+    dashboards := r.Group("/")
+    dashboards.Use(middleware.AuthMiddleware(cfg))
+    {
+        dashboards.GET("/dashboard-improved", handlers.DashboardImprovedHandler)
+        dashboards.GET("/realtime-dashboard", handlers.RealtimeDashboardHandler)
+        dashboards.GET("/revenue-dashboard", handlers.RevenueDashboardHandler)
+        dashboards.GET("/partner-dashboard", handlers.PartnerDashboardHandler)
+        dashboards.GET("/unified-dashboard", handlers.UnifiedDashboardHandler)
+        dashboards.GET("/dashboard-stats", handlers.DashboardStatsHandler)
+    }
 
     // Платежи (публичные страницы, без авторизации)
     r.GET("/payment", handlers.PaymentHandler)
@@ -1546,8 +1583,8 @@ dashboards.Use(middleware.AuthMiddleware(cfg))
     // ========== ЛОГИСТИКА ==========
     // Страницы логистики (публичные или с авторизацией)
     logisticsGroup := r.Group("/logistics")
-    logisticsGroup.Use(middleware.AuthMiddleware(cfg))
-    {
+logisticsGroup.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("logistics"))
+{
         logisticsGroup.GET("/", handlers.LogisticsDashboardHandler)
         logisticsGroup.GET("/orders", handlers.LogisticsOrdersHandler)
         logisticsGroup.GET("/track", handlers.TrackHandler)
@@ -1994,7 +2031,7 @@ api.DELETE("/api/webhooks/:id", func(c *gin.Context) {
         }
 
         // Страница облачного хранилища
-        r.GET("/cloud", middleware.AuthMiddleware(cfg), handlers.NebulaCloudPage)
+       r.GET("/cloud", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("cloud"), handlers.NebulaCloudPage)
     }
 
     // ========== FUSIONAPI - Брендовый API продукт с AI ==========
@@ -2949,33 +2986,32 @@ r.GET("/api/ai/widget", func(c *gin.Context) {
         })
     })
 
-    r.GET("/security-center", func(c *gin.Context) {
+    r.GET("/security-center", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("security"), func(c *gin.Context) {
         c.HTML(http.StatusOK, "security_universal.html", gin.H{
             "title": "Security Center | SaaSPro",
         })
     })
 
     // Универсальная аналитика - новый путь
-    r.GET("/analytics-center", func(c *gin.Context) {
+    r.GET("/analytics-center", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("analytics"), func(c *gin.Context) {
         c.HTML(http.StatusOK, "analytics_universal.html", gin.H{
             "title": "Analytics Center | SaaSPro",
         })
     })
 
 // Страница импорта Excel
-r.GET("/import-excel", func(c *gin.Context) {
+r.GET("/import-excel", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("import-excel"), func(c *gin.Context) {
     c.HTML(http.StatusOK, "import-excel.html", gin.H{
         "title": "Импорт Excel | FinCore",
     })
 })
 
 // Страница закрытия месяца
-r.GET("/month-end", func(c *gin.Context) {
+r.GET("/month-end", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("month-closing"), func(c *gin.Context) {
     c.HTML(http.StatusOK, "month_end", gin.H{
         "title": "Закрытие месяца | FinCore",
     })
-})
-    
+})    
     // Страница "Мои приложения"
     r.GET("/my-apps", handlers.GetMyApps)
     r.GET("/my-apps/settings", handlers.AppSettingsPage)

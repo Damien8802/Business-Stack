@@ -84,10 +84,26 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 
         if tokenString == "" {
             log.Printf("[AUTH] ❌ Неавторизованный доступ: %s %s с IP %s", method, path, c.ClientIP())
-            c.JSON(http.StatusUnauthorized, gin.H{
-                "error": "authorization header required",
-                "code":  "UNAUTHORIZED",
-            })
+            
+            // Проверяем, ожидается ли JSON ответ
+            if strings.HasPrefix(path, "/api/") || c.GetHeader("Accept") == "application/json" {
+                c.JSON(http.StatusUnauthorized, gin.H{
+                    "error": "authorization header required",
+                    "code":  "UNAUTHORIZED",
+                })
+            } else {
+                // Показываем красивую HTML страницу
+                moduleName := getModuleNameFromPath(path)
+                moduleIcon := getModuleIcon(moduleName)
+                moduleDescription := getModuleDescription(moduleName)
+                
+                c.HTML(http.StatusUnauthorized, "auth_required.html", gin.H{
+                    "module_name":        moduleName,
+                    "module_icon":        moduleIcon,
+                    "module_description": moduleDescription,
+                    "redirect_url":       path,
+                })
+            }
             c.Abort()
             return
         }
@@ -95,10 +111,24 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
         // Верифицируем JWT токен
         claims, err := utils.ValidateToken(tokenString)
         if err != nil {
-            c.JSON(http.StatusUnauthorized, gin.H{
-                "error": "invalid or expired token",
-                "code":  "INVALID_TOKEN",
-            })
+            // Токен невалидный, показываем страницу входа
+            if strings.HasPrefix(path, "/api/") || c.GetHeader("Accept") == "application/json" {
+                c.JSON(http.StatusUnauthorized, gin.H{
+                    "error": "invalid or expired token",
+                    "code":  "INVALID_TOKEN",
+                })
+            } else {
+                moduleName := getModuleNameFromPath(path)
+                moduleIcon := getModuleIcon(moduleName)
+                moduleDescription := getModuleDescription(moduleName)
+                
+                c.HTML(http.StatusUnauthorized, "auth_required.html", gin.H{
+                    "module_name":        moduleName,
+                    "module_icon":        moduleIcon,
+                    "module_description": moduleDescription,
+                    "redirect_url":       path,
+                })
+            }
             c.Abort()
             return
         }
@@ -147,6 +177,84 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 
         c.Next()
     }
+}
+
+// Вспомогательные функции для красивого отображения
+func getModuleNameFromPath(path string) string {
+    moduleNames := map[string]string{
+        "/crm":          "CRM система",
+        "/inventory":    "Складской учёт",
+        "/hr":           "HR модуль",
+        "/finance":      "Финансовый учёт",
+        "/teamsphere":   "TeamSphere",
+        "/projects":     "Управление проектами",
+        "/whatsapp":     "WhatsApp Business",
+        "/cloud":        "Cloud Storage",
+        "/logistics":    "Логистика",
+        "/analytics":    "Аналитика",
+        "/marketplace":  "Маркетплейс",
+        "/backup":       "Резервное копирование",
+        "/vpn":          "VPN сервис",
+        "/identity-hub": "Identity Hub",
+        "/ai-agents":    "AI Агенты",
+    }
+    
+    for p, name := range moduleNames {
+        if strings.HasPrefix(path, p) {
+            return name
+        }
+    }
+    return "BusinessStack платформа"
+}
+
+func getModuleIcon(moduleName string) string {
+    icons := map[string]string{
+        "CRM система":           "fa-users",
+        "Складской учёт":        "fa-boxes",
+        "HR модуль":             "fa-user-tie",
+        "Финансовый учёт":       "fa-chart-line",
+        "TeamSphere":            "fa-users",
+        "Управление проектами":  "fa-tasks",
+        "WhatsApp Business":     "fa-whatsapp",
+        "Cloud Storage":         "fa-cloud",
+        "Логистика":             "fa-truck",
+        "Аналитика":             "fa-chart-bar",
+        "Маркетплейс":           "fa-store",
+        "Резервное копирование": "fa-database",
+        "VPN сервис":            "fa-shield-alt",
+        "Identity Hub":          "fa-id-card",
+        "AI Агенты":             "fa-robot",
+    }
+    
+    if icon, ok := icons[moduleName]; ok {
+        return icon
+    }
+    return "fa-rocket"
+}
+
+func getModuleDescription(moduleName string) string {
+    descriptions := map[string]string{
+        "CRM система":           "Управляйте клиентами, сделками и продажами в одном месте",
+        "Складской учёт":        "Контролируйте остатки, заказы и поставки",
+        "HR модуль":             "Управляйте сотрудниками, отпусками и кандидатами",
+        "Финансовый учёт":       "Ведите учёт доходов, расходов и платежей",
+        "TeamSphere":            "Корпоративный портал для командной работы",
+        "Управление проектами":  "Планируйте задачи и отслеживайте прогресс",
+        "WhatsApp Business":     "Общайтесь с клиентами через WhatsApp",
+        "Cloud Storage":         "Храните файлы в защищённом облаке",
+        "Логистика":             "Отслеживайте доставку и управляйте заказами",
+        "Аналитика":             "Анализируйте данные и стройте отчёты",
+        "Маркетплейс":           "Покупайте и продавайте приложения и интеграции",
+        "Резервное копирование": "Автоматическое резервное копирование данных",
+        "VPN сервис":            "Безопасный доступ к корпоративной сети",
+        "Identity Hub":          "Единый вход и управление доступом",
+        "AI Агенты":             "Искусственный интеллект для автоматизации",
+    }
+    
+    if desc, ok := descriptions[moduleName]; ok {
+        return desc
+    }
+    return "Войдите в аккаунт, чтобы получить доступ ко всем функциям платформы"
 }
 
 func AdminMiddleware(cfg *config.Config) gin.HandlerFunc {

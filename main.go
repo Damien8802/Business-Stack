@@ -3078,6 +3078,40 @@ r.GET("/month-end", middleware.AuthMiddleware(cfg), middleware.RequireModuleAcce
     // API для маркетплейса
     r.GET("/api/marketplace/my-apps", handlers.GetMyAppsAPI)
     r.PUT("/api/marketplace/apps/:id/settings", handlers.UpdateAppSettings)
+
+// ========== МОБИЛЬНОЕ ПРИЛОЖЕНИЕ (PWA) - МАРКЕТПЛЕЙС МОДУЛЕЙ ==========
+// Главная страница мобильного приложения
+r.GET("/marketplace-app", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "mobile_app.html", gin.H{
+        "title": "BizStore — Маркетплейс модулей",
+        "version": "1.0.0",
+    })
+})
+
+
+// Мобильное приложение для подписок
+r.GET("/mobile", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "mobile_subscriptions.html", gin.H{
+        "title": "Subscription Mobile",
+    })
+})
+
+// API для скачивания APK (если есть файл)
+r.GET("/api/mobile/download", func(c *gin.Context) {
+    apkPath := "./static/app/bizstore.apk"
+    if _, err := os.Stat(apkPath); os.IsNotExist(err) {
+        c.JSON(200, gin.H{
+            "download_url": "https://play.google.com/store/apps/details?id=com.bizstore.app",
+            "message":      "Скачайте приложение из Google Play",
+        })
+        return
+    }
+    c.Header("Content-Type", "application/vnd.android.package-archive")
+    c.Header("Content-Disposition", "attachment; filename=bizstore.apk")
+    c.File(apkPath)
+})
+
+
     
 // Запускаем на всех интерфейсах с улучшенными таймаутами
 srv := &http.Server{
@@ -3085,7 +3119,7 @@ srv := &http.Server{
     Handler:      r,
     ReadTimeout:  120 * time.Second,   // 2 минуты на чтение
     WriteTimeout: 120 * time.Second,   // 2 минуты на запись
-   IdleTimeout:  21600 * time.Second,   // 1 ЧАС бездействия (вот это главное!)
+   IdleTimeout:  21600 * time.Second,   // 6 ЧАСОВ бездействия (вот это главное!)
     MaxHeaderBytes: 1 << 20,           // 1 MB
 }
 

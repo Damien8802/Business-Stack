@@ -2,10 +2,10 @@
 <html lang="ru">
 <head>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">`n    `n    `n    `n    
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Маркетплейс | SaaSPro</title>
+    <title>Маркетплейс | BizStore</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <style>
@@ -55,49 +55,54 @@
         .page-title { font-size: 36px; font-weight: 800; background: linear-gradient(135deg, #ffffff, #a78bfa, #667eea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
         .page-subtitle { color: rgba(255,255,255,0.5); font-size: 16px; }
         
-        .card {
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(102,126,234,0.3);
-            border-radius: 24px;
-            padding: 28px;
-            margin-bottom: 28px;
-            transition: all 0.3s;
-        }
-        
-        .card:hover {
-            border-color: rgba(102,126,234,0.6);
-            box-shadow: 0 10px 30px rgba(102,126,234,0.1);
-        }
-        
-        .card-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 20px;
+        /* Дополнительные стили для выбора модулей */
+        .card-actions {
             display: flex;
-            align-items: center;
             gap: 10px;
-            color: #a78bfa;
+            margin-top: 10px;
         }
-        
-        .btn {
+        .module-checkbox {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            accent-color: #10b981;
+        }
+        .card-header-checkbox {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 10px;
+        }
+        .download-bar {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #1a1a2e, #0f0f23);
+            border: 1px solid rgba(16,185,129,0.3);
+            border-radius: 60px;
             padding: 12px 24px;
-            border-radius: 40px;
-            font-weight: 600;
-            transition: all 0.3s;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .download-bar .count {
+            background: #10b981;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-weight: bold;
+        }
+        .download-bar button {
+            background: linear-gradient(135deg, #10b981, #059669);
             border: none;
-            font-size: 14px;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 10px 24px;
+            border-radius: 40px;
             color: white;
+            font-weight: 600;
+            cursor: pointer;
         }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(102,126,234,0.4);
-        }
+        .download-bar button:active { transform: scale(0.98); }
         
         .filters { display: flex; gap: 12px; justify-content: center; margin-bottom: 30px; flex-wrap: wrap; }
         .filter-btn { 
@@ -166,7 +171,7 @@
             border-radius: 40px; 
             cursor: pointer; 
             font-weight: 600; 
-            width: 100%; 
+            flex: 1;
             transition: all 0.3s;
         }
         .btn-buy:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(16,185,129,0.3); }
@@ -223,10 +228,55 @@
         }
         .back-button-oval:hover { background: rgba(102,126,234,0.4); transform: scale(1.05); }
         
-        /* Кнопка в шапке */
         .header-buttons { display: flex; gap: 15px; margin-bottom: 30px; justify-content: flex-end; }
         .btn-header { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 10px 20px; border-radius: 40px; color: white; cursor: pointer; transition: all 0.3s; }
         .btn-header:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); }
+        
+        /* AI виджет */
+        .ai-floating-widget {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            z-index: 100;
+        }
+        .ai-widget-button {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(99,102,241,0.4);
+            transition: all 0.3s;
+        }
+        .ai-widget-button:hover { transform: scale(1.05); }
+        .ai-widget-badge {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            width: 12px;
+            height: 12px;
+            background: #10b981;
+            border-radius: 50%;
+            border: 2px solid #1a1a2e;
+        }
+        .ai-widget-tooltip {
+            position: absolute;
+            bottom: 70px;
+            left: 0;
+            background: rgba(0,0,0,0.8);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .ai-floating-widget:hover .ai-widget-tooltip { opacity: 1; }
         
         @media (max-width: 768px) {
             .apps-grid { grid-template-columns: 1fr; }
@@ -234,6 +284,8 @@
             .filters { gap: 8px; }
             .filter-btn { padding: 6px 16px; font-size: 12px; }
             .header-buttons { justify-content: center; }
+            .download-bar { bottom: 100px; padding: 8px 16px; gap: 10px; }
+            .download-bar button { padding: 6px 16px; font-size: 12px; }
         }
     </style>
 </head>
@@ -251,8 +303,8 @@
     </div>
 
     <div class="page-header">
-        <h1 class="page-title"><i class="bi bi-shop"></i> Маркетплейс SaaSPro</h1>
-        <p class="page-subtitle">Расширьте возможности вашей платформы с помощью приложений и интеграций</p>
+        <h1 class="page-title"><i class="bi bi-shop"></i> Маркетплейс BizStore</h1>
+        <p class="page-subtitle">Выберите модули для скачивания или купите новые</p>
     </div>
 
     <div class="filters" id="filters">
@@ -266,6 +318,14 @@
     <input type="text" id="search" class="search" placeholder="Поиск приложений...">
 
     <div id="apps" class="apps-grid"></div>
+</div>
+
+<!-- Плавающая панель скачивания -->
+<div class="download-bar" id="downloadBar" style="display: none;">
+    <span>📱 Выбрано: <span class="count" id="selectedCount">0</span></span>
+    <button id="downloadSelectedBtn">
+        <i class="bi bi-download"></i> Скачать выбранное
+    </button>
 </div>
 
 <div id="modal" class="modal">
@@ -286,6 +346,14 @@
     <i class="bi bi-arrow-left"></i> На главную
 </button>
 
+<div class="ai-floating-widget">
+    <div class="ai-widget-button" onclick="openAIAssistant()">
+        🤖
+        <div class="ai-widget-badge">●</div>
+    </div>
+    <div class="ai-widget-tooltip">💬 Спросить AI ассистента</div>
+</div>
+
 <script>
     const apps = [
         { id: "1", name: "Ozon + Wildberries", desc: "Управление заказами, остатками, ценами на Ozon и Wildberries", cat: "integration", price: 6900, price_yearly: 69000, icon: "📦", featured: true },
@@ -304,6 +372,65 @@
     let currentCat = 'all';
     let currentSearch = '';
     let selectedApp = null;
+    
+    // ========== ВЫБОР МОДУЛЕЙ ДЛЯ СКАЧИВАНИЯ ==========
+    let selectedModules = JSON.parse(localStorage.getItem('selectedModules') || '[]');
+    
+    function updateSelectedUI() {
+        const count = selectedModules.length;
+        const downloadBar = document.getElementById('downloadBar');
+        const countSpan = document.getElementById('selectedCount');
+        
+        if (countSpan) countSpan.innerText = count;
+        if (downloadBar) {
+            downloadBar.style.display = count > 0 ? 'flex' : 'none';
+        }
+    }
+    
+    function saveSelectedModules() {
+        localStorage.setItem('selectedModules', JSON.stringify(selectedModules));
+        updateSelectedUI();
+    }
+    
+    // Обработчик выбора модуля (делегирование)
+    document.addEventListener('change', function(e) {
+        if (e.target.classList && e.target.classList.contains('module-checkbox')) {
+            const id = e.target.dataset.id;
+            const name = e.target.dataset.name;
+            const price = e.target.dataset.price;
+            
+            if (e.target.checked) {
+                if (!selectedModules.find(m => m.id === id)) {
+                    selectedModules.push({ id, name, price });
+                }
+            } else {
+                selectedModules = selectedModules.filter(m => m.id !== id);
+            }
+            saveSelectedModules();
+        }
+    });
+    
+    // Восстановление состояния чекбоксов после рендера
+    function restoreCheckboxes() {
+        document.querySelectorAll('.module-checkbox').forEach(cb => {
+            const id = cb.dataset.id;
+            if (selectedModules.find(m => m.id === id)) {
+                cb.checked = true;
+            }
+        });
+    }
+    
+    // Кнопка скачивания выбранных модулей
+    document.getElementById('downloadSelectedBtn')?.addEventListener('click', function() {
+        if (selectedModules.length === 0) {
+            alert('❌ Выберите хотя бы один модуль для скачивания');
+            return;
+        }
+        
+        // Сохраняем выбранные модули и переходим на страницу с QR-кодом
+        localStorage.setItem('modulesToDownload', JSON.stringify(selectedModules));
+        window.location.href = '/marketplace-app?selected=' + encodeURIComponent(JSON.stringify(selectedModules));
+    });
 
     function render() {
         let filtered = apps;
@@ -319,13 +446,20 @@
         container.innerHTML = filtered.map(app => `
             <div class="app-card">
                 ${app.featured ? '<div class="featured">⭐ Рекомендуемое</div>' : ''}
+                <div class="card-header-checkbox">
+                    <input type="checkbox" class="module-checkbox" data-id="${app.id}" data-name="${app.name}" data-price="${app.price}">
+                </div>
                 <div class="app-icon">${app.icon}</div>
                 <div class="app-name">${app.name}</div>
                 <div class="app-desc">${app.desc}</div>
                 <div class="price">${app.price === 0 ? 'Бесплатно' : app.price.toLocaleString() + ' ₽'}<small>/мес</small></div>
-                <button class="btn-buy" onclick="showModal('${app.id}')">Купить</button>
+                <div class="card-actions">
+                    <button class="btn-buy" onclick="showModal('${app.id}')">💳 Купить</button>
+                </div>
             </div>
         `).join('');
+        
+        restoreCheckboxes();
     }
 
     function showModal(id) {
@@ -357,7 +491,6 @@
             if (data.success) {
                 alert(`✅ ${data.message}`);
                 closeModal();
-                // ПЕРЕХОД НА СТРАНИЦУ МОИХ ПРИЛОЖЕНИЙ
                 window.location.href = '/my-apps';
             } else {
                 alert('❌ Ошибка при покупке: ' + (data.error || 'Неизвестная ошибка'));
@@ -385,19 +518,12 @@
         });
     });
 
+    function openAIAssistant() {
+        window.open('/ai-assistant', '_blank', 'width=500,height=700,left=' + (screen.width - 520) + ',top=100');
+    }
+    
+    updateSelectedUI();
     render();
-</script>
-<div class="ai-floating-widget">
-    <div class="ai-widget-button" onclick="openAIAssistant()">
-        🤖
-        <div class="ai-widget-badge">●</div>
-    </div>
-    <div class="ai-widget-tooltip">💬 Спросить AI ассистента</div>
-</div>
-<script>
-function openAIAssistant() {
-    window.open('/ai-assistant', '_blank', 'width=500,height=700,left=' + (screen.width - 520) + ',top=100');
-}
 </script>
 </body>
 </html>

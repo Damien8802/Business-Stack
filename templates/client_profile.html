@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">`n    `n    `n    `n    
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Мой кабинет | SaaSPro</title>
@@ -32,7 +32,6 @@
             text-align: center;
         }
         
-        /* Стили для аватарки */
         .avatar-container {
             position: relative;
             display: inline-block;
@@ -259,7 +258,6 @@
 <div class="container">
     <div class="profile-card">
         <div class="profile-header">
-            <!-- Аватарка с кнопкой камеры -->
             <div class="avatar-container">
                 <div class="profile-avatar" id="avatarDisplay" onclick="document.getElementById('avatarInput').click()">
                     <span id="avatarInitial">👤</span>
@@ -290,7 +288,6 @@
             <button class="tab-btn" onclick="showTab('documents')"><i class="fas fa-file-pdf"></i> Документы</button>
         </div>
         
-        <!-- Обзор -->
         <div id="overviewTab" class="tab-content active">
             <div class="stats-grid">
                 <div class="stat-card"><div class="stat-number" id="statProjects">0</div><div class="stat-label">📁 Проектов</div></div>
@@ -298,6 +295,20 @@
                 <div class="stat-card"><div class="stat-number" id="statIdeas">0</div><div class="stat-label">💡 Идей</div></div>
                 <div class="stat-card"><div class="stat-number" id="statDays">0</div><div class="stat-label">📅 Дней с нами</div></div>
             </div>
+
+            <div style="margin: 0 30px 20px 30px;">
+                <a href="/marketplace-app" style="display: block; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 18px 24px; border-radius: 20px; text-decoration: none; text-align: center; font-weight: 700; font-size: 18px; transition: transform 0.2s, box-shadow 0.2s;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 15px;">
+                        <i class="fas fa-download" style="font-size: 24px;"></i>
+                        <span>📱 Скачать мобильное приложение BizStore</span>
+                        <i class="fas fa-qrcode" style="font-size: 24px;"></i>
+                    </div>
+                    <div style="font-size: 12px; margin-top: 8px; opacity: 0.8;">
+                        Доступно для Android • QR-код внутри
+                    </div>
+                </a>
+            </div>
+            
             <div class="dashboard-row">
                 <div class="dashboard-card">
                     <h3><i class="fas fa-clock"></i> Последние заявки</h3>
@@ -310,7 +321,6 @@
             </div>
         </div>
         
-        <!-- Личные данные -->
         <div id="profileTab" class="tab-content">
             <div class="dashboard-card">
                 <h3><i class="fas fa-user-circle"></i> Личная информация</h3>
@@ -328,7 +338,6 @@
             </div>
         </div>
 
-        <!-- Документы -->
         <div id="documentsTab" class="tab-content">
             <div class="dashboard-card">
                 <h3><i class="fas fa-file-pdf"></i> Акт сверки с контрагентом</h3>
@@ -371,12 +380,10 @@
             </div>
         </div>
         
-        <!-- Мои заявки -->
         <div id="ordersTab" class="tab-content">
             <div id="userOrdersList">Загрузка...</div>
         </div>
         
-        <!-- Мои идеи -->
         <div id="featuresTab" class="tab-content">
             <div class="dashboard-card">
                 <h3><i class="fas fa-plus"></i> Предложить идею</h3>
@@ -392,7 +399,6 @@
             <div style="margin-top: 20px;" id="userIdeasList">Загрузка...</div>
         </div>
         
-        <!-- Безопасность -->
         <div id="securityTab" class="tab-content">
             <div class="dashboard-card">
                 <h3><i class="fas fa-key"></i> Смена пароля</h3>
@@ -410,7 +416,6 @@
     </div>
 </div>
 
-<!-- Модалка редактирования профиля -->
 <div class="modal-overlay" id="editProfileModal">
     <div class="modal-content">
         <h3><i class="fas fa-edit"></i> Редактировать профиль</h3>
@@ -433,7 +438,6 @@
     let currentUser = null;
     let currentAvatarUrl = '';
     
-    // Функции для аватарки
     async function uploadAvatar(file) {
         const formData = new FormData();
         formData.append('avatar', file);
@@ -461,8 +465,6 @@
     
     function updateAvatarDisplay(url) {
         const avatarDiv = document.getElementById('avatarDisplay');
-        const initialSpan = document.getElementById('avatarInitial');
-        
         if (url && url !== '') {
             avatarDiv.innerHTML = `<img src="${url}?t=${Date.now()}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
         } else {
@@ -488,14 +490,13 @@
         } catch(e) {}
     }
     
-    // Обработчик выбора файла
     document.getElementById('avatarInput').addEventListener('change', function(e) {
         if (this.files && this.files[0]) {
             uploadAvatar(this.files[0]);
         }
     });
     
-    // Загрузка данных пользователя
+    // ИСПРАВЛЕННАЯ ЗАГРУЗКА ДАННЫХ ПОЛЬЗОВАТЕЛЯ
     async function loadUserData() {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -504,68 +505,98 @@
         }
         
         try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const userId = payload.user_id;
-            
-            const response = await fetch(`/api/user/${userId}`, {
+            // Пробуем /api/current-user (он точно работает)
+            const response = await fetch('/api/current-user', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             
             if (response.ok) {
-                currentUser = await response.json();
+                const user = await response.json();
+                currentUser = {
+                    name: user.name || user.user_name || user.email?.split('@')[0] || 'Клиент',
+                    email: user.email || '—',
+                    user_id: user.user_id || user.id,
+                    role: user.role || 'client',
+                    phone: user.phone || '',
+                    organization_name: user.organization_name || '',
+                    organization_inn: user.organization_inn || '',
+                    created_at: user.created_at || new Date().toISOString(),
+                    projects_count: user.projects_count || 0,
+                    orders_count: user.orders_count || 0,
+                    ideas_count: user.ideas_count || 0,
+                    days_with_us: user.days_with_us || 1
+                };
                 updateUI();
-            } else {
-                // Fallback
-                const res2 = await fetch('/api/current-user', { headers: { 'Authorization': `Bearer ${token}` } });
-                if (res2.ok) {
-                    const user = await res2.json();
-                    currentUser = { name: user.name || 'Клиент', email: user.email || '—', user_id: user.user_id };
-                    updateUI();
-                }
+                loadAvatar();
+                loadUserOrders();
+                loadUserIdeas();
+                return;
             }
-        } catch(e) { console.error(e); }
-        
-        loadUserOrders();
-        loadUserIdeas();
-        loadAvatar();
+            
+            // Fallback: данные из токена
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            currentUser = {
+                name: payload.user_name || payload.name || payload.email?.split('@')[0] || 'Клиент',
+                email: payload.email || '—',
+                user_id: payload.user_id || payload.sub,
+                role: payload.role || 'client',
+                phone: '',
+                organization_name: '',
+                organization_inn: '',
+                created_at: new Date().toISOString(),
+                projects_count: 0,
+                orders_count: 0,
+                ideas_count: 0,
+                days_with_us: 1
+            };
+            updateUI();
+            loadAvatar();
+            loadUserOrders();
+            loadUserIdeas();
+            
+        } catch(e) { 
+            console.error('loadUserData error:', e);
+            document.getElementById('userName').innerText = 'Клиент';
+            
+            // Последняя попытка - из токена
+            try {
+                const token = localStorage.getItem('token');
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                document.getElementById('userName').innerText = payload.user_name || payload.name || 'Клиент';
+                document.getElementById('userEmail').innerText = payload.email || '—';
+            } catch(err) {
+                document.getElementById('userName').innerText = 'Клиент';
+            }
+        }
     }
     
     function updateUI() {
-        // Имя
-        document.getElementById('userName').innerText = currentUser?.name || 'Клиент';
-        document.getElementById('infoName').innerText = currentUser?.name || '—';
+        const userName = currentUser?.name || currentUser?.user_name || currentUser?.email?.split('@')[0] || 'Клиент';
+        document.getElementById('userName').innerText = userName;
+        document.getElementById('infoName').innerText = userName;
         
-        // Email
         document.getElementById('userEmail').innerText = currentUser?.email || '—';
         document.getElementById('infoEmail').innerText = currentUser?.email || '—';
         
-        // Организация
-        const orgHtml = currentUser?.is_organization && currentUser?.organization_name 
+        const orgHtml = currentUser?.organization_name 
             ? `<i class="fas fa-building"></i> ${currentUser.organization_name}`
             : '';
         document.getElementById('userOrganization').innerHTML = orgHtml;
         document.getElementById('infoOrganization').innerText = currentUser?.organization_name || 'Не указана';
         document.getElementById('infoInn').innerText = currentUser?.organization_inn || '—';
-        
-        // Телефон
         document.getElementById('infoPhone').innerText = currentUser?.phone || '—';
         
-        // Роль
         const roleMap = { 'owner': '👑 Владелец', 'admin': '🛠️ Администратор', 'developer': '💻 Разработчик', 'client': '👤 Клиент' };
         const roleText = roleMap[currentUser?.role] || '👤 Клиент';
         document.getElementById('userRole').innerText = roleText;
         document.getElementById('infoRole').innerText = roleText;
         
-        // Дата регистрации
         document.getElementById('infoRegDate').innerText = currentUser?.created_at?.slice(0,10) || '—';
-        
-        // Статистика
         document.getElementById('statProjects').innerHTML = currentUser?.projects_count || 0;
         document.getElementById('statOrders').innerHTML = currentUser?.orders_count || 0;
         document.getElementById('statIdeas').innerHTML = currentUser?.ideas_count || 0;
         document.getElementById('statDays').innerHTML = currentUser?.days_with_us || 0;
         
-        // Обновляем аватар
         if (currentUser?.name) {
             const avatarDiv = document.getElementById('avatarDisplay');
             if (!currentAvatarUrl) {
@@ -762,7 +793,6 @@
         if (tabName === 'features') loadUserIdeas();
     }
     
-    // Акты сверки
     async function generateReconciliationAct() {
         const token = localStorage.getItem('token');
         const counterpartyName = document.getElementById('recCounterpartyName')?.value;

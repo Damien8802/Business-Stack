@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#6366f1">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/static/brand/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/brand/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/static/brand/icon-512.png">
+    <title>BizStore — Выбор модулей</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+        .app-header {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .app-icon {
+            width: 70px;
+            height: 70px;
+            background: white;
+            border-radius: 18px;
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .app-icon i { font-size: 38px; color: #6366f1; }
+        .app-header h1 { font-size: 24px; font-weight: 700; }
+        .app-header p { font-size: 12px; opacity: 0.9; margin-top: 4px; }
+        .content { padding: 20px; max-width: 500px; margin: 0 auto; }
+        
+        .profile-card {
+            background: rgba(30,30,46,0.95);
+            border-radius: 20px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .profile-avatar {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .profile-info { flex: 1; }
+        .profile-name { font-weight: 600; font-size: 15px; }
+        .profile-email { font-size: 11px; color: #94a3b8; }
+        .owner-badge {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #333;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 9px;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 3px;
+        }
+        .logout-btn {
+            background: rgba(239,68,68,0.2);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+            padding: 6px 12px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .modules-select {
+            background: rgba(30,30,46,0.95);
+            border-radius: 20px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .modules-select h3 {
+            font-size: 15px;
+            margin-bottom: 12px;
+            color: #a78bfa;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .module-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .module-item:last-child { border-bottom: none; }
+        .module-info { display: flex; align-items: center; gap: 12px; }
+        .module-icon { font-size: 24px; }
+        .module-name { font-weight: 500; font-size: 14px; }
+        .module-checkbox {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            accent-color: #10b981;
+        }
+        
+        .selected-modules {
+            background: rgba(30,30,46,0.95);
+            border-radius: 20px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .selected-modules h3 {
+            font-size: 15px;
+            margin-bottom: 12px;
+            color: #a78bfa;
+        }
+        .modules-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .module-tag {
+            background: rgba(99,102,241,0.2);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .no-modules {
+            color: #64748b;
+            font-size: 13px;
+            text-align: center;
+            padding: 10px;
+        }
+        
+        .qr-section {
+            text-align: center;
+            background: rgba(30,30,46,0.95);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(99,102,241,0.2);
+        }
+        .qr-code {
+            background: white;
+            padding: 12px;
+            border-radius: 16px;
+            display: inline-block;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+        .qr-code canvas { width: 160px; height: 160px; }
+        .qr-title { font-size: 16px; font-weight: 600; margin: 10px 0 4px; }
+        .qr-subtitle { font-size: 12px; color: #94a3b8; }
+        
+        .download-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 14px 20px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            margin-top: 16px;
+        }
+        .download-btn:active { transform: scale(0.98); }
+        
+        .info-card {
+            background: rgba(30,30,46,0.95);
+            border-radius: 20px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .info-card h3 { font-size: 15px; margin-bottom: 10px; color: #a78bfa; }
+        .feature-list li {
+            padding: 6px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #cbd5e1;
+        }
+        .feature-list i { width: 18px; color: #10b981; font-size: 11px; }
+        .version { text-align: center; font-size: 10px; color: #475569; margin-top: 16px; }
+        .btn-buy {
+            background: linear-gradient(135deg, #f59e0b, #ea580c);
+            border: none;
+            padding: 14px;
+            border-radius: 50px;
+            color: white;
+            font-weight: bold;
+            width: 100%;
+            cursor: pointer;
+            text-align: center;
+            display: block;
+            text-decoration: none;
+        }
+        .access-denied {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .access-denied i { font-size: 48px; color: #f59e0b; }
+        .access-denied p { margin: 15px 0; color: #94a3b8; }
+        .info-note {
+            font-size: 11px;
+            color: #10b981;
+            margin-top: 8px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-header">
+    <div class="app-icon"><i class="fas fa-store"></i></div>
+    <h1>BizStore</h1>
+    <p>Выберите модули для скачивания</p>
+</div>
+
+<div class="content" id="mainContent"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+    // Основные модули
+    const mainModules = [
+        { id: "fincore", name: "FinCore", icon: "💰", isMain: true },
+        { id: "crm", name: "CRM", icon: "🤝" },
+        { id: "teamsphere", name: "TeamSphere", icon: "👥" },
+        { id: "vpn", name: "VPN", icon: "🔒" },
+        { id: "cloud", name: "Cloud Storage", icon: "☁️" },
+        { id: "inventory", name: "Складской учет", icon: "📦" },
+        { id: "logistics", name: "Логистика", icon: "🚚" },
+        { id: "hr", name: "HR модуль", icon: "👥" },
+        { id: "ai-agents", name: "AI Агенты", icon: "🤖" },
+        { id: "security", name: "Безопасность", icon: "🛡️" },
+        { id: "migration", name: "Миграция данных", icon: "🔄" },
+        { id: "archive", name: "Архив", icon: "📦" },
+        { id: "identity-hub", name: "Identity Hub", icon: "🔐" },
+        { id: "marketplace", name: "Маркетплейс", icon: "🛒" }
+    ];
+
+    // Модули, которые автоматически подтягиваются с FinCore
+    const fincoreDependencies = [
+        { id: "finance", name: "Финансовый учёт", icon: "💰" },
+        { id: "reports-analytics", name: "Отчёты и аналитика", icon: "📊" },
+        { id: "reconciliation", name: "Акты сверки", icon: "📄" },
+        { id: "journal", name: "Журнал проводок", icon: "📒" },
+        { id: "bank-client", name: "Банк-клиент", icon: "🏦" },
+        { id: "payroll", name: "Расчёт зарплаты", icon: "💰" },
+        { id: "tax-reporting", name: "Налоговая отчётность", icon: "📋" },
+        { id: "import-excel", name: "Импорт Excel", icon: "📊" },
+        { id: "month-closing", name: "Закрытие месяца", icon: "📅" }
+    ];
+
+    let currentUser = null;
+    let selectedModules = [];
+    let hasAccess = false;
+    let isOwner = false;
+
+    async function loadProfileAndCheckAccess() {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            renderNoAccess('Войдите в аккаунт', '/login', 'Войти');
+            return false;
+        }
+        
+        try {
+            const profileRes = await fetch('/api/current-user', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            
+            if (profileRes.ok) {
+                const data = await profileRes.json();
+                currentUser = data;
+                isOwner = data.email === 'dev@businesstack.ru' || data.role === 'platform_owner' || data.role === 'owner';
+            }
+            
+            const subsRes = await fetch('/api/user/subscriptions', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            
+            if (subsRes.ok) {
+                const subsData = await subsRes.json();
+                hasAccess = isOwner || subsData.modules?.some(m => 
+                    (m.module_id === 'fincore' || m.name === 'FinCore') && 
+                    (m.status === 'active' || m.status === 'trial')
+                );
+            }
+            
+            const saved = localStorage.getItem('selectedModulesForDownload');
+            if (saved) {
+                try {
+                    selectedModules = JSON.parse(saved);
+                } catch(e) {}
+            }
+            
+            return true;
+        } catch(e) {
+            console.error(e);
+            return false;
+        }
+    }
+
+    // Автоматическое добавление зависимостей при выборе FinCore
+    function updateModulesOnFinCore() {
+        const hasFinCore = selectedModules.some(m => m.id === 'fincore');
+        let changed = false;
+        
+        if (hasFinCore) {
+            for (const dep of fincoreDependencies) {
+                if (!selectedModules.some(m => m.id === dep.id)) {
+                    selectedModules.push({ ...dep });
+                    changed = true;
+                }
+            }
+        } else {
+            const before = selectedModules.length;
+            selectedModules = selectedModules.filter(m => 
+                !fincoreDependencies.some(dep => dep.id === m.id)
+            );
+            if (before !== selectedModules.length) changed = true;
+        }
+        
+        if (changed) {
+            localStorage.setItem('selectedModulesForDownload', JSON.stringify(selectedModules));
+        }
+    }
+
+    function renderPage() {
+        const container = document.getElementById('mainContent');
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div class="profile-card" id="profileCard">
+                <div class="profile-avatar" id="userAvatar">${currentUser?.name?.charAt(0).toUpperCase() || '👤'}</div>
+                <div class="profile-info">
+                    <div class="profile-name" id="userName">${currentUser?.name || currentUser?.email?.split('@')[0] || 'Пользователь'}</div>
+                    <div class="profile-email" id="userEmail">${currentUser?.email || '—'}</div>
+                    <div id="ownerBadge">${isOwner ? '<span class="owner-badge">👑 Владелец</span>' : ''}</div>
+                </div>
+                <button class="logout-btn" onclick="logout()">🚪</button>
+            </div>
+            
+            <div class="modules-select">
+                <h3><i class="fas fa-cube"></i> Выберите модули для скачивания</h3>
+                <div id="modulesList"></div>
+                <div class="info-note">✅ При выборе FinCore автоматически добавляются связанные модули</div>
+            </div>
+            
+            <div class="selected-modules" id="selectedModulesBlock">
+                <h3><i class="fas fa-check-circle"></i> Выбранные модули</h3>
+                <div id="selectedModulesList" class="modules-list"></div>
+            </div>
+            
+            <div class="qr-section" id="qrSection" style="display: none;">
+                <div class="qr-code" id="qrCode"></div>
+                <div class="qr-title">📱 Наведите камеру</div>
+                <div class="qr-subtitle">или нажмите на QR-код для скачивания</div>
+                <button class="download-btn" id="downloadBtn">
+                    <i class="fas fa-download"></i> Скачать APK
+                </button>
+            </div>
+            
+            <div class="info-card">
+                <h3><i class="fas fa-info-circle"></i> Как установить</h3>
+                <ul class="feature-list">
+                    <li><i class="fas fa-qrcode"></i> Наведите камеру на QR-код</li>
+                    <li><i class="fas fa-download"></i> Нажмите "Скачать APK"</li>
+                    <li><i class="fas fa-lock"></i> Разрешите установку из неизвестных источников</li>
+                    <li><i class="fas fa-rocket"></i> Откройте приложение</li>
+                </ul>
+            </div>
+            
+            <div class="version">Версия 1.0.0 | BizStore</div>
+        `;
+        
+        renderModulesList();
+        renderSelectedModules();
+        setTimeout(() => updateQRCode(), 100);
+        
+        const btn = document.getElementById('downloadBtn');
+        if (btn) btn.addEventListener('click', downloadAPK);
+    }
+
+    function renderModulesList() {
+        const container = document.getElementById('modulesList');
+        if (!container) return;
+        
+        const allModules = [...mainModules];
+        
+        container.innerHTML = allModules.map(mod => `
+            <div class="module-item">
+                <div class="module-info">
+                    <div class="module-icon">${mod.icon}</div>
+                    <div class="module-name">${mod.name}</div>
+                </div>
+                <input type="checkbox" class="module-checkbox" data-id="${mod.id}" data-name="${mod.name}" data-main="${mod.isMain || false}" ${selectedModules.some(s => s.id === mod.id) ? 'checked' : ''}>
+            </div>
+        `).join('');
+        
+        document.querySelectorAll('.module-checkbox').forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                const id = e.target.dataset.id;
+                const name = e.target.dataset.name;
+                
+                if (e.target.checked) {
+                    if (!selectedModules.find(m => m.id === id)) {
+                        selectedModules.push({ id, name });
+                    }
+                } else {
+                    selectedModules = selectedModules.filter(m => m.id !== id);
+                }
+                
+                updateModulesOnFinCore();
+                renderSelectedModules();
+                renderModulesList();
+                setTimeout(() => updateQRCode(), 50);
+            });
+        });
+    }
+
+    function renderSelectedModules() {
+        const container = document.getElementById('selectedModulesList');
+        if (!container) return;
+        
+        if (selectedModules.length === 0) {
+            container.innerHTML = '<div class="no-modules">📭 Модули не выбраны</div>';
+            return;
+        }
+        
+        container.innerHTML = selectedModules.map(mod => `
+            <div class="module-tag">
+                <i class="fas fa-cube"></i> ${mod.name}
+            </div>
+        `).join('');
+    }
+
+      function updateQRCode() {
+        const qrSection = document.getElementById('qrSection');
+        const qrDiv = document.getElementById('qrCode');
+        
+        if (!qrSection || !qrDiv) return;
+        
+        if (selectedModules.length === 0) {
+            qrSection.style.display = 'none';
+            return;
+        }
+        
+        qrSection.style.display = 'block';
+        
+        const token = localStorage.getItem('token');
+        // ✅ ТОЛЬКО ID модулей (коротко)
+        const moduleIds = selectedModules.map(m => m.id).join(',');
+        const selectedData = encodeURIComponent(moduleIds);
+        
+        let downloadUrl = `/api/mobile/download?modules=${selectedData}`;
+        if (token) {
+            downloadUrl += `&token=${encodeURIComponent(token)}`;
+        }
+        
+        // Ограничиваем длину (если всё ещё длинная - обрезаем)
+        let fullUrl = window.location.origin + downloadUrl;
+        if (fullUrl.length > 2000) {
+            // Берём первые 5 модулей
+            const shortIds = selectedModules.slice(0, 5).map(m => m.id).join(',');
+            const shortData = encodeURIComponent(shortIds);
+            fullUrl = window.location.origin + `/api/mobile/download?modules=${shortData}`;
+            console.warn('URL сокращён до 5 модулей');
+        }
+        
+        qrDiv.innerHTML = '';
+        
+        try {
+            new QRCode(qrDiv, {
+                text: fullUrl,
+                width: 160,
+                height: 160,
+                colorDark: '#000000',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        } catch(e) {
+            console.error('QR ошибка:', e);
+            qrDiv.innerHTML = '<div style="color:#f87171; font-size:12px;">❌ Ошибка QR</div>';
+        }
+    }
+
+    async function downloadAPK() {
+        if (selectedModules.length === 0) {
+            alert('❌ Выберите хотя бы один модуль');
+            return;
+        }
+        
+        const token = localStorage.getItem('token');
+        const selectedData = encodeURIComponent(JSON.stringify(selectedModules));
+        let url = `/api/mobile/download?modules=${selectedData}`;
+        if (token) {
+            url += `&token=${encodeURIComponent(token)}`;
+        }
+        
+        window.location.href = url;
+    }
+
+    function renderNoAccess(message, link, linkText) {
+        const container = document.getElementById('mainContent');
+        if (container) {
+            container.innerHTML = `
+                <div class="access-denied">
+                    <i>🔒</i>
+                    <p>${message}</p>
+                    <a href="${link}" class="btn-buy">${linkText}</a>
+                </div>
+            `;
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('selectedModulesForDownload');
+        window.location.href = '/login';
+    }
+
+    async function init() {
+        const access = await loadProfileAndCheckAccess();
+        if (!access) return;
+        
+        if (!hasAccess && !isOwner) {
+            renderNoAccess(
+                'Для скачивания модулей необходима подписка FinCore',
+                '/pricing',
+                'Активировать триал или купить'
+            );
+            return;
+        }
+        
+        renderPage();
+    }
+    
+    init();
+</script>
+</body>
+</html>

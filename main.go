@@ -1056,6 +1056,8 @@ responsesAPI.Use(middleware.AuthMiddleware(cfg))
         bankAPI.POST("/sync/:id", handlers.SyncBankStatements)
         bankAPI.POST("/match/:id", handlers.MatchTransactionsByAccount)
         bankAPI.GET("/statements", handlers.GetBankStatementsByAccount)
+       // Экспорт выписок
+        bankAPI.GET("/statements/export", handlers.ExportBankStatementsToExcel)
     }
 
     // ========== WHATSAPP BUSINESS API ==========

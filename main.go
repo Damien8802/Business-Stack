@@ -847,7 +847,7 @@ r.GET("/suppliers", func(c *gin.Context) {
 
     // Экспорт отчетов
     r.GET("/api/reports/export/osv", handlers.ExportOSVToExcel)
-    r.GET("/api/reports/export/profit-loss", handlers.ExportProfitLossToHTML)
+    r.GET("/api/reports/export/profit-loss", handlers.ExportProfitLossToExcel)
 
     // Гант-диаграмма
     r.GET("/api/gantt", handlers.GetGanttData)
@@ -2167,6 +2167,7 @@ api.DELETE("/api/webhooks/:id", func(c *gin.Context) {
         adminAPI.PUT("/users/:id/block", handlers.AdminToggleUserBlockHandler)
         adminAPI.GET("/payments", handlers.AdminPaymentsHandler)
         adminAPI.GET("/payment-stats", handlers.AdminPaymentStats)
+        adminAPI.GET("/payments/recent", handlers.GetRecentPayments)
         adminAPI.GET("/security-logs", handlers.AdminSecurityLogs)
         adminAPI.GET("/blocked-ips", handlers.AdminBlockedIPs)
         adminAPI.POST("/users/toggle-block", handlers.AdminToggleUserBlock)
@@ -3123,7 +3124,7 @@ srv := &http.Server{
     MaxHeaderBytes: 1 << 20,           // 1 MB
 }
 
-log.Printf("🚀 Сервер запущен на порту %s с таймаутом бездействия 1 час", cfg.Port)
+log.Printf("🚀 Сервер запущен на порту %s с таймаутом бездействия 3 часа", cfg.Port)
 // Проверка доступности хендлеров (чтобы не было ошибок компиляции)
 // Если некоторых хендлеров нет - закомментируй соответствующие строки
 log.Println("✅ Все маршруты зарегистрированы")

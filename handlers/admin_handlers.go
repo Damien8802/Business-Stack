@@ -5,6 +5,7 @@ import (
     "time"
 
     "github.com/gin-gonic/gin"
+    "subscription-system/database"
 )
 
 // ==================== АДМИН-СТРАНИЦЫ (HTML) ====================
@@ -47,17 +48,55 @@ func AdminPaymentsHandler(c *gin.Context) {
     })
 }
 
-// AdminPaymentStats возвращает статистику платежей
+// AdminPaymentStats возвращает статистику платежей из БД
 func AdminPaymentStats(c *gin.Context) {
-    c.JSON(http.StatusOK, gin.H{
-        "total_amount":   0,
-        "today_amount":   0,
-        "week_amount":    0,
-        "month_amount":   0,
-        "payments_count": 0,
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = "11111111-1111-1111-1111-111111111111"
+    }
+    
+    var totalAmount float64
+    var paymentsCount int
+    var todayAmount float64
+    var weekAmount float64
+    var monthAmount float64
+    
+    // Общая сумма и количество платежей (только completed)
+    database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COALESCE(SUM(amount), 0), COUNT(*)
+        FROM payments
+        WHERE tenant_id = $1 AND status = 'completed'
+    `, tenantID).Scan(&totalAmount, &paymentsCount)
+    
+    // Сумма за сегодня
+    database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COALESCE(SUM(amount), 0)
+        FROM payments
+        WHERE tenant_id = $1 AND status = 'completed' AND DATE(created_at) = CURRENT_DATE
+    `, tenantID).Scan(&todayAmount)
+    
+    // Сумма за неделю
+    database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COALESCE(SUM(amount), 0)
+        FROM payments
+        WHERE tenant_id = $1 AND status = 'completed' AND created_at >= NOW() - INTERVAL '7 days'
+    `, tenantID).Scan(&weekAmount)
+    
+    // Сумма за месяц
+    database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COALESCE(SUM(amount), 0)
+        FROM payments
+        WHERE tenant_id = $1 AND status = 'completed' AND created_at >= NOW() - INTERVAL '30 days'
+    `, tenantID).Scan(&monthAmount)
+    
+    c.JSON(200, gin.H{
+        "total_amount":   totalAmount,
+        "payments_count": paymentsCount,
+        "today_amount":   todayAmount,
+        "week_amount":    weekAmount,
+        "month_amount":   monthAmount,
     })
 }
-
 // AdminSecurityLogs возвращает логи безопасности
 func AdminSecurityLogs(c *gin.Context) {
     c.JSON(http.StatusOK, gin.H{
@@ -96,4 +135,49 @@ func AdminDeleteUser(c *gin.Context) {
         "success": true,
         "message": "User deleted",
     })
+}
+
+// GetRecentPayments возвращает последние платежи
+func GetRecentPayments(c *gin.Context) {
+    limit := c.DefaultQuery("limit", "10")
+    tenantID := c.GetString("tenant_id")
+    
+    if tenantID == "" {
+        tenantID = "11111111-1111-1111-1111-111111111111"
+    }
+    
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT id, amount, status, created_at, plan_name
+        FROM payments
+        WHERE tenant_id = $1
+        ORDER BY created_at DESC
+        LIMIT $2
+    `, tenantID, limit)
+    
+    if err != nil {
+        c.JSON(500, gin.H{"error": err.Error()})
+        return
+    }
+    defer rows.Close()
+    
+    var payments []gin.H
+    for rows.Next() {
+        var id string
+        var amount float64
+        var status string
+        var createdAt time.Time
+        var planName string
+        
+        rows.Scan(&id, &amount, &status, &createdAt, &planName)
+        
+        payments = append(payments, gin.H{
+            "id":         id,
+            "amount":     amount,
+            "status":     status,
+            "created_at": createdAt,
+            "plan_name":  planName,
+        })
+    }
+    
+    c.JSON(200, gin.H{"payments": payments})
 }

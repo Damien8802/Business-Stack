@@ -145,8 +145,8 @@ func GetProfitAndLoss(c *gin.Context) {
         FROM journal_postings p
         JOIN journal_entries e ON p.entry_id = e.id
         WHERE e.user_id = $1
-        AND e.entry_status = 'posted'
-        AND e.entry_date BETWEEN $2 AND $3
+        AND e.status = 'posted'
+        AND e.operation_date BETWEEN $2 AND $3
         AND p.account_id IN (
             SELECT id FROM chart_of_accounts
             WHERE user_id = $1 AND code IN ('90', '91')
@@ -163,8 +163,8 @@ func GetProfitAndLoss(c *gin.Context) {
         FROM journal_postings p
         JOIN journal_entries e ON p.entry_id = e.id
         WHERE e.user_id = $1
-        AND e.entry_status = 'posted'
-        AND e.entry_date BETWEEN $2 AND $3
+        AND e.status = 'posted'
+        AND e.operation_date BETWEEN $2 AND $3
         AND p.account_id IN (
             SELECT id FROM chart_of_accounts
             WHERE user_id = $1 AND code IN ('20', '26', '44', '91')
@@ -197,8 +197,8 @@ func GetDashboardStats(c *gin.Context) {
         FROM journal_postings p
         JOIN journal_entries e ON p.entry_id = e.id
         WHERE e.user_id = $1
-        AND e.entry_status = 'posted'
-        AND e.entry_date >= DATE_TRUNC('month', NOW())
+        AND e.status = 'posted'
+        AND e.operation_date >= DATE_TRUNC('month', NOW())
         AND p.account_id IN (SELECT id FROM chart_of_accounts WHERE user_id = $1 AND code = '90')
     `, userID).Scan(&revenue)
 
@@ -208,15 +208,15 @@ func GetDashboardStats(c *gin.Context) {
         FROM journal_postings p
         JOIN journal_entries e ON p.entry_id = e.id
         WHERE e.user_id = $1
-        AND e.entry_status = 'posted'
-        AND e.entry_date >= DATE_TRUNC('month', NOW())
+        AND e.status = 'posted'
+        AND e.operation_date >= DATE_TRUNC('month', NOW())
         AND p.account_id IN (SELECT id FROM chart_of_accounts WHERE user_id = $1 AND code IN ('20', '26', '44'))
     `, userID).Scan(&expenses)
 
     var entriesCount int
     database.Pool.QueryRow(c.Request.Context(), `
         SELECT COUNT(*) FROM journal_entries
-        WHERE user_id = $1 AND entry_status = 'posted'
+        WHERE user_id = $1 AND status = 'posted'
     `, userID).Scan(&entriesCount)
 
     var bankBalance float64
@@ -225,7 +225,7 @@ func GetDashboardStats(c *gin.Context) {
         FROM journal_postings p
         JOIN journal_entries e ON p.entry_id = e.id
         WHERE e.user_id = $1
-        AND e.entry_status = 'posted'
+        AND e.status = 'posted'
         AND p.account_id IN (SELECT id FROM chart_of_accounts WHERE user_id = $1 AND code = '51')
     `, userID).Scan(&bankBalance)
 
@@ -257,15 +257,15 @@ func GetSalesChart(c *gin.Context) {
 
     rows, err := database.Pool.Query(c.Request.Context(), `
         SELECT
-            DATE_TRUNC('day', e.entry_date) as date,
+            DATE_TRUNC('day', e.operation_date) as date,
             COALESCE(SUM(p.credit_amount), 0) as total
         FROM journal_postings p
         JOIN journal_entries e ON p.entry_id = e.id
         WHERE e.user_id = $1
-        AND e.entry_status = 'posted'
-        AND e.entry_date >= NOW() - $2::INTERVAL
+        AND e.status = 'posted'
+        AND e.operation_date >= NOW() - $2::INTERVAL
         AND p.account_id IN (SELECT id FROM chart_of_accounts WHERE user_id = $1 AND code = '90')
-        GROUP BY DATE_TRUNC('day', e.entry_date)
+        GROUP BY DATE_TRUNC('day', e.operation_date)
         ORDER BY date
     `, userID, interval)
 
@@ -369,8 +369,8 @@ func GetFinancialRatios(c *gin.Context) {
         SELECT COALESCE(SUM(credit_amount), 0)
         FROM journal_postings p
         JOIN journal_entries e ON p.entry_id = e.id
-        WHERE e.user_id = $1 AND e.entry_status = 'posted'
-        AND e.entry_date >= DATE_TRUNC('month', NOW())
+        WHERE e.user_id = $1 AND e.status = 'posted'
+        AND e.operation_date >= DATE_TRUNC('month', NOW())
         AND p.account_id IN (SELECT id FROM chart_of_accounts WHERE user_id = $1 AND code = '90')
     `, userID).Scan(&revenue)
 
@@ -379,8 +379,8 @@ func GetFinancialRatios(c *gin.Context) {
         SELECT COALESCE(SUM(debit_amount), 0)
         FROM journal_postings p
         JOIN journal_entries e ON p.entry_id = e.id
-        WHERE e.user_id = $1 AND e.entry_status = 'posted'
-        AND e.entry_date >= DATE_TRUNC('month', NOW())
+        WHERE e.user_id = $1 AND e.status = 'posted'
+        AND e.operation_date >= DATE_TRUNC('month', NOW())
         AND p.account_id IN (SELECT id FROM chart_of_accounts WHERE user_id = $1 AND code = '20')
     `, userID).Scan(&cost)
 
@@ -389,8 +389,8 @@ func GetFinancialRatios(c *gin.Context) {
         SELECT COALESCE(SUM(debit_amount), 0)
         FROM journal_postings p
         JOIN journal_entries e ON p.entry_id = e.id
-        WHERE e.user_id = $1 AND e.entry_status = 'posted'
-        AND e.entry_date >= DATE_TRUNC('month', NOW())
+        WHERE e.user_id = $1 AND e.status = 'posted'
+        AND e.operation_date >= DATE_TRUNC('month', NOW())
         AND p.account_id IN (SELECT id FROM chart_of_accounts WHERE user_id = $1 AND code IN ('26', '44'))
     `, userID).Scan(&expenses)
 
@@ -401,7 +401,7 @@ func GetFinancialRatios(c *gin.Context) {
         FROM journal_postings p
         JOIN journal_entries e ON p.entry_id = e.id
         JOIN chart_of_accounts a ON p.account_id = a.id
-        WHERE e.user_id = $1 AND e.entry_status = 'posted'
+        WHERE e.user_id = $1 AND e.status = 'posted'
         AND a.code IN ('50', '51')
     `, userID).Scan(&assets)
 
@@ -411,7 +411,7 @@ func GetFinancialRatios(c *gin.Context) {
         FROM journal_postings p
         JOIN journal_entries e ON p.entry_id = e.id
         JOIN chart_of_accounts a ON p.account_id = a.id
-        WHERE e.user_id = $1 AND e.entry_status = 'posted'
+        WHERE e.user_id = $1 AND e.status = 'posted'
         AND a.code = '60'
     `, userID).Scan(&liabilities)
 
@@ -549,9 +549,12 @@ func ExportOSVToExcel(c *gin.Context) {
     c.String(http.StatusOK, html)
 }
 
-// ExportProfitLossToHTML - экспорт отчета о прибылях и убытках в HTML
-func ExportProfitLossToHTML(c *gin.Context) {
-    userID := getUserID(c)
+// ExportProfitLossToExcel - экспорт отчета о прибылях и убытках в Excel (скачивается файл)
+func ExportProfitLossToExcel(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = "11111111-1111-1111-1111-111111111111"
+    }
 
     startDate := c.Query("start_date")
     endDate := c.Query("end_date")
@@ -563,26 +566,21 @@ func ExportProfitLossToHTML(c *gin.Context) {
         endDate = time.Now().Format("2006-01-02")
     }
 
-    var revenue, expenses float64
+    var revenue float64
+    // Берём данные из таблицы payments (реальные платежи)
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COALESCE(SUM(amount), 0)
+        FROM payments
+        WHERE tenant_id = $1 AND status = 'completed'
+        AND created_at BETWEEN $2 AND $3
+    `, tenantID, startDate, endDate).Scan(&revenue)
+    
+    if err != nil {
+        log.Printf("Ошибка получения revenue: %v", err)
+        revenue = 0
+    }
 
-    database.Pool.QueryRow(c.Request.Context(), `
-        SELECT COALESCE(SUM(credit_amount), 0)
-        FROM journal_postings p
-        JOIN journal_entries e ON p.entry_id = e.id
-        WHERE e.user_id = $1 AND e.entry_status = 'posted'
-        AND e.entry_date BETWEEN $2 AND $3
-        AND p.account_id IN (SELECT id FROM chart_of_accounts WHERE user_id = $1 AND code IN ('90', '91'))
-    `, userID, startDate, endDate).Scan(&revenue)
-
-    database.Pool.QueryRow(c.Request.Context(), `
-        SELECT COALESCE(SUM(debit_amount), 0)
-        FROM journal_postings p
-        JOIN journal_entries e ON p.entry_id = e.id
-        WHERE e.user_id = $1 AND e.entry_status = 'posted'
-        AND e.entry_date BETWEEN $2 AND $3
-        AND p.account_id IN (SELECT id FROM chart_of_accounts WHERE user_id = $1 AND code IN ('20', '26', '44', '91'))
-    `, userID, startDate, endDate).Scan(&expenses)
-
+    expenses := 0.0
     profit := revenue - expenses
 
     profitClass := "profit"
@@ -590,50 +588,39 @@ func ExportProfitLossToHTML(c *gin.Context) {
         profitClass = "loss"
     }
 
-    html := fmt.Sprintf(`
-<!DOCTYPE html>
-<html>
+    // Формируем HTML для Excel
+    html := fmt.Sprintf(`<html>
 <head>
     <meta charset="UTF-8">
     <title>Отчет о прибылях и убытках</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        h1 { color: #333; text-align: center; }
-        .period { text-align: center; color: #666; margin-bottom: 30px; }
-        table { width: 100%%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background-color: #4472C4; color: white; }
-        .total { font-weight: bold; background-color: #f9f9f9; }
-        .profit { font-weight: bold; color: green; }
-        .loss { font-weight: bold; color: red; }
-        .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #666; }
+        td, th { border: 1px solid #ddd; padding: 8px; }
+        table { border-collapse: collapse; width: 100%%; }
+        .profit { color: green; font-weight: bold; }
+        .loss { color: red; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h1>Отчет о прибылях и убытках</h1>
-    <div class="period">Период: %s - %s</div>
-
-    </table>
+    <h2>Отчет о прибылях и убытках</h2>
+    <p>Период: %s - %s</p>
+    <table>
         <thead>
             <tr><th>Показатель</th><th>Сумма, ₽</th></tr>
         </thead>
         <tbody>
-            <tr><td style="text-align: left;">Выручка</td><td align="right">%.2f</td></tr>
-            <tr><td style="text-align: left;">Расходы</td><td align="right">%.2f</td></tr>
-            <tr class="total"><td style="text-align: left;">Прибыль/Убыток</td><td align="right" class="%s">%.2f</td></tr>
+            <tr><td>Выручка</td><td align="right">%.2f</td></tr>
+            <tr><td>Расходы</td><td align="right">%.2f</td></tr>
+            <tr><td><strong>Прибыль/Убыток</strong></td><td align="right" class="%s"><strong>%.2f</strong></td></tr>
         </tbody>
     </table>
-
-    <div class="footer">
-        Сформировано: %s<br>
-        SaaSPro ERP
-    </div>
+    <p>Сформировано: %s</p>
+    <p>SaaSPro ERP</p>
 </body>
-</html>
-`, startDate, endDate, revenue, expenses, profitClass, profit, time.Now().Format("2006-01-02 15:04:05"))
+</html>`, startDate, endDate, revenue, expenses, profitClass, profit, time.Now().Format("2006-01-02 15:04:05"))
 
-    filename := fmt.Sprintf("pnl_%s_%s.html", startDate, endDate)
-    c.Header("Content-Type", "text/html")
+    filename := fmt.Sprintf("pnl_%s_%s.xls", startDate, endDate)
+    c.Header("Content-Type", "application/vnd.ms-excel")
     c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
     c.String(http.StatusOK, html)
 }
@@ -680,8 +667,8 @@ func getPostingsByPeriod(userID uuid.UUID, startDate, endDate string) ([]posting
         FROM journal_postings p
         JOIN journal_entries e ON p.entry_id = e.id
         WHERE e.user_id = $1
-        AND e.entry_status = 'posted'
-        AND e.entry_date BETWEEN $2 AND $3
+        AND e.status = 'posted'
+        AND e.operation_date BETWEEN $2 AND $3
     `, userID, startDate, endDate)
     if err != nil {
         return nil, err

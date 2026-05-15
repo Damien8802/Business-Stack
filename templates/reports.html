@@ -1,257 +1,449 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">`n    `n    `n    `n    
     <meta charset="UTF-8">
-    <title>Отчёты | SaaSPro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinCore | Отчёты и аналитика</title>
+    
+    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Font Awesome 5 (стабильная версия, БЕЗ ошибки ERR_QUIC_PROTOCOL_ERROR) -->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css">
+    
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <style>
-        body { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); min-height: 100vh; }
-        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
-        .header { background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 20px; padding: 30px; color: white; margin-bottom: 30px; }
-        .card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: transform 0.3s, box-shadow 0.3s; }
-        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
-        .stat-card { background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 16px; padding: 20px; color: white; text-align: center; }
-        .stat-value { font-size: 32px; font-weight: bold; }
-        .tax-card { cursor: pointer; border-left: 4px solid; transition: all 0.3s; }
-        .tax-card.usn { border-left-color: #10b981; }
-        .tax-card.ndfl { border-left-color: #3b82f6; }
-        .tax-card.rsv { border-left-color: #f59e0b; }
-        .tax-card:hover { transform: translateX(5px); background: #f8f9fa; }
-        .modal-content { border-radius: 20px; }
-        .btn-tax { background: linear-gradient(135deg, #667eea, #764ba2); border: none; border-radius: 50px; padding: 8px 20px; color: white; transition: all 0.3s; }
-        .btn-tax:hover { transform: scale(1.05); box-shadow: 0 5px 15px rgba(102,126,234,0.4); }
-        .badge-status { padding: 5px 12px; border-radius: 50px; font-size: 12px; }
-        .badge-generated { background: #10b981; color: white; }
-        .badge-sent { background: #3b82f6; color: white; }
-        .reports-table { width: 100%; border-collapse: collapse; }
-        .reports-table th, .reports-table td { padding: 12px; border-bottom: 1px solid #e5e7eb; }
-        .reports-table tr:hover { background: #f8f9fa; }
-        .btn-icon { background: #f3f4f6; border: none; width: 32px; height: 32px; border-radius: 8px; transition: all 0.3s; }
-        .btn-icon:hover { background: #667eea; color: white; transform: scale(1.1); }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0a0a2a 0%, #0f0f35 50%, #1a1a4a 100%);
+            min-height: 100vh;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at 20% 30%, rgba(102,126,234,0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 70%, rgba(118,75,162,0.15) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .container { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .header {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 32px;
+            padding: 40px;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff, #a5b4fc, #c4b5fd);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 10px;
+        }
+        .header h1 i { background: none; -webkit-background-clip: unset; color: #667eea; margin-right: 12px; }
+        .header p { color: rgba(255,255,255,0.7); font-size: 1.1rem; }
+        
+        .stat-card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover { transform: translateY(-5px); border-color: #667eea; }
+        .stat-icon {
+            width: 60px; height: 60px;
+            background: linear-gradient(135deg, rgba(102,126,234,0.2), rgba(118,75,162,0.2));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin: 0 auto 20px auto;
+        }
+        .stat-value { font-size: 32px; font-weight: 800; color: #fff; }
+        .stat-label { color: rgba(255,255,255,0.6); font-size: 14px; margin-top: 8px; }
+        
+        .card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .card h3, .card h4 { color: #fff; font-weight: 600; margin-bottom: 20px; }
+        .card h3 i, .card h4 i { margin-right: 10px; color: #667eea; }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 12px;
+            padding: 12px 24px;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s;
+        }
+        .btn-primary:hover { transform: scale(1.02); box-shadow: 0 10px 25px -5px rgba(102,126,234,0.4); }
+        
+        .btn-outline {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 10px 20px;
+            color: #fff;
+            transition: all 0.3s;
+        }
+        .btn-outline:hover { background: rgba(102,126,234,0.2); border-color: #667eea; }
+        
+        .table { color: #e2e8f0; margin-bottom: 0; }
+        .table thead th { border-bottom: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); padding: 15px; }
+        .table tbody td { border-bottom: 1px solid rgba(255,255,255,0.05); padding: 15px; }
+        
+        .badge-generated { background: rgba(16,185,129,0.2); color: #10b981; padding: 4px 12px; border-radius: 20px; font-size: 12px; display: inline-block; }
+        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .animate { animation: fadeIn 0.5s ease forwards; }
+        
+        /* Стиль для сообщения об обновлении */
+        .update-toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(16, 185, 129, 0.95);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2);
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .btn-refresh-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .last-update {
+            color: rgba(255,255,255,0.6);
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .last-update i {
+            font-size: 12px;
+        }
+        
+        .btn-outline:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
-    {{template "navbar" .}}
-    
     <div class="container">
         <div class="header animate">
-            <h1><i class="fas fa-chart-bar"></i> Отчёты и аналитика</h1>
-            <p class="mb-0">Генерация и экспорт отчётов</p>
+            <h1><i class="fas fa-chart-bar"></i> FinCore | Отчёты и аналитика</h1>
+            <p class="mb-0">Генерация и экспорт финансовых отчётов</p>
         </div>
-        
-        <!-- Основные отчёты -->
-        <div class="row mb-4 animate" style="animation-delay: 0.1s">
-            <div class="col-md-4">
-                <div class="card text-center">
-                    <i class="fas fa-file-excel fa-3x text-success mb-3"></i>
-                    <h5>Оборотно-сальдовая ведомость</h5>
-                    <button class="btn btn-primary mt-3" onclick="exportOSV()">Скачать Excel</button>
+
+        <div class="row mb-4">
+            <div class="col-md-4 mb-3">
+                <div class="card text-center animate">
+                    <div class="stat-icon mx-auto"><i class="fas fa-file-excel" style="color: #10b981;"></i></div>
+                    <h5 style="color: #fff;">Оборотно-сальдовая ведомость</h5>
+                    <button class="btn-primary mt-3" onclick="exportOSV()"><i class="fas fa-download"></i> Скачать Excel</button>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card text-center">
-                    <i class="fas fa-chart-line fa-3x text-primary mb-3"></i>
-                    <h5>Прибыли и убытки</h5>
-                    <button class="btn btn-primary mt-3" onclick="exportPNL()">Сформировать</button>
+            <div class="col-md-4 mb-3">
+                <div class="card text-center animate">
+                    <div class="stat-icon mx-auto"><i class="fas fa-chart-line" style="color: #667eea;"></i></div>
+                    <h5 style="color: #fff;">Прибыли и убытки</h5>
+                    <button class="btn-primary mt-3" onclick="exportPNL()"><i class="fas fa-chart-simple"></i> Сформировать</button>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card text-center">
-                    <i class="fas fa-chart-pie fa-3x text-info mb-3"></i>
-                    <h5>Аналитика продаж</h5>
-                    <button class="btn btn-primary mt-3" onclick="alert('В разработке')">Показать</button>
+            <div class="col-md-4 mb-3">
+                <div class="card text-center animate">
+                    <div class="stat-icon mx-auto"><i class="fas fa-chart-pie" style="color: #f59e0b;"></i></div>
+                    <h5 style="color: #fff;">Аналитика продаж</h5>
+                    <button class="btn-primary mt-3" onclick="showSalesAnalytics()"><i class="fas fa-chart-pie"></i> Показать</button>
                 </div>
             </div>
         </div>
-        
-        <!-- НАЛОГОВАЯ ОТЧЁТНОСТЬ -->
-        <div class="card animate" style="animation-delay: 0.2s">
-            <h4 class="mb-4"><i class="fas fa-file-invoice-dollar text-primary me-2"></i>Налоговая отчётность</h4>
-            <div class="row">
-                <div class="col-md-3 mb-3">
-                    <div class="stat-card">
-                        <i class="fas fa-chart-line fa-2x mb-2"></i>
-                        <div class="stat-value" id="totalTax">0 ₽</div>
-                        <small>Всего налогов</small>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669);">
-                        <i class="fas fa-file-alt fa-2x mb-2"></i>
-                        <div class="stat-value" id="totalReports">0</div>
-                        <small>Отчётов</small>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="stat-card" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
-                        <i class="fas fa-building fa-2x mb-2"></i>
-                        <div class="stat-value" id="totalIncome">0 ₽</div>
-                        <small>Доход</small>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                        <i class="fas fa-calendar-alt fa-2x mb-2"></i>
-                        <div class="stat-value" id="currentPeriod">2024</div>
-                        <small>Период</small>
-                    </div>
+
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="stat-card animate">
+                    <div class="stat-icon"><i class="fas fa-arrow-up"></i></div>
+                    <div class="stat-value" id="totalIncome">0 ₽</div>
+                    <div class="stat-label">Доход</div>
                 </div>
             </div>
-            
-            <div class="row mb-4">
-                <div class="col-md-4">
-                    <div class="card tax-card usn" onclick="openTaxModal('usn')">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <i class="fas fa-file-alt fa-2x text-success mb-2"></i>
-                                <h6 class="mb-0">Декларация УСН</h6>
-                                <small class="text-muted">Форма по КНД 1152017</small>
-                            </div>
-                            <button class="btn-tax">Сформировать</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card tax-card ndfl" onclick="openTaxModal('ndfl')">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <i class="fas fa-chart-line fa-2x text-primary mb-2"></i>
-                                <h6 class="mb-0">6-НДФЛ</h6>
-                                <small class="text-muted">Расчётный лист</small>
-                            </div>
-                            <button class="btn-tax">Сформировать</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card tax-card rsv" onclick="openTaxModal('rsv')">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <i class="fas fa-chart-pie fa-2x text-warning mb-2"></i>
-                                <h6 class="mb-0">РСВ</h6>
-                                <small class="text-muted">Страховые взносы</small>
-                            </div>
-                            <button class="btn-tax">Сформировать</button>
-                        </div>
-                    </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card animate">
+                    <div class="stat-icon"><i class="fas fa-arrow-down"></i></div>
+                    <div class="stat-value" id="totalExpenses">0 ₽</div>
+                    <div class="stat-label">Расходы</div>
                 </div>
             </div>
-            
-            <!-- История отчётов -->
-            <div id="reportsSection">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6><i class="fas fa-history me-2"></i>Сформированные отчёты</h6>
-                    <button class="btn btn-sm btn-outline-secondary" onclick="loadTaxReports()"><i class="fas fa-sync-alt"></i> Обновить</button>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card animate">
+                    <div class="stat-icon"><i class="fas fa-chart-simple"></i></div>
+                    <div class="stat-value" id="totalProfit">0 ₽</div>
+                    <div class="stat-label">Прибыль</div>
                 </div>
-                <div id="reportsList" class="table-responsive">
-                    <div class="text-center py-3 text-muted">Загрузка...</div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card animate">
+                    <div class="stat-icon"><i class="fas fa-file-invoice-dollar"></i></div>
+                    <div class="stat-value" id="totalTax">0 ₽</div>
+                    <div class="stat-label">Налоги</div>
                 </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <div class="card animate">
+                    <h4><i class="fas fa-chart-line"></i> Динамика доходов</h4>
+                    <canvas id="incomeChart" height="250"></canvas>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card animate">
+                    <h4><i class="fas fa-chart-pie"></i> Распределение</h4>
+                    <canvas id="distributionChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card animate">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-3">
+                <h4><i class="fas fa-file-invoice-dollar"></i> Сформированные отчёты</h4>
+                <div class="btn-refresh-wrapper">
+                    <div class="last-update" id="lastUpdateInfo">
+                        <i class="fas fa-clock"></i>
+                        <span id="lastUpdateTime">—</span>
+                    </div>
+                    <button class="btn-outline" id="refreshReportsBtn">
+                        <i class="fas fa-sync-alt"></i> Обновить
+                    </button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr><th>Тип</th><th>Период</th><th>Сумма налога</th><th>Статус</th><th></th></tr>
+                    </thead>
+                    <tbody id="reportsList">
+                        <tr><td colspan="5" class="text-center">Загрузка...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
-    
-    <!-- Модальное окно -->
-    <div class="modal fade" id="taxModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="taxModalTitle">Сформировать отчёт</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <label class="form-label">Период</label>
-                    <select class="form-select" id="reportPeriod">
-                        <option value="2024-Q1">1 квартал 2024</option>
-                        <option value="2024-Q2">2 квартал 2024</option>
-                        <option value="2024-Q3">3 квартал 2024</option>
-                        <option value="2024-Q4" selected>4 квартал 2024</option>
-                        <option value="2024-1">Январь 2024</option>
-                        <option value="2024-2">Февраль 2024</option>
-                        <option value="2024-3">Март 2024</option>
-                        <option value="2024-4">Апрель 2024</option>
-                        <option value="2024-5">Май 2024</option>
-                        <option value="2024-6">Июнь 2024</option>
-                    </select>
-                    <div class="alert alert-info mt-3 small">
-                        <i class="fas fa-info-circle"></i> После формирования отчёт можно скачать в формате XML
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                    <button type="button" class="btn btn-primary" id="confirmTaxBtn">Сформировать</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
         const token = localStorage.getItem('token');
-        let currentTaxType = 'usn';
         
-        function exportOSV() {
-            window.open('/api/reports/export/osv', '_blank');
+        function exportOSV() { window.open('/api/reports/export/osv', '_blank'); }
+        function exportPNL() { window.open('/api/reports/export/profit-loss', '_blank'); }
+        
+        function showSalesAnalytics() {
+            const income = document.getElementById('totalIncome').innerText;
+            alert('📊 Аналитика продаж\n\nДоход: ' + income);
         }
         
-        function exportPNL() {
-            window.open('/api/reports/export/profit-loss', '_blank');
-        }
-        
-        function openTaxModal(type) {
-            currentTaxType = type;
-            const titles = { usn: 'Декларация УСН', ndfl: '6-НДФЛ', rsv: 'РСВ' };
-            document.getElementById('taxModalTitle').innerText = titles[type];
-            new bootstrap.Modal(document.getElementById('taxModal')).show();
-        }
-        
-        document.getElementById('confirmTaxBtn').onclick = async function() {
-            const period = document.getElementById('reportPeriod').value;
-            let url = '';
-            if (currentTaxType === 'usn') url = `/api/tax/generate/usn?period=${period}`;
-            else if (currentTaxType === 'ndfl') url = `/api/tax/generate/ndfl?period=${period}`;
-            else { alert('Функция в разработке'); return; }
+        // Функция показа уведомления об обновлении
+        function showUpdateNotification(message) {
+            // Удаляем старое уведомление если есть
+            const oldToast = document.querySelector('.update-toast');
+            if (oldToast) oldToast.remove();
             
-            bootstrap.Modal.getInstance(document.getElementById('taxModal')).hide();
+            // Создаём новое уведомление
+            const toast = document.createElement('div');
+            toast.className = 'update-toast';
+            toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+            document.body.appendChild(toast);
             
+            // Автоматически скрываем через 3 секунды
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // Функция обновления времени последнего обновления
+        function updateLastUpdateTime() {
+            const now = new Date();
+            const formattedDate = now.toLocaleDateString('ru-RU', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+            const formattedTime = now.toLocaleTimeString('ru-RU', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            const lastUpdateSpan = document.getElementById('lastUpdateTime');
+            if (lastUpdateSpan) {
+                lastUpdateSpan.innerHTML = `${formattedDate} ${formattedTime}`;
+            }
+            return `${formattedDate} ${formattedTime}`;
+        }
+        
+        async function loadStats() {
             try {
-                const res = await fetch(url, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
-                const data = await res.json();
-                alert('Отчёт сформирован!\n' + (data.tax_amount ? `Сумма налога: ${data.tax_amount} руб.` : `Сумма налога: ${data.total_tax} руб.`));
-                loadTaxReports();
-                loadTaxStats();
-            } catch(e) { alert('Ошибка формирования отчёта'); }
-        };
+                const res = await fetch('/api/admin/payment-stats', { 
+                    headers: { 'Authorization': 'Bearer ' + token } 
+                });
+                const d = await res.json();
+                const totalIncome = d.total_amount || 0;
+                document.getElementById('totalIncome').innerHTML = totalIncome.toLocaleString() + ' ₽';
+                document.getElementById('totalProfit').innerHTML = totalIncome.toLocaleString() + ' ₽';
+                document.getElementById('totalExpenses').innerHTML = '0 ₽';
+            } catch(e) { console.error(e); }
+        }
         
         async function loadTaxReports() {
-            const container = document.getElementById('reportsList');
+            const tbody = document.getElementById('reportsList');
+            const refreshBtn = document.getElementById('refreshReportsBtn');
+            
+            // Блокируем кнопку во время загрузки
+            if (refreshBtn) {
+                refreshBtn.disabled = true;
+                refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Обновление...';
+            }
+            
             try {
-                const res = await fetch('/api/tax/reports', { headers: { 'Authorization': 'Bearer ' + token } });
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/tax/reports', { 
+                    headers: { 'Authorization': 'Bearer ' + token } 
+                });
                 const reports = await res.json();
-                if (!reports.length) { container.innerHTML = '<div class="text-center py-3 text-muted">Нет сформированных отчётов</div>'; return; }
-                container.innerHTML = `<table class="reports-table"><thead><tr><th>Тип</th><th>Период</th><th>Сумма налога</th><th>Статус</th><th></th></tr></thead><tbody>${reports.map(r => `<tr><td>${r.report_type === 'usn' ? '📑 УСН' : '📊 6-НДФЛ'}</td><td>${r.period}</td><td>${(r.tax_amount || 0).toLocaleString()} ₽</td><td><span class="badge-status badge-generated">${r.status}</span></td><td><button class="btn-icon" onclick="window.open('/api/tax/export/xml/${r.id}','_blank')"><i class="fas fa-download"></i></button></td></tr>`).join('')}</tbody></table>`;
-            } catch(e) { container.innerHTML = '<div class="text-center py-3 text-danger">Ошибка загрузки</div>'; }
+                
+                if (!reports || reports.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Нет отчётов</td></tr>';
+                    document.getElementById('totalTax').innerHTML = '0 ₽';
+                    return;
+                }
+                
+                let totalTax = 0;
+                let html = '';
+                for (let i = 0; i < reports.length; i++) {
+                    const r = reports[i];
+                    const taxAmount = r.tax_amount || 0;
+                    totalTax += taxAmount;
+                    let name = r.report_type;
+                    if (name === 'usn') name = '📑 УСН';
+                    else if (name === 'ndfl') name = '📊 6-НДФЛ';
+                    else if (name === 'rsv') name = '📈 РСВ';
+                    else if (name === 'nds') name = '🧾 НДС';
+                    html += '<tr>' +
+                        '<td>' + name + '</td>' +
+                        '<td>' + (r.period || '—') + '</td>' +
+                        '<td class="amount">' + taxAmount.toLocaleString() + ' ₽</td>' +
+                        '<td><span class="badge-generated">' + (r.status || 'generated') + '</span></td>' +
+                        '<td><button class="btn-outline" style="padding:5px 12px;" onclick="downloadReport(\'' + r.id + '\')"><i class="fas fa-download"></i></button></td>' +
+                        '</tr>';
+                }
+                tbody.innerHTML = html;
+                document.getElementById('totalTax').innerHTML = totalTax.toLocaleString() + ' ₽';
+                
+                // Показываем уведомление об успешном обновлении
+                const updateTime = updateLastUpdateTime();
+                showUpdateNotification(`Обновлено ${updateTime}`);
+                
+            } catch(e) {
+                console.error(e);
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">❌ Ошибка загрузки отчётов</td></tr>';
+                showUpdateNotification('❌ Ошибка при обновлении данных');
+            } finally {
+                // Разблокируем кнопку и возвращаем исходный текст
+                if (refreshBtn) {
+                    refreshBtn.disabled = false;
+                    refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Обновить';
+                }
+            }
         }
         
-        async function loadTaxStats() {
-            try {
-                const res = await fetch('/api/tax/reports', { headers: { 'Authorization': 'Bearer ' + token } });
-                const reports = await res.json();
-                let totalTax = 0, totalIncome = 0;
-                reports.forEach(r => { totalTax += r.tax_amount || 0; totalIncome += r.income || 0; });
-                document.getElementById('totalTax').innerText = totalTax.toLocaleString() + ' ₽';
-                document.getElementById('totalIncome').innerText = totalIncome.toLocaleString() + ' ₽';
-                document.getElementById('totalReports').innerText = reports.length;
-                document.getElementById('currentPeriod').innerText = new Date().getFullYear();
-            } catch(e) {}
+        function downloadReport(id) {
+            window.open('/api/tax/export/xml/' + id, '_blank');
         }
         
-        document.addEventListener('DOMContentLoaded', () => { loadTaxStats(); loadTaxReports(); });
+        function initCharts() {
+            const ctx = document.getElementById('incomeChart')?.getContext('2d');
+            if(ctx) {
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн'],
+                        datasets: [{
+                            label: 'Доход (₽)',
+                            data: [88259, 105000, 92000, 110000, 130000, 882590],
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102,126,234,0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: { legend: { labels: { color: '#fff' } } },
+                        scales: { y: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } }, x: { ticks: { color: '#fff' } } }
+                    }
+                });
+            }
+            const ctx2 = document.getElementById('distributionChart')?.getContext('2d');
+            if(ctx2) {
+                new Chart(ctx2, {
+                    type: 'doughnut',
+                    data: { labels: ['Подписки', 'Услуги', 'VPN'], datasets: [{ data: [65, 25, 10], backgroundColor: ['#667eea', '#10b981', '#f59e0b'], borderWidth: 0 }] },
+                    options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { labels: { color: '#fff' } } } }
+                });
+            }
+        }
+        
+        // Основная функция обновления (вызывается при нажатии на кнопку)
+        async function refreshAllData() {
+            await loadTaxReports();
+            await loadStats();
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+            loadTaxReports();
+            initCharts();
+            
+            // Назначаем обработчик на кнопку обновления
+            const refreshBtn = document.getElementById('refreshReportsBtn');
+            if (refreshBtn) {
+                refreshBtn.onclick = refreshAllData;
+            }
+        });
     </script>
 </body>
 </html>

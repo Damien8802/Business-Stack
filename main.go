@@ -982,6 +982,7 @@ hr.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("hr"))
     hr.POST("/api/vacancies", handlers.AddVacancyHandler)
     hr.PUT("/api/vacancies/:id", handlers.UpdateVacancyHandler)
     hr.DELETE("/api/vacancies/:id", handlers.DeleteVacancyHandler)
+   
     
     // Statistics
     hr.GET("/api/statistics", handlers.GetStatisticsHandler)
@@ -1174,6 +1175,9 @@ payrollAPI := r.Group("/api/payroll")
 payrollAPI.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("payroll"))
 {
     payrollAPI.GET("/employees", handlers.GetEmployeesForPayroll)
+    payrollAPI.POST("/employees", handlers.AddEmployeeToPayroll)      
+    payrollAPI.PUT("/employees/:id", handlers.UpdateEmployeeInPayroll) 
+    payrollAPI.DELETE("/employees/:id", handlers.DeleteEmployeeFromPayroll) 
     payrollAPI.POST("/calculate", handlers.CalculatePayroll)
     payrollAPI.GET("/history", handlers.GetPayrollHistory)
     payrollAPI.POST("/pay", handlers.ProcessPayrollPayment)

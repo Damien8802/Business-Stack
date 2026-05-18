@@ -3,6 +3,7 @@ package handlers
 import (
     "crypto/sha256"
     "database/sql"
+    "encoding/json"
     "fmt"
     "io"
     "log"
@@ -32,9 +33,6 @@ func GenerateReconciliationAct(c *gin.Context) {
         CounterpartyINN  string `json:"counterparty_inn"`
         PeriodStart      string `json:"period_start"`
         PeriodEnd        string `json:"period_end"`
-        TotalDebit       float64 `json:"total_debit"`
-        TotalCredit      float64 `json:"total_credit"`
-        ClosingBalance   float64 `json:"closing_balance"`
     }
     
     if err := c.ShouldBindJSON(&req); err != nil {
@@ -46,8 +44,8 @@ func GenerateReconciliationAct(c *gin.Context) {
         return
     }
     
-    log.Printf("📝 Распарсенные данные: Name=%s, INN=%s, Start=%s, End=%s, Debit=%v, Credit=%v", 
-        req.CounterpartyName, req.CounterpartyINN, req.PeriodStart, req.PeriodEnd, req.TotalDebit, req.TotalCredit)
+    log.Printf("📝 Распарсенные данные: Name=%s, INN=%s, Start=%s, End=%s", 
+        req.CounterpartyName, req.CounterpartyINN, req.PeriodStart, req.PeriodEnd)
     
     if req.CounterpartyName == "" {
         c.JSON(http.StatusBadRequest, gin.H{"error": "counterparty_name обязателен"})
@@ -87,9 +85,9 @@ func GenerateReconciliationAct(c *gin.Context) {
     
     actID := uuid.New()
     
-    totalDebit := req.TotalDebit
-    totalCredit := req.TotalCredit
-    closingBalance := req.ClosingBalance
+    totalDebit := 0.0
+    totalCredit := 0.0
+    closingBalance := 0.0
     
     query := `
         INSERT INTO reconciliation_acts (
@@ -723,33 +721,9 @@ func DeleteReconciliationAct(c *gin.Context) {
     actID := c.Param("id")
     tenantID := middleware.GetTenantIDFromContext(c)
     
-    log.Printf("🗑️ Удаление акта: ID=%s", actID)
-    
-    // Сначала получаем статус акта
-    var status string
-    var counterpartyName string
-    err := database.Pool.QueryRow(c.Request.Context(), `
-        SELECT status, counterparty_name FROM reconciliation_acts 
-        WHERE id = $1 AND tenant_id = $2
-    `, actID, tenantID).Scan(&status, &counterpartyName)
-    
-    if err != nil {
-        log.Printf("❌ Акт не найден: %v", err)
-        c.JSON(http.StatusNotFound, gin.H{"error": "Акт не найден"})
-        return
-    }
-    
-    // Проверяем, можно ли удалить акт (только draft, generated, partially_signed)
-    if status == "signed" {
-        log.Printf("❌ Нельзя удалить подписанный акт: %s", actID)
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Нельзя удалить подписанный акт"})
-        return
-    }
-    
-    // Удаляем акт
     result, err := database.Pool.Exec(c.Request.Context(), `
         DELETE FROM reconciliation_acts 
-        WHERE id = $1 AND tenant_id = $2
+        WHERE id = $1 AND tenant_id = $2 AND status IN ('draft', 'generated')
     `, actID, tenantID)
     
     if err != nil {
@@ -760,14 +734,290 @@ func DeleteReconciliationAct(c *gin.Context) {
     
     rowsAffected := result.RowsAffected()
     if rowsAffected == 0 {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Акт не найден или не может быть удален"})
+        return
+    }
+    
+    log.Printf("✅ Акт %s удален", actID)
+    
+    c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+// ========== ДОБАВЛЕННЫЕ ФУНКЦИИ ==========
+
+// Получение истории изменений акта
+func GetActHistory(c *gin.Context) {
+    actID := c.Param("id")
+    tenantID := middleware.GetTenantIDFromContext(c)
+    
+    log.Printf("📜 Получение истории для акта: %s", actID)
+    
+    var exists bool
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT EXISTS(SELECT 1 FROM reconciliation_acts WHERE id = $1 AND tenant_id = $2)
+    `, actID, tenantID).Scan(&exists)
+    
+    if err != nil {
+        log.Printf("❌ Ошибка проверки акта: %v", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка проверки акта"})
+        return
+    }
+    
+    if !exists {
+        log.Printf("❌ Акт не найден: %s", actID)
         c.JSON(http.StatusNotFound, gin.H{"error": "Акт не найден"})
         return
     }
     
-    log.Printf("✅ Акт %s (%s) успешно удален", actID, counterpartyName)
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT id, action, user_name, user_email, old_data, new_data, created_at
+        FROM reconciliation_act_logs
+        WHERE act_id = $1::uuid
+        ORDER BY created_at DESC
+        LIMIT 50
+    `, actID)
+    
+    if err != nil {
+        log.Printf("❌ Ошибка получения истории: %v", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения истории"})
+        return
+    }
+    defer rows.Close()
+    
+    var history []gin.H
+    for rows.Next() {
+        var id int
+        var action, userName, userEmail string
+        var oldData, newData []byte
+        var createdAt time.Time
+        
+        err := rows.Scan(&id, &action, &userName, &userEmail, &oldData, &newData, &createdAt)
+        if err != nil {
+            continue
+        }
+        
+        var oldDataMap, newDataMap interface{}
+        json.Unmarshal(oldData, &oldDataMap)
+        json.Unmarshal(newData, &newDataMap)
+        
+        history = append(history, gin.H{
+            "id":         id,
+            "action":     action,
+            "user_name":  userName,
+            "user_email": userEmail,
+            "old_data":   oldDataMap,
+            "new_data":   newDataMap,
+            "created_at": createdAt.Format("2006-01-02 15:04:05"),
+        })
+    }
+    
+    log.Printf("✅ Найдено записей истории: %d", len(history))
     
     c.JSON(http.StatusOK, gin.H{
         "success": true,
-        "message": "Акт успешно удален",
+        "data":    history,
+    })
+}
+
+// Получение статистики для графика
+func GetActStatistics(c *gin.Context) {
+    tenantID := middleware.GetTenantIDFromContext(c)
+    
+    log.Printf("📊 Получение статистики для tenantID: %v", tenantID)
+    
+    var totalActs int
+    var totalDebit, totalCredit, totalBalance float64
+    var signedCount, draftCount int
+    
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT 
+            COALESCE(COUNT(*), 0) as total_acts,
+            COALESCE(SUM(total_debit), 0) as total_debit,
+            COALESCE(SUM(total_credit), 0) as total_credit,
+            COALESCE(SUM(closing_balance), 0) as total_balance,
+            COALESCE(SUM(CASE WHEN status = 'signed' THEN 1 ELSE 0 END), 0) as signed_count,
+            COALESCE(SUM(CASE WHEN status IN ('draft', 'generated', 'partially_signed') THEN 1 ELSE 0 END), 0) as draft_count
+        FROM reconciliation_acts
+        WHERE tenant_id = $1
+    `, tenantID).Scan(&totalActs, &totalDebit, &totalCredit, &totalBalance, &signedCount, &draftCount)
+    
+    if err != nil {
+        log.Printf("❌ Ошибка получения статистики: %v", err)
+        c.JSON(http.StatusOK, gin.H{
+            "success": true,
+            "data": gin.H{
+                "total_acts":    0,
+                "total_debit":   0,
+                "total_credit":  0,
+                "total_balance": 0,
+                "signed_count":  0,
+                "draft_count":   0,
+                "months":        []string{},
+                "debit_data":    []float64{},
+                "credit_data":   []float64{},
+                "balance_data":  []float64{},
+            },
+        })
+        return
+    }
+    
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT 
+            DATE_TRUNC('month', created_at) as month,
+            COUNT(*) as count,
+            COALESCE(SUM(total_debit), 0) as debit,
+            COALESCE(SUM(total_credit), 0) as credit,
+            COALESCE(SUM(closing_balance), 0) as balance
+        FROM reconciliation_acts
+        WHERE tenant_id = $1
+        GROUP BY DATE_TRUNC('month', created_at)
+        ORDER BY month DESC
+        LIMIT 12
+    `, tenantID)
+    
+    if err != nil {
+        c.JSON(http.StatusOK, gin.H{
+            "success": true,
+            "data": gin.H{
+                "total_acts":    totalActs,
+                "total_debit":   totalDebit,
+                "total_credit":  totalCredit,
+                "total_balance": totalBalance,
+                "signed_count":  signedCount,
+                "draft_count":   draftCount,
+                "months":        []string{},
+                "debit_data":    []float64{},
+                "credit_data":   []float64{},
+                "balance_data":  []float64{},
+            },
+        })
+        return
+    }
+    defer rows.Close()
+    
+    var months []string
+    var debitData []float64
+    var creditData []float64
+    var balanceData []float64
+    
+    for rows.Next() {
+        var month time.Time
+        var count int
+        var debit, credit, balance float64
+        
+        rows.Scan(&month, &count, &debit, &credit, &balance)
+        months = append([]string{month.Format("Jan 2006")}, months...)
+        debitData = append([]float64{debit}, debitData...)
+        creditData = append([]float64{credit}, creditData...)
+        balanceData = append([]float64{balance}, balanceData...)
+    }
+    
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "data": gin.H{
+            "total_acts":     totalActs,
+            "total_debit":    totalDebit,
+            "total_credit":   totalCredit,
+            "total_balance":  totalBalance,
+            "signed_count":   signedCount,
+            "draft_count":    draftCount,
+            "months":         months,
+            "debit_data":     debitData,
+            "credit_data":    creditData,
+            "balance_data":   balanceData,
+        },
+    })
+}
+
+// Массовое удаление актов
+func BulkDeleteReconciliationActs(c *gin.Context) {
+    tenantID := middleware.GetTenantIDFromContext(c)
+    
+    var req struct {
+        ActIDs []string `json:"act_ids"`
+    }
+    
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Неверные данные"})
+        return
+    }
+    
+    if len(req.ActIDs) == 0 {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Не выбраны акты для удаления"})
+        return
+    }
+    
+    placeholders := make([]string, len(req.ActIDs))
+    args := make([]interface{}, len(req.ActIDs)+1)
+    args[0] = tenantID
+    for i, id := range req.ActIDs {
+        placeholders[i] = fmt.Sprintf("$%d", i+2)
+        args[i+1] = id
+    }
+    
+    query := fmt.Sprintf(`
+        SELECT id, status, counterparty_name FROM reconciliation_acts 
+        WHERE tenant_id = $1 AND id IN (%s)
+    `, strings.Join(placeholders, ","))
+    
+    rows, err := database.Pool.Query(c.Request.Context(), query, args...)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка проверки актов"})
+        return
+    }
+    defer rows.Close()
+    
+    var toDelete []string
+    var toSkip []string
+    
+    for rows.Next() {
+        var id string
+        var status string
+        var counterpartyName string
+        rows.Scan(&id, &status, &counterpartyName)
+        
+        if status == "signed" {
+            toSkip = append(toSkip, counterpartyName)
+        } else {
+            toDelete = append(toDelete, id)
+        }
+    }
+    
+    if len(toDelete) == 0 {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Выбранные акты нельзя удалить (подписаны)"})
+        return
+    }
+    
+    deletePlaceholders := make([]string, len(toDelete))
+    deleteArgs := make([]interface{}, len(toDelete)+1)
+    deleteArgs[0] = tenantID
+    for i, id := range toDelete {
+        deletePlaceholders[i] = fmt.Sprintf("$%d", i+2)
+        deleteArgs[i+1] = id
+    }
+    
+    deleteQuery := fmt.Sprintf(`
+        DELETE FROM reconciliation_acts 
+        WHERE tenant_id = $1 AND id IN (%s)
+    `, strings.Join(deletePlaceholders, ","))
+    
+    result, err := database.Pool.Exec(c.Request.Context(), deleteQuery, deleteArgs...)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка массового удаления"})
+        return
+    }
+    
+    rowsAffected := result.RowsAffected()
+    
+    message := fmt.Sprintf("Удалено актов: %d", rowsAffected)
+    if len(toSkip) > 0 {
+        message += fmt.Sprintf("\nПропущено (подписаны): %d - %s", len(toSkip), strings.Join(toSkip, ", "))
+    }
+    
+    c.JSON(http.StatusOK, gin.H{
+        "success":       true,
+        "message":       message,
+        "deleted_count": rowsAffected,
+        "skipped":       toSkip,
     })
 }

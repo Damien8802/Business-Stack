@@ -461,6 +461,23 @@ r.GET("/docs", func(c *gin.Context) {
     })
 })
     // ========== СТАТИКА, РЕДИРЕКТЫ ==========
+
+// ========== СКАЧИВАНИЕ SaaSPro VPN ==========
+r.GET("/download", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "download.html", gin.H{
+        "title": "SaaSPro VPN - Установить",
+    })
+})
+
+r.GET("/downloads/saaspro.apk", func(c *gin.Context) {
+    c.Header("Content-Type", "application/vnd.android.package-archive")
+    c.Header("Content-Disposition", "attachment; filename=saaspro.apk")
+    c.File("./static/downloads/saaspro.apk")
+})
+
+r.GET("/get-vpn", func(c *gin.Context) {
+    c.Redirect(http.StatusFound, "/download")
+})
     r.Static("/static", cfg.StaticPath)
     r.Static("/frontend", cfg.FrontendPath)
     r.Static("/app", "C:/Projects/subscription-system/telegram-mini-app")
@@ -479,16 +496,22 @@ r.GET("/docs", func(c *gin.Context) {
     r.GET("/transcriptions", handlers.TranscriptionsPage)
     r.GET("/ai-agents", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("ai-agents"), handlers.AIAgentsPage)
     r.GET("/advanced-analytics", handlers.AdvancedAnalyticsPage)
+
+
 // Акты сверки
 reconciliationAPI := r.Group("/api/reconciliation")
 reconciliationAPI.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("reconciliation"))
 {
     reconciliationAPI.POST("/generate", handlers.GenerateReconciliationAct)
     reconciliationAPI.GET("/acts", handlers.GetReconciliationActs)
-    reconciliationAPI.GET("/act/:id", handlers.GetReconciliationAct)
+    reconciliationAPI.GET("/acts/:id", handlers.GetReconciliationActByID)
+    reconciliationAPI.GET("/acts/:id/history", handlers.GetActHistory)
+    reconciliationAPI.GET("/statistics", handlers.GetActStatistics)
+    reconciliationAPI.POST("/bulk-delete", handlers.BulkDeleteReconciliationActs)
+    reconciliationAPI.POST("/acts/:id/sign", handlers.SignReconciliationAct)
+    reconciliationAPI.PUT("/acts/:id", handlers.UpdateReconciliationAct)
+    reconciliationAPI.DELETE("/acts/:id", handlers.DeleteReconciliationAct)
     reconciliationAPI.GET("/download/:id", handlers.DownloadReconciliationAct)
-    reconciliationAPI.DELETE("/delete/:id", handlers.DeleteReconciliationAct)
-    reconciliationAPI.PUT("/update/:id", handlers.UpdateReconciliationAct)
 }
 
 journalAPI := r.Group("/api/journal")

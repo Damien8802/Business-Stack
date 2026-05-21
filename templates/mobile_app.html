@@ -467,16 +467,13 @@
             return;
         }
         
-        const token = localStorage.getItem('token');
-        const selectedData = encodeURIComponent(JSON.stringify(selectedModules));
-        let downloadUrl = `/api/mobile/download?modules=${selectedData}`;
-        if (token) {
-            downloadUrl += `&token=${encodeURIComponent(token)}`;
-        }
+        // ===== ИЗМЕНЕНИЕ: ПРЯМАЯ ССЫЛКА НА APK ФАЙЛ =====
+        // Вместо API /api/mobile/download используем прямую ссылку на APK
+        const downloadUrl = window.location.origin + '/downloads/saaspro.apk';
         
         console.log('📱 QR URL:', downloadUrl);
         
-        // Создаём QR-код
+        // Создаём QR-код с прямой ссылкой на APK
         new QRCode(qrContainer, {
             text: downloadUrl,
             width: 200,
@@ -493,19 +490,9 @@
     }
 
     function downloadAPK() {
-        if (selectedModules.length === 0) {
-            alert('❌ Выберите хотя бы один модуль');
-            return;
-        }
-        
-        const token = localStorage.getItem('token');
-        const selectedData = encodeURIComponent(JSON.stringify(selectedModules));
-        let url = `/api/mobile/download?modules=${selectedData}`;
-        if (token) {
-            url += `&token=${encodeURIComponent(token)}`;
-        }
-        
-        window.location.href = url;
+        // ===== ИЗМЕНЕНИЕ: ПРЯМАЯ ССЫЛКА НА APK ФАЙЛ =====
+        const downloadUrl = window.location.origin + '/downloads/saaspro.apk';
+        window.location.href = downloadUrl;
     }
 
     function renderPage() {
@@ -562,6 +549,10 @@
         
         const btn = document.getElementById('downloadBtn');
         if (btn) btn.addEventListener('click', downloadAPK);
+        
+        // Нажатие на QR код тоже скачивает
+        const qrDiv = document.getElementById('qrCode');
+        if (qrDiv) qrDiv.addEventListener('click', downloadAPK);
     }
 
     function renderModulesList() {

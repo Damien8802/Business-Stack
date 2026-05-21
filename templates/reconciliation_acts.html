@@ -12,15 +12,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
-        .action-btn.delete-btn {
-            color: #ef4444;
-        }
-        .action-btn.delete-btn:hover {
-            background: rgba(239,68,68,0.2);
-            border-color: #ef4444;
-        }
+        .action-btn.delete-btn { color: #ef4444; }
+        .action-btn.delete-btn:hover { background: rgba(239,68,68,0.2); border-color: #ef4444; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', sans-serif;
@@ -315,10 +311,10 @@
                 <div class="stat-info"><h3 id="pendingActs">0</h3><p>В работе</p></div>
             </div>
         </div>
-        <div class="stat-card" onclick="showAmountDetails()">
+        <div class="stat-card" onclick="showAnalytics()">
             <div class="stat-card-left">
-                <div class="stat-icon">💰</div>
-                <div class="stat-info"><h3 id="totalAmount">0 ₽</h3><p>Общая сумма</p></div>
+                <div class="stat-icon">📊</div>
+                <div class="stat-info"><h3 id="totalAmount">0 ₽</h3><p>Аналитика</p></div>
             </div>
         </div>
     </div>
@@ -341,6 +337,7 @@
             </select>
             <button class="btn-outline" onclick="resetFilters()"><i class="fas fa-undo"></i> Сбросить</button>
             <button class="btn-outline" onclick="exportToExcel()"><i class="fas fa-file-excel"></i> Excel</button>
+            <button class="btn-outline" onclick="showAnalytics()"><i class="fas fa-chart-pie"></i> Аналитика</button>
         </div>
     </div>
 
@@ -350,7 +347,7 @@
         </div>
         <div class="table-responsive">
             <table class="table">
-                <thead><tr><th>№</th><th>Контрагент</th><th>ИНН</th><th>Период</th><th>Дебет</th><th>Кредит</th><th>Сальдо</th><th>Статус</th><th>Подпись</th><th>Действия</th></tr></thead>
+                <thead><tr><th>№</th><th>Контрагент</th><th>ИНН</th><th>Период</th><th>Дебет</th><th>Кредит</th><th>Сальдо</th><th>Статус</th><th>Подпись</th><th>Действия</th><tr></thead>
                 <tbody id="actsTable"><tr><td colspan="10" class="text-center"><div class="spinner-border text-primary"></div> Загрузка...<\/td><\/tr></tbody>
             </table>
         </div>
@@ -358,78 +355,87 @@
     </div>
 </div>
 
-<!-- МОДАЛЬНОЕ ОКНО 1: Создание акта -->
-<div class="modal fade" id="createActModal" tabindex="-1" data-bs-backdrop="static">
+<!-- МОДАЛЬНЫЕ ОКНА -->
+<div class="modal fade" id="createActModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-plus-circle"></i> Создать акт сверки</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
+            <div class="modal-header"><h5 class="modal-title"><i class="fas fa-plus-circle"></i> Создать акт сверки</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
             <div class="modal-body">
                 <div class="mb-3"><label class="form-label">Контрагент <span class="text-danger">*</span></label><input type="text" class="form-control" id="actCounterpartyName" placeholder="ООО Ромашка" required></div>
                 <div class="mb-3"><label class="form-label">ИНН контрагента <span class="text-danger">*</span></label><input type="text" class="form-control" id="actCounterpartyINN" placeholder="1234567890" required></div>
                 <div class="row"><div class="col-md-6 mb-3"><label class="form-label">Период с <span class="text-danger">*</span></label><input type="date" class="form-control" id="actPeriodStart" required></div>
                 <div class="col-md-6 mb-3"><label class="form-label">Период по <span class="text-danger">*</span></label><input type="date" class="form-control" id="actPeriodEnd" required></div></div>
-                <div class="row">
-                    <div class="col-md-4 mb-3"><label class="form-label">Дебет</label><input type="number" class="form-control" id="actTotalDebit" placeholder="0.00" step="0.01" value="0"></div>
-                    <div class="col-md-4 mb-3"><label class="form-label">Кредит</label><input type="number" class="form-control" id="actTotalCredit" placeholder="0.00" step="0.01" value="0"></div>
-                    <div class="col-md-4 mb-3"><label class="form-label">Сальдо</label><input type="number" class="form-control" id="actClosingBalance" placeholder="0.00" step="0.01" value="0" readonly style="background: rgba(102,126,234,0.2);"></div>
-                </div>
-                <div class="alert alert-info small"><i class="fas fa-calculator"></i> Сальдо = Дебет - Кредит (рассчитывается автоматически)</div>
+                <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Дебет</label><input type="number" class="form-control" id="actTotalDebit" step="0.01" value="0"></div>
+                <div class="col-md-4 mb-3"><label class="form-label">Кредит</label><input type="number" class="form-control" id="actTotalCredit" step="0.01" value="0"></div>
+                <div class="col-md-4 mb-3"><label class="form-label">Сальдо</label><input type="number" class="form-control" id="actClosingBalance" step="0.01" value="0" readonly style="background:rgba(102,126,234,0.2)"></div></div>
+                <div class="alert alert-info small"><i class="fas fa-calculator"></i> Сальдо = Дебет - Кредит</div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-outline" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn-primary" onclick="createAct()" id="createActBtn">Создать</button>
-            </div>
+            <div class="modal-footer"><button class="btn-outline" data-bs-dismiss="modal">Отмена</button><button class="btn-primary" onclick="createAct()">Создать</button></div>
         </div>
     </div>
 </div>
 
-<!-- МОДАЛЬНОЕ ОКНО 2: Просмотр акта -->
-<div class="modal fade" id="viewActModal" tabindex="-1" data-bs-backdrop="static">
+<div class="modal fade" id="viewActModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header"><h5 class="modal-title"><i class="fas fa-file-alt"></i> Просмотр акта сверки</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-header"><h5 class="modal-title"><i class="fas fa-file-alt"></i> Просмотр акта</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
             <div class="modal-body" id="viewActBody"><div class="text-center py-4">Загрузка...</div></div>
-            <div class="modal-footer"><button class="btn-outline" onclick="downloadCurrentAct()"><i class="fas fa-download"></i> Скачать</button><button class="btn-warning" onclick="sendToEmailCurrentAct()"><i class="fas fa-envelope"></i> Отправить на email</button><button class="btn-success" onclick="openSignModalForCurrent()"><i class="fas fa-signature"></i> Подписать</button><button class="btn-primary" data-bs-dismiss="modal">Закрыть</button></div>
+            <div class="modal-footer"><button class="btn-outline" onclick="downloadCurrentAct()"><i class="fas fa-download"></i> Скачать</button><button class="btn-warning" onclick="sendToEmailCurrentAct()"><i class="fas fa-envelope"></i> Email</button><button class="btn-success" onclick="openSignModalForCurrent()"><i class="fas fa-signature"></i> Подписать</button><button class="btn-primary" data-bs-dismiss="modal">Закрыть</button></div>
         </div>
     </div>
 </div>
 
-<!-- МОДАЛЬНОЕ ОКНО 3: Подписание акта -->
-<div class="modal fade" id="signActModal" tabindex="-1" data-bs-backdrop="static">
+<div class="modal fade" id="signActModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header"><h5 class="modal-title"><i class="fas fa-signature"></i> Электронная подпись акта</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-header"><h5 class="modal-title"><i class="fas fa-signature"></i> Электронная подпись</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
             <div class="modal-body">
                 <div id="signActInfo" class="mb-3"></div>
-                <div class="mb-3"><div class="form-check"><input class="form-check-input" type="checkbox" id="signOurCheck"><label class="form-check-label" for="signOurCheck"><i class="fas fa-user-check text-success"></i> Я подтверждаю, что ознакомлен с актом и подписываю его</label></div></div>
-                <div class="mb-3"><label class="form-label">Ваше ФИО <span class="text-danger">*</span></label><input type="text" class="form-control" id="signerName" placeholder="Иванов Иван Иванович"></div>
+                <div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="signOurCheck"><label class="form-check-label" for="signOurCheck">Подтверждаю подписание</label></div>
+                <div class="mb-3"><label class="form-label">Ваше ФИО</label><input type="text" class="form-control" id="signerName" placeholder="Иванов Иван Иванович"></div>
                 <div class="mb-3"><label class="form-label">Должность</label><input type="text" class="form-control" id="signerPosition" placeholder="Генеральный директор"></div>
-                <div class="alert alert-warning small"><i class="fas fa-shield-alt"></i> Электронная подпись имеет юридическую силу согласно Федеральному закону №63-ФЗ</div>
+                <div class="alert alert-warning small"><i class="fas fa-shield-alt"></i> Электронная подпись имеет юридическую силу</div>
             </div>
-            <div class="modal-footer"><button type="button" class="btn-outline" data-bs-dismiss="modal">Отмена</button><button type="button" class="btn-success" onclick="confirmSign()" id="signActBtn">Подписать</button></div>
+            <div class="modal-footer"><button class="btn-outline" data-bs-dismiss="modal">Отмена</button><button class="btn-success" onclick="confirmSign()">Подписать</button></div>
         </div>
     </div>
 </div>
 
-<!-- МОДАЛЬНОЕ ОКНО 4: Редактирование акта -->
-<div class="modal fade" id="editActModal" tabindex="-1" data-bs-backdrop="static">
+<div class="modal fade" id="editActModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header"><h5 class="modal-title"><i class="fas fa-edit"></i> Редактирование акта сверки</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-header"><h5 class="modal-title"><i class="fas fa-edit"></i> Редактирование</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
             <div class="modal-body">
                 <input type="hidden" id="editActId">
-                <div class="mb-3"><label class="form-label">Контрагент <span class="text-danger">*</span></label><input type="text" class="form-control" id="editCounterpartyName" required></div>
-                <div class="mb-3"><label class="form-label">ИНН контрагента <span class="text-danger">*</span></label><input type="text" class="form-control" id="editCounterpartyINN" required></div>
-                <div class="row"><div class="col-md-6 mb-3"><label class="form-label">Период с <span class="text-danger">*</span></label><input type="date" class="form-control" id="editPeriodStart" required></div>
-                <div class="col-md-6 mb-3"><label class="form-label">Период по <span class="text-danger">*</span></label><input type="date" class="form-control" id="editPeriodEnd" required></div></div>
+                <div class="mb-3"><label class="form-label">Контрагент</label><input type="text" class="form-control" id="editCounterpartyName"></div>
+                <div class="mb-3"><label class="form-label">ИНН</label><input type="text" class="form-control" id="editCounterpartyINN"></div>
+                <div class="row"><div class="col-md-6 mb-3"><label class="form-label">Период с</label><input type="date" class="form-control" id="editPeriodStart"></div>
+                <div class="col-md-6 mb-3"><label class="form-label">Период по</label><input type="date" class="form-control" id="editPeriodEnd"></div></div>
                 <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Дебет</label><input type="number" class="form-control" id="editTotalDebit" step="0.01"></div>
                 <div class="col-md-4 mb-3"><label class="form-label">Кредит</label><input type="number" class="form-control" id="editTotalCredit" step="0.01"></div>
                 <div class="col-md-4 mb-3"><label class="form-label">Сальдо</label><input type="number" class="form-control" id="editClosingBalance" step="0.01"></div></div>
             </div>
-            <div class="modal-footer"><button type="button" class="btn-outline" data-bs-dismiss="modal">Отмена</button><button type="button" class="btn-primary" onclick="saveEditAct()" id="saveEditBtn">Сохранить</button></div>
+            <div class="modal-footer"><button class="btn-outline" data-bs-dismiss="modal">Отмена</button><button class="btn-primary" onclick="saveEditAct()">Сохранить</button></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="analyticsModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title"><i class="fas fa-chart-pie"></i> Аналитика актов сверки</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4"><div class="stat-card" style="cursor:default"><div class="stat-card-left"><div class="stat-icon">📊</div><div class="stat-info"><h3 id="analyticsTotalActs">0</h3><p>Всего актов</p></div></div></div></div>
+                    <div class="col-md-4"><div class="stat-card" style="cursor:default"><div class="stat-card-left"><div class="stat-icon">✅</div><div class="stat-info"><h3 id="analyticsSignedActs">0</h3><p>Подписано</p></div></div></div></div>
+                    <div class="col-md-4"><div class="stat-card" style="cursor:default"><div class="stat-card-left"><div class="stat-icon">⏳</div><div class="stat-info"><h3 id="analyticsPendingActs">0</h3><p>В работе</p></div></div></div></div>
+                </div>
+                <div class="row mt-4">
+                    <div class="col-md-6"><canvas id="analyticsChart" height="250"></canvas></div>
+                    <div class="col-md-6"><canvas id="debitCreditChart" height="250"></canvas></div>
+                </div>
+            </div>
+            <div class="modal-footer"><button class="btn-outline" onclick="exportAnalytics()"><i class="fas fa-download"></i> Экспорт</button><button class="btn-primary" data-bs-dismiss="modal">Закрыть</button></div>
         </div>
     </div>
 </div>
@@ -437,312 +443,350 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const token = localStorage.getItem('token');
-    let allActs = [];
-    let filteredActs = [];
-    let currentPage = 1;
-    let itemsPerPage = 10;
-    let currentViewAct = null;
-    let currentSignAct = null;
-    let currentEditAct = null;
+    let allActs = [], filteredActs = [], currentPage = 1, itemsPerPage = 10;
+    let currentViewAct = null, currentSignAct = null, currentEditAct = null;
+    let analyticsChart = null, debitCreditChart = null;
 
     function calculateBalance() {
-        const debit = parseFloat(document.getElementById('actTotalDebit').value) || 0;
-        const credit = parseFloat(document.getElementById('actTotalCredit').value) || 0;
-        const balance = debit - credit;
-        document.getElementById('actClosingBalance').value = balance.toFixed(2);
+        let debit = parseFloat(document.getElementById('actTotalDebit').value) || 0;
+        let credit = parseFloat(document.getElementById('actTotalCredit').value) || 0;
+        document.getElementById('actClosingBalance').value = (debit - credit).toFixed(2);
     }
 
     function openCreateModal() {
-        document.getElementById('actCounterpartyName').value = '';
-        document.getElementById('actCounterpartyINN').value = '';
-        document.getElementById('actPeriodStart').value = '';
-        document.getElementById('actPeriodEnd').value = '';
-        document.getElementById('actTotalDebit').value = '0';
-        document.getElementById('actTotalCredit').value = '0';
-        document.getElementById('actClosingBalance').value = '0';
-        const modalEl = document.getElementById('createActModal');
-        const modal = new bootstrap.Modal(modalEl, { backdrop: 'static' });
-        modal.show();
+        ['actCounterpartyName','actCounterpartyINN','actPeriodStart','actPeriodEnd'].forEach(id => document.getElementById(id).value = '');
+        ['actTotalDebit','actTotalCredit','actClosingBalance'].forEach(id => document.getElementById(id).value = '0');
+        new bootstrap.Modal(document.getElementById('createActModal')).show();
     }
 
     async function loadActs() {
         try {
             const res = await fetch('/api/reconciliation/acts', { headers: { 'Authorization': 'Bearer ' + token } });
             const data = await res.json();
-            if (data.success && data.data && Array.isArray(data.data)) allActs = data.data;
-            else if (Array.isArray(data)) allActs = data;
-            else allActs = [];
+            allActs = (data.success && data.data) ? data.data : [];
             updateStats();
             applyFilters();
-        } catch(e) { console.error('Ошибка загрузки:', e); allActs = []; }
+        } catch(e) { console.error(e); allActs = []; }
     }
 
-    function updateStats() {
-        const total = allActs.length;
-        const signed = allActs.filter(a => a.status === 'signed').length;
-        const pending = allActs.filter(a => a.status === 'draft' || a.status === 'generated' || a.status === 'partially_signed').length;
-        const totalAmount = allActs.reduce((sum, a) => sum + (Math.abs(parseFloat(a.closing_balance) || 0)), 0);
-        document.getElementById('totalActs').innerHTML = total;
-        document.getElementById('signedActs').innerHTML = signed;
-        document.getElementById('pendingActs').innerHTML = pending;
-        document.getElementById('totalAmount').innerHTML = totalAmount.toLocaleString() + ' ₽';
+  function updateStats() {
+    const total = allActs.length;
+    // Подписано нашей стороной (даже если контрагент нет)
+    const signedByUs = allActs.filter(a => a.signed_by_our === true).length;
+    // Полностью подписан (обеими сторонами)
+    const fullySigned = allActs.filter(a => a.status === 'signed').length;
+    // В работе (еще не подписано нашей стороной)
+    const pending = allActs.filter(a => a.signed_by_our !== true).length;
+    const totalAmount = allActs.reduce((sum, a) => sum + (Math.abs(parseFloat(a.closing_balance) || 0)), 0);
+    
+    document.getElementById('totalActs').innerHTML = total;
+    // Показываем количество подписанных НАМИ
+    document.getElementById('signedActs').innerHTML = signedByUs;
+    document.getElementById('pendingActs').innerHTML = pending;
+    document.getElementById('totalAmount').innerHTML = totalAmount.toLocaleString() + ' ₽';
+    
+    // Для отладки
+    console.log('Статистика:', { total, signedByUs, fullySigned, pending, totalAmount });
+}
+
+    function getStatusBadge(s) {
+        let map = { 'draft':'<span class="badge badge-draft">📝 Черновик</span>', 'generated':'<span class="badge badge-draft">📄 Сформирован</span>', 'partially_signed':'<span class="badge badge-partial">🔄 Частично подписан</span>', 'signed':'<span class="badge badge-signed">✅ Подписан</span>' };
+        return map[s] || '<span class="badge badge-draft">📝 Черновик</span>';
     }
 
-    function getStatusBadge(status) {
-        const map = { 'draft': '<span class="badge badge-draft">📝 Черновик</span>', 'generated': '<span class="badge badge-draft">📄 Сформирован</span>', 'partially_signed': '<span class="badge badge-partial">🔄 Частично подписан</span>', 'signed': '<span class="badge badge-signed">✅ Подписан</span>' };
-        return map[status] || '<span class="badge badge-draft">📝 Черновик</span>';
+    function getSignatureIcon(a) {
+        if (a.status === 'signed') return '✅✅';
+        if (a.signed_by_our) return '✅👤';
+        return '⏳';
     }
 
-    function getSignatureIcon(act) {
-        if (act.status === 'signed') return '<span title="Подписан">✅✅</span>';
-        if (act.signed_by_our) return '<span title="Подписано с нашей стороны">✅👤</span>';
-        if (act.signed_by_their) return '<span title="Подписано контрагентом">✅🏢</span>';
-        return '<span title="Не подписан">⏳</span>';
-    }
-
-    function formatDate(dateStr) {
-        if (!dateStr) return '—';
-        try { const date = new Date(dateStr); if (isNaN(date.getTime())) return '—'; return date.toLocaleDateString('ru-RU'); } catch(e) { return '—'; }
-    }
+    function formatDate(d) { return d ? new Date(d).toLocaleDateString('ru-RU') : '—'; }
 
     function applyFilters() {
-        const search = document.getElementById('searchCounterparty').value.toLowerCase();
-        const dateFrom = document.getElementById('dateFrom').value;
-        const dateTo = document.getElementById('dateTo').value;
-        const status = document.getElementById('statusFilter').value;
+        let search = document.getElementById('searchCounterparty').value.toLowerCase();
+        let status = document.getElementById('statusFilter').value;
         filteredActs = [...allActs];
-        if (search) filteredActs = filteredActs.filter(a => (a.counterparty_name || '').toLowerCase().includes(search));
+        if (search) filteredActs = filteredActs.filter(a => (a.counterparty_name||'').toLowerCase().includes(search));
         if (status) filteredActs = filteredActs.filter(a => a.status === status);
-        if (dateFrom) filteredActs = filteredActs.filter(a => a.period_start && new Date(a.period_start) >= new Date(dateFrom));
-        if (dateTo) filteredActs = filteredActs.filter(a => a.period_end && new Date(a.period_end) <= new Date(dateTo));
         currentPage = 1;
         renderTable();
     }
 
     function resetFilters() {
         document.getElementById('searchCounterparty').value = '';
-        document.getElementById('dateFrom').value = '';
-        document.getElementById('dateTo').value = '';
         document.getElementById('statusFilter').value = '';
         applyFilters();
     }
 
-    function filterByStatus(status) { document.getElementById('statusFilter').value = status; applyFilters(); }
+    function filterByStatus(s) { document.getElementById('statusFilter').value = s; applyFilters(); }
 
     function renderTable() {
-        const totalPages = Math.ceil(filteredActs.length / itemsPerPage);
-        const start = (currentPage - 1) * itemsPerPage;
-        const pageActs = filteredActs.slice(start, start + itemsPerPage);
-        const tbody = document.getElementById('actsTable');
+        let totalPages = Math.ceil(filteredActs.length / itemsPerPage);
+        let start = (currentPage-1)*itemsPerPage;
+        let pageActs = filteredActs.slice(start, start+itemsPerPage);
+        let tbody = document.getElementById('actsTable');
         if (!pageActs.length) { tbody.innerHTML = '<tr><td colspan="10" class="text-center">📋 Нет актов сверки<\/td><\/tr>'; document.getElementById('pagination').innerHTML = ''; return; }
-        tbody.innerHTML = pageActs.map(act => `<tr>
-            <td><code>${act.id?.slice(0,8)||'—'}</code><\/td>
-            <td><strong>${act.counterparty_name||'—'}</strong><\/td>
-            <td>${act.counterparty_inn||'—'}<\/td>
-            <td>${formatDate(act.period_start)} — ${formatDate(act.period_end)}<\/td>
-            <td class="text-end">${(parseFloat(act.total_debit)||0).toLocaleString()} ₽<\/td>
-            <td class="text-end">${(parseFloat(act.total_credit)||0).toLocaleString()} ₽<\/td>
-            <td class="text-end"><strong>${(parseFloat(act.closing_balance)||0).toLocaleString()} ₽<\/strong><\/td>
-            <td>${getStatusBadge(act.status)}<\/td>
-            <td>${getSignatureIcon(act)}<\/td>
+        tbody.innerHTML = pageActs.map(a => `<tr>
+            <td><code>${a.id?.slice(0,8)||'—'}</code><\/td>
+            <td><strong>${a.counterparty_name||'—'}</strong><\/td>
+            <td>${a.counterparty_inn||'—'}<\/td>
+            <td>${formatDate(a.period_start)} — ${formatDate(a.period_end)}<\/td>
+            <td class="text-end">${(parseFloat(a.total_debit)||0).toLocaleString()} ₽<\/td>
+            <td class="text-end">${(parseFloat(a.total_credit)||0).toLocaleString()} ₽<\/td>
+            <td class="text-end"><strong>${(parseFloat(a.closing_balance)||0).toLocaleString()} ₽<\/strong><\/td>
+            <td>${getStatusBadge(a.status)}<\/td>
+            <td>${getSignatureIcon(a)}<\/td>
             <td class="action-buttons">
-                <button class="action-btn" onclick="viewActDetails('${act.id}')" title="Просмотр">👁️</button>
-                <button class="action-btn" onclick="openEditModal('${act.id}')" title="Редактировать">✏️</button>
-                <button class="action-btn" onclick="downloadAct('${act.id}')" title="Скачать PDF">📥</button>
-                <button class="action-btn" onclick="sendToEmail('${act.id}')" title="Отправить на email">📧</button>
-                ${act.status !== 'signed' ? `<button class="action-btn" onclick="openSignModal('${act.id}')" title="Подписать">✍️</button>` : ''}
-                <button class="action-btn delete-btn" onclick="deleteAct('${act.id}')" title="Удалить акт">🗑️</button>
+                <button class="action-btn" onclick="viewActDetails('${a.id}')" title="Просмотр">👁️</button>
+                <button class="action-btn" onclick="openEditModal('${a.id}')" title="Редактировать">✏️</button>
+                <button class="action-btn" onclick="downloadAct('${a.id}')" title="Скачать">📥</button>
+                <button class="action-btn" onclick="sendToEmail('${a.id}')" title="Email">📧</button>
+                ${a.status !== 'signed' ? `<button class="action-btn" onclick="openSignModal('${a.id}')" title="Подписать">✍️</button>` : ''}
+                <button class="action-btn delete-btn" onclick="deleteAct('${a.id}')" title="Удалить">🗑️</button>
             <\/td>
         <\/tr>`).join('');
-        renderPagination(totalPages);
+        let pag = document.getElementById('pagination');
+        if (totalPages <= 1) pag.innerHTML = '';
+        else { let html = ''; for(let i=1;i<=Math.min(totalPages,5);i++) html += `<button class="btn-outline ${i===currentPage?'active':''}" onclick="changePage(${i})">${i}</button>`; pag.innerHTML = html; }
     }
 
-    function renderPagination(totalPages) {
-        const container = document.getElementById('pagination');
-        if (totalPages <= 1) { container.innerHTML = ''; return; }
-        let html = '';
-        for (let i = 1; i <= Math.min(totalPages, 5); i++) html += `<button class="btn-outline ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
-        if (totalPages > 5) html += `<span>...</span><button class="btn-outline" onclick="changePage(${totalPages})">${totalPages}</button>`;
-        container.innerHTML = html;
-    }
-
-    function changePage(page) { if (page < 1) return; const totalPages = Math.ceil(filteredActs.length / itemsPerPage); if (page > totalPages) return; currentPage = page; renderTable(); }
+    function changePage(p) { if(p<1) return; if(p>Math.ceil(filteredActs.length/itemsPerPage)) return; currentPage=p; renderTable(); }
 
     async function createAct() {
-        const counterpartyName = document.getElementById('actCounterpartyName').value.trim();
-        const counterpartyINN = document.getElementById('actCounterpartyINN').value.trim();
-        const periodStart = document.getElementById('actPeriodStart').value;
-        const periodEnd = document.getElementById('actPeriodEnd').value;
-        const totalDebit = parseFloat(document.getElementById('actTotalDebit').value) || 0;
-        const totalCredit = parseFloat(document.getElementById('actTotalCredit').value) || 0;
-        const closingBalance = parseFloat(document.getElementById('actClosingBalance').value) || 0;
-        
-        if (!counterpartyName) { showToast('Введите название контрагента', 'error'); return; }
-        if (!counterpartyINN) { showToast('Введите ИНН контрагента', 'error'); return; }
-        if (!periodStart) { showToast('Выберите дату начала периода', 'error'); return; }
-        if (!periodEnd) { showToast('Выберите дату окончания периода', 'error'); return; }
-        
-        const btn = document.getElementById('createActBtn');
-        btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Создание...';
-        try {
-            const res = await fetch('/api/reconciliation/generate', { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, 
-                body: JSON.stringify({ 
-                    counterparty_name: counterpartyName, 
-                    counterparty_inn: counterpartyINN, 
-                    period_start: periodStart, 
-                    period_end: periodEnd,
-                    total_debit: totalDebit,
-                    total_credit: totalCredit,
-                    closing_balance: closingBalance
-                }) 
-            });
-            const data = await res.json();
-            if (res.ok && data.success) {
-                showToast('✅ Акт сверки успешно создан', 'success');
-                const modal = bootstrap.Modal.getInstance(document.getElementById('createActModal')); if (modal) modal.hide();
-                loadActs();
-            } else { showToast('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'), 'error'); }
-        } catch(e) { showToast('❌ Ошибка создания акта', 'error'); } finally { btn.disabled = false; btn.innerHTML = 'Создать'; }
+        let data = {
+            counterparty_name: document.getElementById('actCounterpartyName').value.trim(),
+            counterparty_inn: document.getElementById('actCounterpartyINN').value.trim(),
+            period_start: document.getElementById('actPeriodStart').value,
+            period_end: document.getElementById('actPeriodEnd').value,
+            total_debit: parseFloat(document.getElementById('actTotalDebit').value)||0,
+            total_credit: parseFloat(document.getElementById('actTotalCredit').value)||0,
+            closing_balance: parseFloat(document.getElementById('actClosingBalance').value)||0
+        };
+        if (!data.counterparty_name || !data.counterparty_inn || !data.period_start || !data.period_end) { showToast('Заполните все поля', 'error'); return; }
+        let res = await fetch('/api/reconciliation/generate', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify(data) });
+        let r = await res.json();
+        if (r.success) { showToast('Акт создан', 'success'); bootstrap.Modal.getInstance(document.getElementById('createActModal')).hide(); loadActs(); }
+        else showToast('Ошибка: ' + (r.error||''), 'error');
     }
 
     async function viewActDetails(id) {
-        const act = allActs.find(a => a.id === id); if (!act) return; currentViewAct = act;
-        document.getElementById('viewActBody').innerHTML = `<div class="row"><div class="col-md-6"><div class="detail-row"><strong>📄 Номер акта:</strong> ${act.id?.slice(0,8)}</div><div class="detail-row"><strong>🏢 Контрагент:</strong> ${act.counterparty_name}</div><div class="detail-row"><strong>🆔 ИНН:</strong> ${act.counterparty_inn}</div><div class="detail-row"><strong>📅 Период:</strong> ${formatDate(act.period_start)} — ${formatDate(act.period_end)}</div></div><div class="col-md-6"><div class="detail-row"><strong>💰 Дебет:</strong> ${(parseFloat(act.total_debit)||0).toLocaleString()} ₽</div><div class="detail-row"><strong>💰 Кредит:</strong> ${(parseFloat(act.total_credit)||0).toLocaleString()} ₽</div><div class="detail-row"><strong>⚖️ Сальдо:</strong> <span style="color:#10b981;font-size:20px;">${(parseFloat(act.closing_balance)||0).toLocaleString()} ₽</span></div><div class="detail-row"><strong>📊 Статус:</strong> ${getStatusBadge(act.status)}</div></div></div><hr><div class="row"><div class="col-md-12"><h6>📝 Информация о подписании:</h6><div class="detail-row"><strong>✅ Подписано нашей стороной:</strong> ${act.signed_by_our ? 'Да ✓' : 'Нет ✗'}</div><div class="detail-row"><strong>✅ Подписано стороной контрагента:</strong> ${act.signed_by_their ? 'Да ✓' : 'Нет ✗'}</div>${act.signed_at ? `<div class="detail-row"><strong>📅 Дата подписания:</strong> ${formatDate(act.signed_at)}</div>` : ''}<div class="detail-row"><strong>📅 Дата создания:</strong> ${formatDate(act.created_at)}</div></div></div>`;
-        const modal = new bootstrap.Modal(document.getElementById('viewActModal')); modal.show();
+        let a = allActs.find(a=>a.id===id); if(!a) return; currentViewAct = a;
+        document.getElementById('viewActBody').innerHTML = `<div class="row"><div class="col-md-6"><div class="detail-row"><strong>Номер:</strong> ${a.id.slice(0,8)}</div><div class="detail-row"><strong>Контрагент:</strong> ${a.counterparty_name}</div><div class="detail-row"><strong>ИНН:</strong> ${a.counterparty_inn}</div><div class="detail-row"><strong>Период:</strong> ${formatDate(a.period_start)} — ${formatDate(a.period_end)}</div></div><div class="col-md-6"><div class="detail-row"><strong>Дебет:</strong> ${(parseFloat(a.total_debit)||0).toLocaleString()} ₽</div><div class="detail-row"><strong>Кредит:</strong> ${(parseFloat(a.total_credit)||0).toLocaleString()} ₽</div><div class="detail-row"><strong>Сальдо:</strong> <span style="color:#10b981;font-size:20px;">${(parseFloat(a.closing_balance)||0).toLocaleString()} ₽</span></div><div class="detail-row"><strong>Статус:</strong> ${getStatusBadge(a.status)}</div></div></div><hr><h6>Подписание:</h6><div class="detail-row"><strong>Наша сторона:</strong> ${a.signed_by_our?'Да ✓':'Нет ✗'}</div><div class="detail-row"><strong>Контрагент:</strong> ${a.signed_by_their?'Да ✓':'Нет ✗'}</div>`;
+        new bootstrap.Modal(document.getElementById('viewActModal')).show();
     }
 
-    function openEditModal(actId) {
-        const act = allActs.find(a => a.id === actId); if (!act) return;
-        if (act.status === 'signed') { showToast('❌ Подписанный акт нельзя редактировать', 'error'); return; }
-        currentEditAct = act;
-        document.getElementById('editActId').value = act.id;
-        document.getElementById('editCounterpartyName').value = act.counterparty_name;
-        document.getElementById('editCounterpartyINN').value = act.counterparty_inn;
-        document.getElementById('editPeriodStart').value = act.period_start;
-        document.getElementById('editPeriodEnd').value = act.period_end;
-        document.getElementById('editTotalDebit').value = act.total_debit;
-        document.getElementById('editTotalCredit').value = act.total_credit;
-        document.getElementById('editClosingBalance').value = act.closing_balance;
-        const modal = new bootstrap.Modal(document.getElementById('editActModal')); modal.show();
+    function openEditModal(id) {
+        let a = allActs.find(a=>a.id===id); if(!a) return;
+        if(a.status==='signed') { showToast('Подписанный акт нельзя редактировать', 'error'); return; }
+        currentEditAct = a;
+        document.getElementById('editActId').value = a.id;
+        document.getElementById('editCounterpartyName').value = a.counterparty_name;
+        document.getElementById('editCounterpartyINN').value = a.counterparty_inn;
+        document.getElementById('editPeriodStart').value = a.period_start;
+        document.getElementById('editPeriodEnd').value = a.period_end;
+        document.getElementById('editTotalDebit').value = a.total_debit;
+        document.getElementById('editTotalCredit').value = a.total_credit;
+        document.getElementById('editClosingBalance').value = a.closing_balance;
+        new bootstrap.Modal(document.getElementById('editActModal')).show();
     }
 
     async function saveEditAct() {
-        const actId = document.getElementById('editActId').value;
-        const counterpartyName = document.getElementById('editCounterpartyName').value.trim();
-        const counterpartyINN = document.getElementById('editCounterpartyINN').value.trim();
-        const periodStart = document.getElementById('editPeriodStart').value;
-        const periodEnd = document.getElementById('editPeriodEnd').value;
-        const totalDebit = parseFloat(document.getElementById('editTotalDebit').value) || 0;
-        const totalCredit = parseFloat(document.getElementById('editTotalCredit').value) || 0;
-        const closingBalance = parseFloat(document.getElementById('editClosingBalance').value) || 0;
-        if (!counterpartyName) { showToast('Введите название контрагента', 'error'); return; }
-        if (!counterpartyINN) { showToast('Введите ИНН контрагента', 'error'); return; }
-        if (!periodStart) { showToast('Выберите дату начала периода', 'error'); return; }
-        if (!periodEnd) { showToast('Выберите дату окончания периода', 'error'); return; }
-        const btn = document.getElementById('saveEditBtn');
-        btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Сохранение...';
-        try {
-            const res = await fetch(`/api/reconciliation/acts/${actId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ counterparty_name: counterpartyName, counterparty_inn: counterpartyINN, period_start: periodStart, period_end: periodEnd, total_debit: totalDebit, total_credit: totalCredit, closing_balance: closingBalance }) });
-            const data = await res.json();
-            if (res.ok && data.success) { showToast('✅ Акт успешно обновлен', 'success'); const modal = bootstrap.Modal.getInstance(document.getElementById('editActModal')); if (modal) modal.hide(); loadActs(); } 
-            else { showToast('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'), 'error'); }
-        } catch(e) { showToast('❌ Ошибка сохранения', 'error'); } finally { btn.disabled = false; btn.innerHTML = 'Сохранить'; }
+        let id = document.getElementById('editActId').value;
+        let data = {
+            counterparty_name: document.getElementById('editCounterpartyName').value.trim(),
+            counterparty_inn: document.getElementById('editCounterpartyINN').value.trim(),
+            period_start: document.getElementById('editPeriodStart').value,
+            period_end: document.getElementById('editPeriodEnd').value,
+            total_debit: parseFloat(document.getElementById('editTotalDebit').value)||0,
+            total_credit: parseFloat(document.getElementById('editTotalCredit').value)||0,
+            closing_balance: parseFloat(document.getElementById('editClosingBalance').value)||0
+        };
+        let res = await fetch(`/api/reconciliation/acts/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify(data) });
+        if (res.ok) { showToast('Сохранено', 'success'); bootstrap.Modal.getInstance(document.getElementById('editActModal')).hide(); loadActs(); }
+        else showToast('Ошибка сохранения', 'error');
     }
 
-    function downloadAct(id) { window.open('/api/reconciliation/download/' + id, '_blank'); showToast('📄 Скачивание начато', 'success'); }
-    function downloadCurrentAct() { if (currentViewAct) downloadAct(currentViewAct.id); }
-    function sendToEmail(id) { showToast('📧 Акт отправлен на email контрагента', 'success'); }
-    function sendToEmailCurrentAct() { if (currentViewAct) sendToEmail(currentViewAct.id); }
+    function downloadAct(id) { window.open('/api/reconciliation/download/'+id, '_blank'); showToast('Скачивание начато', 'success'); }
+    function downloadCurrentAct() { if(currentViewAct) downloadAct(currentViewAct.id); }
+    function sendToEmail(id) { showToast('Акт отправлен на email', 'success'); }
+    function sendToEmailCurrentAct() { if(currentViewAct) sendToEmail(currentViewAct.id); }
 
-    async function deleteAct(actId) {
-        const act = allActs.find(a => a.id === actId);
-        if (!act) return;
-        if (act.status === 'signed') {
-            showToast('❌ Подписанный акт нельзя удалить', 'error');
-            return;
-        }
-        if (!confirm(`Удалить акт сверки с контрагентом "${act.counterparty_name}"?\n\nЭто действие нельзя отменить.`)) {
-            return;
-        }
-        try {
-            const res = await fetch(`/api/reconciliation/acts/${actId}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': 'Bearer ' + token }
-            });
-            const data = await res.json();
-            if (res.ok && data.success) {
-                showToast('✅ Акт успешно удален', 'success');
-                loadActs();
-            } else {
-                showToast('❌ Ошибка: ' + (data.error || 'Не удалось удалить акт'), 'error');
-            }
-        } catch(e) {
-            console.error('Ошибка удаления:', e);
-            showToast('❌ Ошибка удаления акта', 'error');
-        }
+    async function deleteAct(id) {
+        let a = allActs.find(a=>a.id===id); if(!a) return;
+        if(a.status==='signed') { showToast('Нельзя удалить подписанный акт', 'error'); return; }
+        if(!confirm(`Удалить акт с ${a.counterparty_name}?`)) return;
+        let res = await fetch(`/api/reconciliation/acts/${id}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+        if(res.ok) { showToast('Акт удален', 'success'); loadActs(); }
+        else showToast('Ошибка удаления', 'error');
     }
 
-    async function openSignModal(actId) {
-        const act = allActs.find(a => a.id === actId); if (!act) return;
-        if (act.status === 'signed') { showToast('⚠️ Акт уже полностью подписан', 'error'); return; }
-        currentSignAct = act;
-        document.getElementById('signActInfo').innerHTML = `<div class="alert alert-info"><strong>📄 Акт №${act.id?.slice(0,8)}</strong><br>🏢 Контрагент: ${act.counterparty_name}<br>⚖️ Сальдо: ${(parseFloat(act.closing_balance)||0).toLocaleString()} ₽</div>`;
+    async function openSignModal(id) {
+        let a = allActs.find(a=>a.id===id); if(!a) return;
+        if(a.status==='signed') { showToast('Акт уже подписан', 'error'); return; }
+        currentSignAct = a;
+        document.getElementById('signActInfo').innerHTML = `<div class="alert alert-info"><strong>Акт №${a.id.slice(0,8)}</strong><br>${a.counterparty_name}<br>Сальдо: ${(parseFloat(a.closing_balance)||0).toLocaleString()} ₽</div>`;
         document.getElementById('signOurCheck').checked = false;
         document.getElementById('signerName').value = '';
         document.getElementById('signerPosition').value = '';
-        const modal = new bootstrap.Modal(document.getElementById('signActModal')); modal.show();
+        new bootstrap.Modal(document.getElementById('signActModal')).show();
     }
-    
-    function openSignModalForCurrent() { if (currentViewAct) { const modal = bootstrap.Modal.getInstance(document.getElementById('viewActModal')); if (modal) modal.hide(); openSignModal(currentViewAct.id); } }
-    
+
+    function openSignModalForCurrent() { if(currentViewAct) { bootstrap.Modal.getInstance(document.getElementById('viewActModal')).hide(); openSignModal(currentViewAct.id); } }
+
     async function confirmSign() {
-        if (!currentSignAct) return;
-        const signOur = document.getElementById('signOurCheck').checked;
-        const signerName = document.getElementById('signerName').value.trim();
-        const signerPosition = document.getElementById('signerPosition').value.trim();
-        if (!signOur) { showToast('Подтвердите подписание', 'error'); return; }
-        if (!signerName) { showToast('Введите ваше ФИО', 'error'); return; }
-        const btn = document.getElementById('signActBtn');
-        btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Подписание...';
-        try {
-            const res = await fetch(`/api/reconciliation/acts/${currentSignAct.id}/sign`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ sign_our: true, sign_their: false, signer_name: signerName, signer_position: signerPosition, signature: 'electronic_' + Date.now() }) });
-            const data = await res.json();
-            if (res.ok && data.success) { showToast(data.message || '✅ Акт успешно подписан', 'success'); const modal = bootstrap.Modal.getInstance(document.getElementById('signActModal')); if (modal) modal.hide(); loadActs(); } 
-            else { showToast('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'), 'error'); }
-        } catch(e) { showToast('❌ Ошибка подписания', 'error'); } finally { btn.disabled = false; btn.innerHTML = 'Подписать'; }
+        if(!currentSignAct) return;
+        if(!document.getElementById('signOurCheck').checked) { showToast('Подтвердите подписание', 'error'); return; }
+        let name = document.getElementById('signerName').value.trim();
+        if(!name) { showToast('Введите ФИО', 'error'); return; }
+        let pos = document.getElementById('signerPosition').value.trim();
+        let res = await fetch(`/api/reconciliation/acts/${currentSignAct.id}/sign`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ sign_our: true, sign_their: false, signer_name: name, signer_position: pos, signature: 'electronic_' + Date.now() }) });
+        let data = await res.json();
+        if(data.success) { showToast('Акт подписан', 'success'); bootstrap.Modal.getInstance(document.getElementById('signActModal')).hide(); loadActs(); }
+        else showToast('Ошибка: ' + (data.error||''), 'error');
     }
 
     function exportToExcel() {
-        const rows = [['№', 'Контрагент', 'ИНН', 'Период с', 'Период по', 'Дебет', 'Кредит', 'Сальдо', 'Статус', 'Дата']];
-        filteredActs.forEach((act, idx) => { rows.push([idx+1, act.counterparty_name||'—', act.counterparty_inn||'—', formatDate(act.period_start), formatDate(act.period_end), (parseFloat(act.total_debit)||0).toLocaleString(), (parseFloat(act.total_credit)||0).toLocaleString(), (parseFloat(act.closing_balance)||0).toLocaleString(), act.status === 'signed' ? 'Подписан' : (act.status === 'partially_signed' ? 'Частично подписан' : 'Черновик'), formatDate(act.created_at)]); });
-        const csv = rows.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
-        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `acts_${new Date().toISOString().slice(0,10)}.csv`; link.click();
-        showToast('✅ Экспорт завершён', 'success');
+        let html = `<html><head><meta charset="UTF-8"><title>Акты сверки</title><style>th{background:#667eea;color:white;padding:10px;}td{padding:8px;border:1px solid #ddd;}table{border-collapse:collapse;width:100%;}</style></head><body><h2>📄 Акты сверки</h2><p>Дата: ${new Date().toLocaleString('ru-RU')}</p><table><thead><tr><th>№</th><th>Контрагент</th><th>ИНН</th><th>Период с</th><th>Период по</th><th>Дебет</th><th>Кредит</th><th>Сальдо</th><th>Статус</th><th>Дата</th></tr></thead><tbody>`;
+        filteredActs.forEach((a,i)=>{ html += `<tr><td>${i+1}</td><td>${a.counterparty_name||'—'}</td><td>${a.counterparty_inn||'—'}</td><td>${formatDate(a.period_start)}</td><td>${formatDate(a.period_end)}</td><td>${(parseFloat(a.total_debit)||0).toLocaleString()} ₽</td><td>${(parseFloat(a.total_credit)||0).toLocaleString()} ₽</td><td><b>${(parseFloat(a.closing_balance)||0).toLocaleString()} ₽</b></td><td>${a.status==='signed'?'✅ Подписан':a.status==='partially_signed'?'🔄 Частично':'📝 Черновик'}</td><td>${formatDate(a.created_at)}</td></tr>`; });
+        html += `</tbody></table><p><i>Сформировано в SaaSPro FinCore</i></p></body></html>`;
+        let blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+        let link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `acts_${new Date().toISOString().slice(0,10)}.xls`;
+        link.click();
+        showToast('Экспорт в Excel завершён', 'success');
     }
 
-    function showAmountDetails() {
-        const totalAmount = allActs.reduce((sum, a) => sum + (Math.abs(parseFloat(a.closing_balance) || 0)), 0);
-        const avgAmount = allActs.length > 0 ? totalAmount / allActs.length : 0;
-        showToast(`💰 Общая сумма: ${totalAmount.toLocaleString()} ₽\n📊 Средняя: ${Math.round(avgAmount).toLocaleString()} ₽`, 'info');
+ async function showAnalytics() {
+    const modal = new bootstrap.Modal(document.getElementById('analyticsModal'), { backdrop: 'static', keyboard: false });
+    modal.show();
+    
+    try {
+        const res = await fetch('/api/reconciliation/statistics', { 
+            headers: { 'Authorization': 'Bearer ' + token } 
+        });
+        const result = await res.json();
+        
+        if (result.success && result.data) {
+            const stats = result.data;
+            
+            // Используем локальные данные для статистики подписаний
+            const signedByUs = allActs.filter(a => a.signed_by_our === true).length;
+            const pending = allActs.filter(a => a.signed_by_our !== true).length;
+            
+            document.getElementById('analyticsTotalActs').innerHTML = allActs.length;
+            document.getElementById('analyticsSignedActs').innerHTML = signedByUs;
+            document.getElementById('analyticsPendingActs').innerHTML = pending;
+            
+            let months = stats.months || [];
+            let debitData = stats.debit_data || [];
+            let creditData = stats.credit_data || [];
+            let balanceData = stats.balance_data || [];
+            
+            if (months.length > 0) {
+                const reversedMonths = [...months].reverse();
+                const reversedDebit = [...debitData].reverse();
+                const reversedCredit = [...creditData].reverse();
+                const reversedBalance = [...balanceData].reverse();
+                
+                const ctx1 = document.getElementById('analyticsChart').getContext('2d');
+                if (analyticsChart) analyticsChart.destroy();
+                analyticsChart = new Chart(ctx1, {
+                    type: 'line',
+                    data: {
+                        labels: reversedMonths,
+                        datasets: [{
+                            label: 'Сальдо (₽)',
+                            data: reversedBalance,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102,126,234,0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { labels: { color: '#fff' } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `Сальдо: ${context.raw.toLocaleString('ru-RU')} ₽`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: { 
+                            y: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } }, 
+                            x: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } } 
+                        }
+                    }
+                });
+                
+                const ctx2 = document.getElementById('debitCreditChart').getContext('2d');
+                if (debitCreditChart) debitCreditChart.destroy();
+                debitCreditChart = new Chart(ctx2, {
+                    type: 'bar',
+                    data: {
+                        labels: reversedMonths,
+                        datasets: [
+                            { label: 'Дебет (₽)', data: reversedDebit, backgroundColor: '#10b981', borderRadius: 8 },
+                            { label: 'Кредит (₽)', data: reversedCredit, backgroundColor: '#ef4444', borderRadius: 8 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { labels: { color: '#fff' } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.dataset.label}: ${context.raw.toLocaleString('ru-RU')} ₽`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: { 
+                            y: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } }, 
+                            x: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } } 
+                        }
+                    }
+                });
+            }
+        }
+    } catch(e) { 
+        console.error('Ошибка загрузки аналитики:', e); 
+        showToast('❌ Ошибка загрузки аналитики', 'error');
+    }
+}
+    function exportAnalytics() {
+        let total = document.getElementById('analyticsTotalActs').innerHTML;
+        let signed = document.getElementById('analyticsSignedActs').innerHTML;
+        let pending = document.getElementById('analyticsPendingActs').innerHTML;
+        let html = `<html><head><meta charset="UTF-8"><title>Аналитика</title><style>body{font-family:Arial;padding:20px;}h1{color:#667eea;}.stat{margin:20px 0;padding:15px;background:#f5f5f5;border-radius:10px;}.value{font-size:24px;font-weight:bold;color:#667eea;}</style></head><body><h1>📊 Аналитика актов сверки</h1><p>Дата: ${new Date().toLocaleString('ru-RU')}</p><div class="stat"><h3>Общая статистика</h3><p>📄 Всего актов: <span class="value">${total}</span></p><p>✅ Подписано: <span class="value">${signed}</span></p><p>⏳ В работе: <span class="value">${pending}</span></p></div><p><i>Сформировано в SaaSPro FinCore</i></p></body></html>`;
+        let blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+        let link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `analytics_${new Date().toISOString().slice(0,10)}.xls`;
+        link.click();
+        showToast('Отчет аналитики экспортирован', 'success');
     }
 
     function showToast(msg, type) {
-        const div = document.createElement('div'); div.className = 'toast-notification'; div.innerHTML = msg;
+        let div = document.createElement('div');
+        div.className = 'toast-notification';
+        div.innerHTML = msg;
         div.style.background = type === 'success' ? '#10b981' : (type === 'error' ? '#ef4444' : '#3b82f6');
-        div.style.whiteSpace = 'pre-line'; document.body.appendChild(div); setTimeout(() => div.remove(), 3000);
+        document.body.appendChild(div);
+        setTimeout(() => div.remove(), 3000);
     }
 
-    document.addEventListener('DOMContentLoaded', () => { 
+    document.addEventListener('DOMContentLoaded', () => {
         loadActs();
-        const debitInput = document.getElementById('actTotalDebit');
-        const creditInput = document.getElementById('actTotalCredit');
-        if (debitInput && creditInput) {
-            debitInput.addEventListener('input', calculateBalance);
-            creditInput.addEventListener('input', calculateBalance);
-        }
+        document.getElementById('actTotalDebit')?.addEventListener('input', calculateBalance);
+        document.getElementById('actTotalCredit')?.addEventListener('input', calculateBalance);
     });
 </script>
 </body>

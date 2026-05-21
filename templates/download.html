@@ -1,0 +1,932 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
+void main() {
+  runApp(const SaaSProApp());
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+    ),
+  );
+}
+
+class SaaSProApp extends StatelessWidget {
+  const SaaSProApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'SaaSPro VPN',
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        primaryColor: const Color(0xFF6C5CE7),
+        scaffoldBackgroundColor: const Color(0xFF0F0F1F),
+        useMaterial3: true,
+      ),
+      home: const SplashScreen(),
+      debugShowCheckedModeBanner: false,
+    );
+  }
+}
+
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+    _controller.forward();
+    
+    // Проверяем авторизацию и загружаем модули
+    _checkAuthAndLoadModules();
+  }
+
+  Future<void> _checkAuthAndLoadModules() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    
+    if (token == null) {
+      // Нет токена - идем на логин
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
+      return;
+    }
+    
+    // Загружаем доступные модули с сервера
+    await _loadUserModules(token);
+  }
+  
+  Future<void> _loadUserModules(String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://localhost:8080/api/user/subscriptions'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final modules = data['modules'] ?? [];
+        
+        final prefs = await SharedPreferences.getInstance();
+        prefs.setString('user_modules', json.encode(modules));
+      }
+    } catch (e) {
+      print('Ошибка загрузки модулей: $e');
+    }
+    
+    // Переходим на главный экран
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const HomeScreen()),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF0F0F1F), Color(0xFF1A1A3E), Color(0xFF2D1B4E)],
+          ),
+        ),
+        child: Center(
+          child: ScaleTransition(
+            scale: _animation,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF6C5CE7), Color(0xFFA367F0)],
+                    ),
+                    borderRadius: BorderRadius.circular(35),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF6C5CE7).withOpacity(0.5),
+                        blurRadius: 30,
+                        spreadRadius: 5,
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.shield, size: 60, color: Colors.white),
+                  ),
+                ),
+                const SizedBox(height: 30),
+                const Text(
+                  'SaaSPro',
+                  style: TextStyle(
+                    fontSize: 48,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Загрузка модулей...',
+                  style: TextStyle(fontSize: 14, color: Colors.white70),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Экран логина
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+  bool _isRegisterMode = false;
+
+  Future<void> _login() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:8080/api/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'email': _emailController.text,
+          'password': _passwordController.text,
+        }),
+      );
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final token = data['token'];
+        
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth_token', token);
+        
+        // Загружаем модули после логина
+        await _loadModules(token);
+        
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+          );
+        }
+      } else {
+        _showError('Неверный email или пароль');
+      }
+    } catch (e) {
+      _showError('Ошибка подключения к серверу');
+    }
+    
+    setState(() => _isLoading = false);
+  }
+  
+  Future<void> _loadModules(String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://localhost:8080/api/user/subscriptions'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final modules = data['modules'] ?? [];
+        
+        final prefs = await SharedPreferences.getInstance();
+        prefs.setString('user_modules', json.encode(modules));
+      }
+    } catch (e) {
+      print('Ошибка загрузки модулей: $e');
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF0F0F1F), Color(0xFF1A1A3E)],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(30),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF6C5CE7), Color(0xFFA367F0)],
+                      ),
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    child: const Center(
+                      child: Icon(Icons.shield, size: 40, color: Colors.white),
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  const Text(
+                    'SaaSPro',
+                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 40),
+                  TextField(
+                    controller: _emailController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Email',
+                      labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: const BorderSide(color: Color(0xFF6C5CE7)),
+                      ),
+                      prefixIcon: const Icon(Icons.email, color: Color(0xFF6C5CE7)),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: _passwordController,
+                    obscureText: true,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Пароль',
+                      labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: const BorderSide(color: Color(0xFF6C5CE7)),
+                      ),
+                      prefixIcon: const Icon(Icons.lock, color: Color(0xFF6C5CE7)),
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _login,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6C5CE7),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('Войти', style: TextStyle(fontSize: 16)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Модель модуля
+class Module {
+  final String id;
+  final String name;
+  final String icon;
+  final bool isActive;
+  
+  Module({required this.id, required this.name, required this.icon, required this.isActive});
+}
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  bool _isConnected = false;
+  int _selectedIndex = 0;
+  List<Module> _availableModules = [];
+  bool _isLoadingModules = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserModules();
+  }
+
+  Future<void> _loadUserModules() async {
+    final prefs = await SharedPreferences.getInstance();
+    final modulesJson = prefs.getString('user_modules');
+    
+    if (modulesJson != null) {
+      try {
+        final List<dynamic> modulesList = json.decode(modulesJson);
+        setState(() {
+          _availableModules = modulesList.map((m) => Module(
+            id: m['module_id'] ?? m['id'] ?? '',
+            name: m['name'] ?? m['module_name'] ?? 'Модуль',
+            icon: _getIconForModule(m['module_id'] ?? m['id'] ?? ''),
+            isActive: m['status'] == 'active' || m['status'] == 'trial',
+          )).toList();
+          _isLoadingModules = false;
+        });
+      } catch (e) {
+        _loadDefaultModules();
+      }
+    } else {
+      _loadDefaultModules();
+    }
+  }
+  
+  void _loadDefaultModules() {
+    setState(() {
+      _availableModules = [
+        Module(id: 'vpn', name: 'VPN', icon: '🔒', isActive: true),
+        Module(id: 'fincore', name: 'FinCore', icon: '💰', isActive: false),
+        Module(id: 'crm', name: 'CRM', icon: '🤝', isActive: false),
+      ];
+      _isLoadingModules = false;
+    });
+  }
+  
+  String _getIconForModule(String id) {
+    switch (id) {
+      case 'vpn': return '🔒';
+      case 'fincore': return '💰';
+      case 'crm': return '🤝';
+      case 'teamsphere': return '👥';
+      case 'cloud': return '☁️';
+      case 'hr': return '👥';
+      case 'ai-agents': return '🤖';
+      default: return '📦';
+    }
+  }
+
+  void _toggleVPN() {
+    setState(() {
+      _isConnected = !_isConnected;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF0F0F1F), Color(0xFF1A1A3E), Color(0xFF2D1B4E)],
+          ),
+        ),
+        child: SafeArea(
+          child: IndexedStack(
+            index: _selectedIndex,
+            children: [
+              _buildHomePage(),
+              _buildModulesPage(),
+              _buildProfilePage(),
+            ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: _buildBottomNavigation(),
+    );
+  }
+
+  Widget _buildHomePage() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          _buildHeader(),
+          _buildBrand(),
+          _buildVPNButton(),
+          if (_isConnected) _buildStats(),
+          const SizedBox(height: 20),
+          _buildAvailableModules(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Container(
+          width: 45,
+          height: 45,
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white),
+            onPressed: () {},
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 35,
+                height: 35,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF6C5CE7), Color(0xFFA367F0)],
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(child: Text('👤', style: TextStyle(fontSize: 18))),
+              ),
+              const SizedBox(width: 10),
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Premium User', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  Text('Активен', style: TextStyle(fontSize: 10, color: Colors.white70)),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBrand() {
+    return Column(
+      children: [
+        const SizedBox(height: 20),
+        Container(
+          width: 100,
+          height: 100,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF6C5CE7), Color(0xFFA367F0)],
+            ),
+            borderRadius: BorderRadius.circular(30),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF6C5CE7).withOpacity(0.5),
+                blurRadius: 30,
+                spreadRadius: 10,
+              ),
+            ],
+          ),
+          child: const Center(
+            child: Icon(Icons.shield, size: 50, color: Colors.white),
+          ),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'SaaSPro',
+          style: TextStyle(
+            fontSize: 44,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFF6C5CE7).withOpacity(0.2),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Text(
+            'МОДУЛИ АКТИВНЫ',
+            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVPNButton() {
+    return GestureDetector(
+      onTap: _toggleVPN,
+      child: Container(
+        margin: const EdgeInsets.all(30),
+        child: Column(
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.03),
+                boxShadow: _isConnected
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFF00F2FE).withOpacity(0.5),
+                          blurRadius: 40,
+                          spreadRadius: 15,
+                        ),
+                      ]
+                    : [],
+              ),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: 160,
+                height: 160,
+                margin: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: _isConnected
+                      ? const LinearGradient(
+                          colors: [Color(0xFF00F2FE), Color(0xFF4FACFE)],
+                        )
+                      : const LinearGradient(
+                          colors: [Color(0xFF6C5CE7), Color(0xFFA367F0)],
+                        ),
+                ),
+                child: const Center(
+                  child: Icon(Icons.power_settings_new, size: 70, color: Colors.white),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              _isConnected ? 'ЗАЩИЩЕН' : 'ОТКЛЮЧЕН',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: _isConnected ? const Color(0xFF00F2FE) : Colors.white70,
+                letterSpacing: 3,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStats() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.white.withOpacity(0.05), Colors.white.withOpacity(0.02)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(25),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildStatItem(Icons.download, '85', 'Мбит/с', Colors.green),
+          _buildStatItem(Icons.upload, '32', 'Мбит/с', Colors.blue),
+          _buildStatItem(Icons.timer, '02:15', '', Colors.orange),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(IconData icon, String value, String unit, Color color) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 28),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+        ),
+        if (unit.isNotEmpty)
+          Text(unit, style: const TextStyle(fontSize: 11, color: Colors.white54)),
+      ],
+    );
+  }
+
+  Widget _buildAvailableModules() {
+    if (_isLoadingModules) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: CircularProgressIndicator(color: Color(0xFF6C5CE7)),
+        ),
+      );
+    }
+    
+    if (_availableModules.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.03),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: const Column(
+          children: [
+            Text('📭', style: TextStyle(fontSize: 40)),
+            SizedBox(height: 10),
+            Text('Нет доступных модулей', style: TextStyle(color: Colors.white70)),
+            Text('Оформите подписку на сайте', style: TextStyle(fontSize: 12, color: Colors.white54)),
+          ],
+        ),
+      );
+    }
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.03),
+        borderRadius: BorderRadius.circular(25),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.apps, size: 20, color: Color(0xFF6C5CE7)),
+              SizedBox(width: 8),
+              Text('Доступные модули', style: TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 15),
+          ..._availableModules.map((module) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              children: [
+                Text(module.icon, style: const TextStyle(fontSize: 24)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(module.name, style: const TextStyle(fontWeight: FontWeight.w500)),
+                      Text(
+                        module.isActive ? '✅ Активен' : '🔒 Требуется подписка',
+                        style: TextStyle(fontSize: 11, color: module.isActive ? Colors.green : Colors.white54),
+                      ),
+                    ],
+                  ),
+                ),
+                if (module.isActive)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF6C5CE7).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text('Открыт', style: TextStyle(fontSize: 10)),
+                  ),
+              ],
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModulesPage() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.store, size: 80, color: Color(0xFF6C5CE7)),
+            const SizedBox(height: 20),
+            const Text(
+              'Маркетплейс модулей',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Выберите модули для скачивания',
+              style: TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 30),
+            ..._availableModules.map((module) => Card(
+              color: Colors.white.withOpacity(0.05),
+              margin: const EdgeInsets.only(bottom: 10),
+              child: ListTile(
+                leading: Text(module.icon, style: const TextStyle(fontSize: 30)),
+                title: Text(module.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text(module.isActive ? 'Доступен' : 'Требуется подписка'),
+                trailing: module.isActive
+                    ? IconButton(
+                        icon: const Icon(Icons.download, color: Color(0xFF10B981)),
+                        onPressed: () {
+                          // Скачивание модуля
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Скачивание модуля...')),
+                          );
+                        },
+                      )
+                    : IconButton(
+                        icon: const Icon(Icons.lock, color: Colors.white54),
+                        onPressed: () {
+                          // Переход на страницу оплаты
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Оформите подписку на сайте')),
+                          );
+                        },
+                      ),
+              ),
+            )),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () {
+                // Открыть страницу маркетплейса в браузере
+                // ignore: deprecated_member_use
+                // ignore: deprecated_member_use
+                // ignore: deprecated_member_use
+                // ignore: deprecated_member_use
+                // ignore: deprecated_member_use
+                const url = 'http://localhost:8080/marketplace-app';
+                // ignore: deprecated_member_use
+                // // ignore: deprecated_member_use
+                // // // ignore: deprecated_member_use
+              },
+              icon: const Icon(Icons.open_in_browser),
+              label: const Text('Открыть маркетплейс'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6C5CE7),
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfilePage() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF6C5CE7), Color(0xFFA367F0)],
+              ),
+              borderRadius: BorderRadius.circular(50),
+            ),
+            child: const Center(child: Text('👤', style: TextStyle(fontSize: 50))),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'SaaSPro User',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          const Text('Premium', style: TextStyle(color: Colors.white70)),
+          const SizedBox(height: 30),
+          Card(
+            color: Colors.white.withOpacity(0.05),
+            margin: const EdgeInsets.symmetric(horizontal: 40),
+            child: const Padding(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  Text('Подписка активна'),
+                  SizedBox(height: 10),
+                  Text('Тариф: Premium'),
+                  SizedBox(height: 10),
+                  Text('Модулей: 5'),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.remove('auth_token');
+              await prefs.remove('user_modules');
+              if (mounted) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                );
+              }
+            },
+            icon: const Icon(Icons.logout),
+            label: const Text('Выйти'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.withOpacity(0.2),
+              foregroundColor: Colors.red,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomNavigation() {
+    return Container(
+      margin: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildNavItem(Icons.home, 'Главная', 0),
+          _buildNavItem(Icons.apps, 'Модули', 1),
+          _buildNavItem(Icons.person, 'Профиль', 2),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavItem(IconData icon, String label, int index) {
+    final isSelected = _selectedIndex == index;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedIndex = index),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: isSelected ? const Color(0xFF6C5CE7) : Colors.white54, size: 24),
+          const SizedBox(height: 4),
+          Text(label, style: TextStyle(fontSize: 11, color: isSelected ? const Color(0xFF6C5CE7) : Colors.white54)),
+        ],
+      ),
+    );
+  }
+}

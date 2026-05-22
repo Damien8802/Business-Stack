@@ -154,7 +154,7 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 
         // ========== УРОВЕНЬ 1: ТВОЯ ПЛАТФОРМА (ТОЛЬКО ТЫ И ТВОИ ПОМОЩНИКИ) ==========
         // Это ДОСТУП К УПРАВЛЕНИЮ ПЛАТФОРМОЙ (глобальная админка)
-        if claims.Email == "dev@businesstack.ru" {
+        if claims.Email == "dev@businessstack.ru" {
             c.Set("platform_role", "owner")
             c.Set("role", "platform_owner")
             c.Set("is_platform_owner", true)
@@ -297,6 +297,7 @@ func RequireTenantAdmin() gin.HandlerFunc {
     }
 }
 
+
 // Вспомогательные функции для красивого отображения
 func getModuleNameFromPath(path string) string {
     moduleNames := map[string]string{
@@ -398,7 +399,7 @@ func AdminMiddleware(cfg *config.Config) gin.HandlerFunc {
         hasAccess := false
         
         // Владелец платформы
-        if userEmail == "dev@businesstack.ru" || platformRole == "owner" {
+        if userEmail == "dev@businessstack.ru" || platformRole == "owner" {
             hasAccess = true
             log.Printf("[ADMIN] 👑 ВЛАДЕЛЕЦ ПЛАТФОРМЫ имеет полный доступ к %s %s", method, path)
         } else if role == "admin" || role == "developer" || role == "owner" {

@@ -14,8 +14,7 @@ import (
 
 // Список email'ов владельцев системы (безлимитный доступ)
 var ownerEmails = map[string]bool{
-    "dev@saaspro.ru":          true,
-    "dev@businesstack.ru":     true,
+    "dev@businessstack.ru":     true,
     "Skorpion_88-88@mail.ru": true,
 }
 

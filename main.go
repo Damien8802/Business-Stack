@@ -401,6 +401,7 @@ public := r.Group("/")
     public.GET("/partner", handlers.PartnerHandler)
     public.GET("/fusion-api", handlers.FusionAPIPortalHandler)
     public.GET("/identity-landing", handlers.IdentityHubLandingHandler)
+    public.GET("/sign-act/:id", handlers.TheirSignPage)
   // Identity Hub отдельные страницы
     public.GET("/identity-login", handlers.IdentityLoginPageHandler)
 
@@ -512,6 +513,29 @@ reconciliationAPI.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAc
     reconciliationAPI.PUT("/acts/:id", handlers.UpdateReconciliationAct)
     reconciliationAPI.DELETE("/acts/:id", handlers.DeleteReconciliationAct)
     reconciliationAPI.GET("/download/:id", handlers.DownloadReconciliationAct)
+    reconciliationAPI.POST("/acts/:id/restore", handlers.RestoreReconciliationAct) // восстановить
+    reconciliationAPI.DELETE("/trash", handlers.ClearTrashReconciliationActs)      // очистить корзину
+    reconciliationAPI.GET("/trash", handlers.GetTrashReconciliationActs)           // список корзины
+    reconciliationAPI.DELETE("/trash/selected", handlers.PermanentDeleteSelectedActs)
+    reconciliationAPI.POST("/generate-pdf", handlers.GeneratePDF)
+
+    reconciliationAPI.GET("/qr/:id", handlers.GenerateQRCodeForAct)
+    reconciliationAPI.GET("/ai-verify/:id", handlers.AIVerifySignature)
+    reconciliationAPI.GET("/compare/:id", handlers.CompareWithPrevious)
+    reconciliationAPI.POST("/telegram/:id", handlers.SendToTelegram)
+    reconciliationAPI.POST("/whatsapp/:id", handlers.SendToWhatsApp)
+
+    reconciliationAPI.POST("/send-to-counterparty/:id", handlers.SendSignLinkToCounterparty)
+    reconciliationAPI.POST("/their-sign/:id", handlers.TheirSignAct)
+}
+
+// Настройки компании (для FinCore)
+companyAPI := r.Group("/api/company")
+companyAPI.Use(middleware.AuthMiddleware(cfg))
+{
+    companyAPI.GET("/settings", handlers.GetCompanySettings)
+    companyAPI.PUT("/settings", handlers.UpdateCompanyDetails)
+    companyAPI.POST("/upload-stamp", handlers.UploadCompanyStamp)
 }
 
 journalAPI := r.Group("/api/journal")

@@ -44,7 +44,7 @@ func EnableAdmin2FA(c *gin.Context) {
     
     // Генерируем секрет
     key, err := totp.Generate(totp.GenerateOpts{
-        Issuer:      "SaaSPro",
+        Issuer:      "Business Stack",
         AccountName: c.GetString("user_email"),
     })
     if err != nil {

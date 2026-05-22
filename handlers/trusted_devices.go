@@ -18,7 +18,7 @@ func TrustedDevicesHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "trusted_devices.html", gin.H{
-        "Title":  "Доверенные устройства | SaaSPro",
+        "Title":  "Доверенные устройства | Business Stack",
         "UserID": userID,
     })
 }

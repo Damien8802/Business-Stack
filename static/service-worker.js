@@ -1,5 +1,5 @@
 // Service Worker для PWA
-const CACHE_NAME = 'saaspro-v5';
+const CACHE_NAME = 'Business Stack-v5';
 const urlsToCache = [
   '/',
   '/dashboard-improved',

@@ -6,7 +6,7 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>SaaSPro VPN | Настройка телефона</title>
+    <title>Business Stack VPN | Настройка телефона</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -183,7 +183,7 @@
 <div class="container">
     <div class="header">
         <div class="logo"><i class="fas fa-shield-alt"></i></div>
-        <div class="logo-text">SaaSPro</div>
+        <div class="logo-text">Business Stack</div>
         <div class="logo-badge">SECURE VPN</div>
     </div>
     
@@ -266,7 +266,7 @@ function downloadConfig() {
     const blob = new Blob([config], {type: 'text/plain'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'saaspro_vpn.conf';
+    a.download = 'Business Stack_vpn.conf';
     a.click();
     showToast('📁 Файл сохранён');
 }

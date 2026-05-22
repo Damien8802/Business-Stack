@@ -273,7 +273,7 @@ func GetEntityHistory(c *gin.Context) {
 func CRMHandler(c *gin.Context) {
     // // tenantID := middleware.GetTenantIDFromContext(c)
     c.HTML(http.StatusOK, "crm.html", gin.H{
-        "Title": "CRM система - SaaSPro",
+        "Title": "CRM система - Business Stack",
     })
 }
 
@@ -2863,7 +2863,7 @@ func DeleteActivity(c *gin.Context) {
 func CalendarHandler(c *gin.Context) {
     // // tenantID := middleware.GetTenantIDFromContext(c)
     c.HTML(http.StatusOK, "calendar.html", gin.H{
-        "Title": "Календарь сделок - SaaSPro",
+        "Title": "Календарь сделок - Business Stack",
     })
 }
 

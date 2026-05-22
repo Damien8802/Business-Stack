@@ -318,7 +318,7 @@ func handleCommand(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
             "✨ *Добро пожаловать, %s!* ✨\n\n"+
             "┌────────────────────────────────────┐\n"+
             "│  🤖 *SaaS Platform*                │\n"+
-            "│  💻 *Сервер: saaspro.ru*           │\n"+
+            "│  💻 *Сервер: Business Stack.ru*           │\n"+
             "│  📊 *Статус: ONLINE*               │\n"+
             "│  ⚡ *Uptime: 99.9%%*                 │\n"+
             "└────────────────────────────────────┘\n\n"+
@@ -1396,8 +1396,8 @@ func handleSupport(bot *tgbotapi.BotAPI, chatID int64, user *tgbotapi.User) {
     text := fmt.Sprintf("📞 *Поддержка*\n\n"+
         "Здравствуйте, %s!\n\n"+
         "Вы можете связаться с нами:\n"+
-        "• Email: support@saaspro.ru\n"+
-        "• Telegram: @saaspro_support\n"+
+        "• Email: support@Business Stack.ru\n"+
+        "• Telegram: @Business Stack_support\n"+
         "• Чат: 24/7 онлайн\n\n"+
         "Среднее время ответа: 15 минут",
         user.FirstName)
@@ -1408,7 +1408,7 @@ func handleSupport(bot *tgbotapi.BotAPI, chatID int64, user *tgbotapi.User) {
 
     keyboard := tgbotapi.NewInlineKeyboardMarkup(
         tgbotapi.NewInlineKeyboardRow(
-            tgbotapi.NewInlineKeyboardButtonURL("📱 Написать в Telegram", "https://t.me/saaspro_support"),
+            tgbotapi.NewInlineKeyboardButtonURL("📱 Написать в Telegram", "https://t.me/Business Stack_support"),
         ),
         tgbotapi.NewInlineKeyboardRow(
             tgbotapi.NewInlineKeyboardButtonData("💬 Чат", "support_chat"),

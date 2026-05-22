@@ -21,7 +21,7 @@ func ProfilePageHandler(c *gin.Context) {
         if rows != nil { rows.Close() }
         if userID == nil || userID == "" {
             c.HTML(http.StatusOK, "profile.html", gin.H{
-                "Title":    "Мой профиль - SaaSPro",
+                "Title":    "Мой профиль - Business Stack",
                 "Version":  "3.0",
                 "User":     nil,
                 "Initials": "?",
@@ -34,7 +34,7 @@ func ProfilePageHandler(c *gin.Context) {
     user, err := models.GetUserByID(userID.(string))
     if err != nil {
         c.HTML(http.StatusOK, "profile.html", gin.H{
-            "Title":    "Мой профиль - SaaSPro",
+            "Title":    "Мой профиль - Business Stack",
             "Version":  "3.0",
             "User":     nil,
             "Initials": "?",
@@ -61,7 +61,7 @@ func ProfilePageHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "profile.html", gin.H{
-        "Title":    "Мой профиль - SaaSPro",
+        "Title":    "Мой профиль - Business Stack",
         "Version":  "3.0",
         "User":     user,
         "Initials": initials,

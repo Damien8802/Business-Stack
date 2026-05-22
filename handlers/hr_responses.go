@@ -70,7 +70,7 @@ func parseTime(timeStr string) time.Time {
 func fetchHHResponses(accessToken, vacancyID, hhVacancyID string) ([]HHNegotiation, error) {
     req, _ := http.NewRequest("GET", fmt.Sprintf("https://api.hh.ru/negotiations?vacancy_id=%s", hhVacancyID), nil)
     req.Header.Set("Authorization", "Bearer "+accessToken)
-    req.Header.Set("User-Agent", "SaaSPro/1.0")
+    req.Header.Set("User-Agent", "Business Stack/1.0")
     
     client := &http.Client{Timeout: 30 * time.Second}
     resp, err := client.Do(req)

@@ -21,7 +21,7 @@ return
 }
 
 c.HTML(http.StatusOK, "admin_ai_stats.html", gin.H{
-"Title":      "Статистика AI-запросов - SaaSPro",
+"Title":      "Статистика AI-запросов - Business Stack",
 "Version":    "3.0",
 "Stats":      stats,
 "Period":     period,

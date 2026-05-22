@@ -1,6 +1,6 @@
 {
-  "name": "SaaSPro Secure VPN",
-  "short_name": "SaaSPro VPN",
+  "name": "Business Stack Secure VPN",
+  "short_name": "Business Stack VPN",
   "description": "Безопасный и быстрый VPN сервис",
   "start_url": "/dashboard-improved",
   "display": "standalone",

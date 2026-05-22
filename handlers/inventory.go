@@ -265,7 +265,7 @@ func ExportProductsCSV(c *gin.Context) {
 // InventoryPageHandler страница склада
 func InventoryPageHandler(c *gin.Context) {
     c.HTML(http.StatusOK, "inventory.html", gin.H{
-        "title": "Складской учет | SaaSPro",
+        "title": "Складской учет | Business Stack",
     })
 }
 

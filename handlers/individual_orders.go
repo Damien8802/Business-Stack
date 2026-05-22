@@ -23,13 +23,13 @@ func NewIndividualOrdersHandler(yandexAPIKey, yandexFolderID, telegramBotToken, 
 
 func (h *IndividualOrdersHandler) OrderPage(c *gin.Context) {
     c.HTML(http.StatusOK, "individual_order.html", gin.H{
-        "title": "Заказать разработку - SaaSPro",
+        "title": "Заказать разработку - Business Stack",
     })
 }
 
 func (h *IndividualOrdersHandler) AdminOrdersPage(c *gin.Context) {
     c.HTML(http.StatusOK, "admin_orders.html", gin.H{
-        "title": "Управление заказами - SaaSPro",
+        "title": "Управление заказами - Business Stack",
     })
 }
 

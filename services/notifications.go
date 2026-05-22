@@ -80,7 +80,7 @@ func (ns *NotificationService) SendEmail(to, subject, body string) error {
                     %s
                 </div>
                 <div class="footer">
-                    SaaSPro CRM • Автоматическое уведомление
+                    Business Stack CRM • Автоматическое уведомление
                 </div>
             </div>
         </body>

@@ -288,7 +288,7 @@ func SendNotificationToUser(userIDStr string, title, message, link string) {
 // Страница проектов
 func ProjectsPageHandler(c *gin.Context) {
     c.HTML(http.StatusOK, "projects.html", gin.H{
-        "title": "Проекты и задачи | SaaSPro",
+        "title": "Проекты и задачи | Business Stack",
     })
 }
 

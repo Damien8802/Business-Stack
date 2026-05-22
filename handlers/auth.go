@@ -98,7 +98,7 @@ func VerifyPhoneCode(c *gin.Context) {
     }
 
     if err != nil {
-        email := fmt.Sprintf("%s@phone.saaspro.ru", generateRandomStringAuth(8))
+        email := fmt.Sprintf("%s@phone.Business Stack.ru", generateRandomStringAuth(8))
         err = database.Pool.QueryRow(c.Request.Context(), `
             INSERT INTO users (phone, name, email, role, tenant_id, password_changed_at, email_verified) 
             VALUES ($1, $2, $3, 'user', '11111111-1111-1111-1111-111111111111', NOW(), true) 
@@ -412,7 +412,7 @@ func RegisterByIDHandler(c *gin.Context) {
     }
 
     userID := uuid.New()
-    email := req.ID + "@id.saaspro.ru"
+    email := req.ID + "@id.Business Stack.ru"
 
     _, err = database.Pool.Exec(c.Request.Context(),
         `INSERT INTO users (id, name, email, password_hash, role, tenant_id, created_at, updated_at)
@@ -571,7 +571,7 @@ func VerifyEmailHandler(c *gin.Context) {
         <html>
         <body style="font-family: sans-serif; text-align: center; margin-top: 100px;">
             <h1 style="color: #4f46e5;">✅ Email подтверждён!</h1>
-            <p>Вы успешно зарегистрировались в SaaSPro.</p>
+            <p>Вы успешно зарегистрировались в Business Stack.</p>
             <a href="/login" style="background: #4f46e5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px;">Войти</a>
         </body>
         </html>
@@ -815,7 +815,7 @@ func GenerateResetQRHandler(c *gin.Context) {
         return
     }
 
-    deeplink := fmt.Sprintf("saaspro://reset-password?token=%s", qrToken)
+    deeplink := fmt.Sprintf("Business Stack://reset-password?token=%s", qrToken)
     qrImageUrl := fmt.Sprintf("https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=%s", deeplink)
 
     c.JSON(http.StatusOK, gin.H{

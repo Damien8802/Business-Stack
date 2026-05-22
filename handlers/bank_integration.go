@@ -525,7 +525,7 @@ func ExportBankStatementsToExcel(c *gin.Context) {
         </tbody>
     </table>
     <div style="margin-top: 30px; text-align: center; color: #999; font-size: 12px;">
-        Сформировано в FinCore | SaaSPro ERP
+        Сформировано в FinCore | Business Stack ERP
     </div>
 </body>
 </html>`, totalIncome, totalExpense, balance)

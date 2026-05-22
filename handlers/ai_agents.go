@@ -341,7 +341,7 @@ func AIAgentsPage(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "ai_agents.html", gin.H{
-		"Title":     "ИИ-агенты - SaaSPro",
+		"Title":     "ИИ-агенты - Business Stack",
 		"Version":   "3.0",
 		"UserEmail": userEmail,
 		"UserName":  userName,

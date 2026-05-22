@@ -56,7 +56,7 @@ func DashboardImprovedHandler(c *gin.Context) {
     }
     
     c.HTML(http.StatusOK, "dashboard-improved.html", gin.H{
-        "Title":           "Улучшенный дашборд - SaaSPro",
+        "Title":           "Улучшенный дашборд - Business Stack",
         "Version":         "3.0",
         "Time":            time.Now().Format("2006-01-02 15:04:05"),
         "UserName":        userName,
@@ -91,7 +91,7 @@ func RealtimeDashboardHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "realtime-dashboard.html", gin.H{
-        "Title":           "Дашборд реального времени - SaaSPro",
+        "Title":           "Дашборд реального времени - Business Stack",
         "Version":         "3.0",
         "Time":            time.Now().Format("2006-01-02 15:04:05"),
         "IsAuthenticated": userID != "",
@@ -119,7 +119,7 @@ func RevenueDashboardHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "revenue-dashboard.html", gin.H{
-        "Title":           "Дашборд выручки - SaaSPro",
+        "Title":           "Дашборд выручки - Business Stack",
         "Version":         "3.0",
         "Time":            time.Now().Format("2006-01-02 15:04:05"),
         "IsAuthenticated": userID != "",
@@ -147,7 +147,7 @@ func PartnerDashboardHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "partner-dashboard.html", gin.H{
-        "Title":           "Партнерский дашборд - SaaSPro",
+        "Title":           "Партнерский дашборд - Business Stack",
         "Version":         "3.0",
         "Time":            time.Now().Format("2006-01-02 15:04:05"),
         "IsAuthenticated": userID != "",
@@ -175,7 +175,7 @@ func UnifiedDashboardHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "unified-dashboard.html", gin.H{
-        "Title":           "Унифицированный дашборд - SaaSPro",
+        "Title":           "Унифицированный дашборд - Business Stack",
         "Version":         "3.0",
         "Time":            time.Now().Format("2006-01-02 15:04:05"),
         "IsAuthenticated": userID != "",

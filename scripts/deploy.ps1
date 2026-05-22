@@ -1,4 +1,4 @@
-# deploy.ps1 - Deploy SaaSPro to production server
+# deploy.ps1 - Deploy Business Stack to production server
 param(
     [Parameter(Mandatory=$true)]
     [string]$ServerIP,
@@ -8,7 +8,7 @@ param(
 )
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  🚀 SaaSPro 3.0 Production Deploy"
+Write-Host "  🚀 Business Stack 3.0 Production Deploy"
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -18,14 +18,14 @@ $env:GOOS = "linux"
 $env:GOARCH = "amd64"
 $env:CGO_ENABLED = "0"
 
-go build -o saaspro-linux -ldflags="-s -w" main.go
+go build -o Business Stack-linux -ldflags="-s -w" main.go
 
 if (-not $?) {
     Write-Host "❌ Build failed!" -ForegroundColor Red
     exit 1
 }
 
-Write-Host "✅ Build successful: saaspro-linux" -ForegroundColor Green
+Write-Host "✅ Build successful: Business Stack-linux" -ForegroundColor Green
 
 # 2. Prepare files
 Write-Host "`n2. 📦 Preparing files..." -ForegroundColor Green
@@ -35,7 +35,7 @@ $deployDir = "deploy-package"
 New-Item -ItemType Directory -Path $deployDir -Force | Out-Null
 
 # Copy files
-Copy-Item "saaspro-linux" -Destination "$deployDir/saaspro"
+Copy-Item "Business Stack-linux" -Destination "$deployDir/Business Stack"
 Copy-Item ".env.production" -Destination "$deployDir/.env"
 Copy-Item "templates" -Destination $deployDir -Recurse
 Copy-Item "static" -Destination $deployDir -Recurse
@@ -59,16 +59,16 @@ $uploadScript = @"
 set -e
 
 echo "📁 Creating directories..."
-sudo mkdir -p /opt/saaspro/{bin,logs,uploads,backups,templates,static,frontend}
+sudo mkdir -p /opt/Business Stack/{bin,logs,uploads,backups,templates,static,frontend}
 
 echo "📦 Copying files..."
-sudo cp -r /tmp/deploy-package/* /opt/saaspro/
-sudo chmod +x /opt/saaspro/saaspro
-sudo chown -R saaspro:saaspro /opt/saaspro
+sudo cp -r /tmp/deploy-package/* /opt/Business Stack/
+sudo chmod +x /opt/Business Stack/Business Stack
+sudo chown -R Business Stack:Business Stack /opt/Business Stack
 
 echo "⚙️  Restarting service..."
 sudo systemctl daemon-reload
-sudo systemctl restart saaspro
+sudo systemctl restart Business Stack
 
 echo "✅ Deployment completed!"
 echo ""
@@ -88,7 +88,7 @@ ssh -i $KeyPath ${Username}@${ServerIP} "bash /tmp/deploy-package/deploy.sh"
 # 4. Cleanup
 Write-Host "`n4. 🧹 Cleaning up..." -ForegroundColor Green
 Remove-Item -Path $deployDir -Recurse -Force
-Remove-Item -Path "saaspro-linux" -Force
+Remove-Item -Path "Business Stack-linux" -Force
 
 Write-Host "`n========================================" -ForegroundColor Cyan
 Write-Host "  🎉 DEPLOYMENT COMPLETED!" -ForegroundColor Green
@@ -99,7 +99,7 @@ Write-Host "   http://$ServerIP:8080" -ForegroundColor White -BackgroundColor Da
 Write-Host ""
 Write-Host "🔧 Management commands:" -ForegroundColor Gray
 Write-Host "   ssh -i $KeyPath ${Username}@${ServerIP}" -ForegroundColor Gray
-Write-Host "   sudo systemctl status saaspro" -ForegroundColor Gray
-Write-Host "   sudo journalctl -u saaspro -f" -ForegroundColor Gray
-Write-Host "   sudo systemctl restart saaspro" -ForegroundColor Gray
+Write-Host "   sudo systemctl status Business Stack" -ForegroundColor Gray
+Write-Host "   sudo journalctl -u Business Stack -f" -ForegroundColor Gray
+Write-Host "   sudo systemctl restart Business Stack" -ForegroundColor Gray
 Write-Host ""

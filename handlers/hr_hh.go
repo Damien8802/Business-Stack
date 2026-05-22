@@ -218,7 +218,7 @@ func GetHHReferences(c *gin.Context) {
 func getHHReference(accessToken, endpoint string) ([]map[string]interface{}, error) {
     req, _ := http.NewRequest("GET", HH_API_BASE+endpoint, nil)
     req.Header.Set("Authorization", "Bearer "+accessToken)
-    req.Header.Set("User-Agent", "SaaSPro/1.0")
+    req.Header.Set("User-Agent", "Business Stack/1.0")
     
     client := &http.Client{Timeout: 10 * time.Second}
     resp, err := client.Do(req)
@@ -312,7 +312,7 @@ func PublishVacancyToHHClient(c *gin.Context) {
     reqHH, _ := http.NewRequest("POST", HH_API_BASE+"/vacancies", bytes.NewBuffer(jsonData))
     reqHH.Header.Set("Authorization", "Bearer "+token.AccessToken)
     reqHH.Header.Set("Content-Type", "application/json")
-    reqHH.Header.Set("User-Agent", "SaaSPro/1.0")
+    reqHH.Header.Set("User-Agent", "Business Stack/1.0")
     
     client := &http.Client{Timeout: 30 * time.Second}
     resp, err := client.Do(reqHH)

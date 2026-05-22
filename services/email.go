@@ -54,7 +54,7 @@ body { font-family: Arial, sans-serif; }
 <div class="container">
 <div class="header"><h2>%s</h2></div>
 <div class="content">%s</div>
-<div class="footer">SaaSPro CRM • Автоматическое уведомление</div>
+<div class="footer">Business Stack CRM • Автоматическое уведомление</div>
 </div>
 </body>
 </html>`, subject, body)

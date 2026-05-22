@@ -56,6 +56,6 @@ func (t *TelegramNotifier) SendTestMessage() error {
     if t.botToken == "" || t.chatID == "" {
         return nil
     }
-    message := "✅ **Тестовое сообщение от SaaSPro**\n\nВаш Telegram бот успешно настроен!"
+    message := "✅ **Тестовое сообщение от Business Stack**\n\nВаш Telegram бот успешно настроен!"
     return t.sendMessage(t.chatID, message)
 }

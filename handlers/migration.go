@@ -338,7 +338,7 @@ func updateSyncQueue(projectID int, entityType, operation, status string) {
     _, err := database.Pool.Exec(context.Background(), `
         INSERT INTO sync_queue (migration_project_id, entity_type, entity_id, source_system, target_system, operation, status, created_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
-    `, projectID, entityType, "all", "source", "saaspro", operation, status)
+    `, projectID, entityType, "all", "source", "Business Stack", operation, status)
     
     if err != nil {
         log.Printf("❌ Ошибка добавления в очередь: %v", err)
@@ -361,9 +361,9 @@ func updateSyncQueueStatus(projectID int, entityType, status string) {
 func getPhaseDescription(phase int) string {
     switch phase {
     case 1:
-        return "ФАЗА 1: Параллельная работа. Данные синхронизируются в обе стороны. Вы можете работать и в старой системе, и в SaaSPro."
+        return "ФАЗА 1: Параллельная работа. Данные синхронизируются в обе стороны. Вы можете работать и в старой системе, и в Business Stack."
     case 2:
-        return "ФАЗА 2: Полный перенос. Все данные перенесены в SaaSPro. Старая система работает только на чтение."
+        return "ФАЗА 2: Полный перенос. Все данные перенесены в Business Stack. Старая система работает только на чтение."
     case 3:
         return "ФАЗА 3: Постепенный перенос. Вы выбираете, какие данные перенести: отделы, сотрудников, сделки, финансы."
     default:

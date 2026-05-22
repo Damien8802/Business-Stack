@@ -1,12 +1,12 @@
-// Основной JavaScript файл SaaSPro
+// Основной JavaScript файл Business Stack
 
-class SaaSProApp {
+class Business StackApp {
     constructor() {
         this.init();
     }
 
     init() {
-        console.log('SaaSPro App инициализирован');
+        console.log('Business Stack App инициализирован');
         
         // Инициализация компонентов
         this.initNotifications();
@@ -197,7 +197,7 @@ class SaaSProApp {
 
 // Инициализация приложения после загрузки DOM
 document.addEventListener('DOMContentLoaded', () => {
-    window.app = new SaaSProApp();
+    window.app = new Business StackApp();
     
     // Анимация элементов при прокрутке
     const observerOptions = {

@@ -1,5 +1,5 @@
 // ============================================
-// МАКСИМАЛЬНЫЙ AI ASSISTANT SaaSPro v1.0
+// МАКСИМАЛЬНЫЙ AI ASSISTANT Business Stack v1.0
 // ============================================
 
 (function() {
@@ -294,7 +294,7 @@
         <div class="ai-widget-header-full" id="aiWidgetHeaderFull">
             <h4>
                 <span>🤖</span>
-                AI Assistant SaaSPro
+                AI Assistant Business Stack
                 <span class="ai-status">⚡ online</span>
             </h4>
             <div>
@@ -306,7 +306,7 @@
         
         <div class="ai-widget-messages-full" id="aiMessagesFull">
             <div class="ai-message-full assistant">
-                <strong>👋 Привет! Я AI-ассистент SaaSPro</strong><br><br>
+                <strong>👋 Привет! Я AI-ассистент Business Stack</strong><br><br>
                 Я помогаю управлять CRM, создавать сделки, искать клиентов и многое другое.<br><br>
                 <strong>📋 Что я умею:</strong><br>
                 • 📝 <strong>Создавать сделки</strong> — напишите "создай сделку для ООО Ромашка на 1.5 млн"<br>
@@ -565,5 +565,5 @@
     
     // Инициализация
     initVoiceRecognition();
-    console.log('🚀 AI Assistant SaaSPro v1.0 загружен!');
+    console.log('🚀 AI Assistant Business Stack v1.0 загружен!');
 })();

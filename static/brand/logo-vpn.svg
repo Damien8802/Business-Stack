@@ -17,8 +17,8 @@
     <!-- Молния -->
     <path d="M35 12 L28 26 L35 26 L30 40" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
     
-    <!-- Текст SaaSPro -->
-    <text x="65" y="35" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="800" fill="url(#grad)">SaaSPro</text>
+    <!-- Текст Business Stack -->
+    <text x="65" y="35" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="800" fill="url(#grad)">Business Stack</text>
     
     <!-- VPN Badge -->
     <rect x="140" y="22" width="45" height="18" rx="9" fill="url(#grad)"/>

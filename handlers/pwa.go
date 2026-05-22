@@ -83,8 +83,8 @@ func GetPushSubscriptions(c *gin.Context) {
 // GetPWAInfo - информация о PWA
 func GetPWAInfo(c *gin.Context) {
     c.JSON(http.StatusOK, gin.H{
-        "name":        "SaaSPro ERP",
-        "short_name":  "SaaSPro",
+        "name":        "Business Stack ERP",
+        "short_name":  "Business Stack",
         "version":     "3.6.0",
         "description": "Управление складом, финансами и закупками",
         "installable": true,

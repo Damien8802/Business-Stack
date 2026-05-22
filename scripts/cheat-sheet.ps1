@@ -1,6 +1,6 @@
-﻿# cheat-sheet.ps1 - Шпаргалка по командам SaaSPro WSL2
+# cheat-sheet.ps1 - Шпаргалка по командам Business Stack WSL2
 
-Write-Host "📚 Шпаргалка по SaaSPro 3.0 WSL2" -ForegroundColor Cyan
+Write-Host "📚 Шпаргалка по Business Stack 3.0 WSL2" -ForegroundColor Cyan
 Write-Host "================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -22,14 +22,14 @@ Write-Host ""
 
 Write-Host "📊 МОНИТОРИНГ:" -ForegroundColor Green
 Write-Host "  docker stats                    # Использование ресурсов" -ForegroundColor Gray
-Write-Host "  docker top saaspro-wsl2         # Процессы в контейнере" -ForegroundColor Gray
-Write-Host "  docker exec -it saaspro-wsl2 sh # Войти в контейнер" -ForegroundColor Gray
+Write-Host "  docker top Business Stack-wsl2         # Процессы в контейнере" -ForegroundColor Gray
+Write-Host "  docker exec -it Business Stack-wsl2 sh # Войти в контейнер" -ForegroundColor Gray
 Write-Host "  curl http://localhost:8080/health # Проверить здоровье" -ForegroundColor Gray
 Write-Host ""
 
 Write-Host "🔧 РАЗРАБОТКА:" -ForegroundColor Green
 Write-Host "  go run main.go                  # Быстрый запуск без Docker" -ForegroundColor Gray
-Write-Host "  go build -o saaspro.exe         # Сборка бинарника" -ForegroundColor Gray
+Write-Host "  go build -o Business Stack.exe         # Сборка бинарника" -ForegroundColor Gray
 Write-Host "  go test ./...                   # Запуск тестов" -ForegroundColor Gray
 Write-Host "  go mod tidy                     # Обновить зависимости" -ForegroundColor Gray
 Write-Host ""
@@ -62,12 +62,12 @@ Write-Host "  http://localhost:8080/metrics  # Метрики (если вклю
 Write-Host ""
 
 Write-Host "🎯 БЫСТРЫЕ АЛИАСЫ (загрузите: . .\alias.ps1):" -ForegroundColor Green
-Write-Host "  Start-SaaSPro                  # Запустить SaaSPro" -ForegroundColor Gray
-Write-Host "  Stop-SaaSPro                   # Остановить SaaSPro" -ForegroundColor Gray
-Write-Host "  Show-SaaSPro-Logs              # Показать логи" -ForegroundColor Gray
-Write-Host "  Test-SaaSPro-Health            # Проверить здоровье" -ForegroundColor Gray
-Write-Host "  Open-SaaSPro                   # Открыть в браузере" -ForegroundColor Gray
+Write-Host "  Start-Business Stack                  # Запустить Business Stack" -ForegroundColor Gray
+Write-Host "  Stop-Business Stack                   # Остановить Business Stack" -ForegroundColor Gray
+Write-Host "  Show-Business Stack-Logs              # Показать логи" -ForegroundColor Gray
+Write-Host "  Test-Business Stack-Health            # Проверить здоровье" -ForegroundColor Gray
+Write-Host "  Open-Business Stack                   # Открыть в браузере" -ForegroundColor Gray
 Write-Host ""
 
-Write-Host "✅ SaaSPro 3.0 готов к работе в WSL2!" -ForegroundColor Cyan
+Write-Host "✅ Business Stack 3.0 готов к работе в WSL2!" -ForegroundColor Cyan
 Write-Host "   Для начала работы: .\run-wsl.ps1" -ForegroundColor Yellow

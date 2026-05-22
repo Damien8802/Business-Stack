@@ -615,7 +615,7 @@ func ExportProfitLossToExcel(c *gin.Context) {
         </tbody>
     </table>
     <p>Сформировано: %s</p>
-    <p>SaaSPro ERP</p>
+    <p>Business Stack ERP</p>
 </body>
 </html>`, startDate, endDate, revenue, expenses, profitClass, profit, time.Now().Format("2006-01-02 15:04:05"))
 
@@ -689,7 +689,7 @@ func getPostingsByPeriod(userID uuid.UUID, startDate, endDate string) ([]posting
 // TaxReportPage - страница налоговой отчётности
 func TaxReportPage(c *gin.Context) {
     c.HTML(http.StatusOK, "tax_reports", gin.H{
-        "title": "Налоговая отчётность | SaaSPro",
+        "title": "Налоговая отчётность | Business Stack",
     })
 }
 
@@ -1124,7 +1124,7 @@ func ExportTaxReportXML(c *gin.Context) {
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Отчёт %s | SaaSPro</title>
+    <title>Отчёт %s | Business Stack</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -1244,7 +1244,7 @@ func ExportTaxReportXML(c *gin.Context) {
         <div class="report-header">
             <i class="fas fa-file-invoice" style="font-size: 40px; margin-bottom: 10px;"></i>
             <h1>Налоговый отчёт</h1>
-            <p>Сформирован в системе SaaSPro ERP</p>
+            <p>Сформирован в системе Business Stack ERP</p>
         </div>
         <div class="report-body">
             <div class="info-row">

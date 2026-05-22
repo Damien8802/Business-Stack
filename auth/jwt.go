@@ -27,7 +27,7 @@ RegisteredClaims: jwt.RegisteredClaims{
 ExpiresAt: jwt.NewNumericDate(time.Now().Add(cfg.JWTAccessExpiry)),
 IssuedAt:  jwt.NewNumericDate(time.Now()),
 NotBefore: jwt.NewNumericDate(time.Now()),
-Issuer:    "saaspro",
+Issuer:    "Business Stack",
 Subject:   userID,
 },
 }
@@ -47,7 +47,7 @@ RegisteredClaims: jwt.RegisteredClaims{
 ExpiresAt: jwt.NewNumericDate(time.Now().Add(cfg.JWTRefreshExpiry)),
 IssuedAt:  jwt.NewNumericDate(time.Now()),
 NotBefore: jwt.NewNumericDate(time.Now()),
-Issuer:    "saaspro",
+Issuer:    "Business Stack",
 Subject:   userID,
 },
 }

@@ -20,7 +20,7 @@ import (
 // QRLoginPageHandler - страница входа по QR коду
 func QRLoginPageHandler(c *gin.Context) {
     c.HTML(http.StatusOK, "qr-login.html", gin.H{
-        "title": "Вход по QR коду | SaaSPro",
+        "title": "Вход по QR коду | Business Stack",
     })
 }
 
@@ -176,7 +176,7 @@ func createUserFromQR(userID uuid.UUID) (string, error) {
     }
     
     name := fmt.Sprintf("QR_User_%s", userID.String()[:8])
-    email := fmt.Sprintf("%s@qr.saaspro.ru", userID.String()[:8])
+    email := fmt.Sprintf("%s@qr.Business Stack.ru", userID.String()[:8])
     
     err = database.Pool.QueryRow(context.Background(), `
         INSERT INTO users (id, name, email, created_at)
@@ -296,7 +296,7 @@ func QRApprovePageHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "qr-approve.html", gin.H{
-        "title":  "Подтверждение входа | SaaSPro",
+        "title":  "Подтверждение входа | Business Stack",
         "token":  token,
         "status": status,
     })

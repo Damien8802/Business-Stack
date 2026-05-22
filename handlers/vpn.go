@@ -15,7 +15,7 @@ import (
 func InitVPNWithDB(pool interface{}) {}
 
 func VPNSalesPageHandler(c *gin.Context) {
-    c.HTML(http.StatusOK, "vpn-sales.html", gin.H{"title": "VPN Сервис | SaaSPro"})
+    c.HTML(http.StatusOK, "vpn-sales.html", gin.H{"title": "VPN Сервис | Business Stack"})
 }
 
 func CreateVPNKey(c *gin.Context) {
@@ -193,7 +193,7 @@ func GetVPNKeysPage(c *gin.Context) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SaaSPro VPN | Мои ключи</title>
+    <title>Business Stack VPN | Мои ключи</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -933,15 +933,15 @@ func SwitchServerForKey(c *gin.Context) {
     
     switch req.CountryCode {
     case "RU":
-        serverHost = "ru.vpn.saaspro.ru"
+        serverHost = "ru.vpn.Business Stack.ru"
         serverPubKey = "SERVER_PUBLIC_KEY_RU"
         serverPort = 51820
     case "US":
-        serverHost = "us.vpn.saaspro.ru"
+        serverHost = "us.vpn.Business Stack.ru"
         serverPubKey = "SERVER_PUBLIC_KEY_US"
         serverPort = 51820
     case "DE":
-        serverHost = "de.vpn.saaspro.ru"
+        serverHost = "de.vpn.Business Stack.ru"
         serverPubKey = "SERVER_PUBLIC_KEY_DE"
         serverPort = 51820
     default:
@@ -1005,27 +1005,27 @@ func CreateKeyForCountry(c *gin.Context) {
     
     switch req.CountryCode {
     case "RU":
-        serverHost = "ru.vpn.saaspro.ru"
+        serverHost = "ru.vpn.Business Stack.ru"
         serverPubKey = "SERVER_PUBLIC_KEY_RU"
         serverPort = 51820
     case "US":
-        serverHost = "us.vpn.saaspro.ru"
+        serverHost = "us.vpn.Business Stack.ru"
         serverPubKey = "SERVER_PUBLIC_KEY_US"
         serverPort = 51820
     case "DE":
-        serverHost = "de.vpn.saaspro.ru"
+        serverHost = "de.vpn.Business Stack.ru"
         serverPubKey = "SERVER_PUBLIC_KEY_DE"
         serverPort = 51820
     case "NL":
-        serverHost = "nl.vpn.saaspro.ru"
+        serverHost = "nl.vpn.Business Stack.ru"
         serverPubKey = "SERVER_PUBLIC_KEY_NL"
         serverPort = 51820
     case "SG":
-        serverHost = "sg.vpn.saaspro.ru"
+        serverHost = "sg.vpn.Business Stack.ru"
         serverPubKey = "SERVER_PUBLIC_KEY_SG"
         serverPort = 51820
     case "JP":
-        serverHost = "jp.vpn.saaspro.ru"
+        serverHost = "jp.vpn.Business Stack.ru"
         serverPubKey = "SERVER_PUBLIC_KEY_JP"
         serverPort = 51820
     default:

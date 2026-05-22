@@ -129,7 +129,7 @@ func (t *TelegramSender) SendTestMessage() error {
         return fmt.Errorf("telegram not configured")
     }
     
-    testMsg := "✅ Тестовое сообщение от SaaSPro!\n\nБот работает и готов принимать заявки!"
+    testMsg := "✅ Тестовое сообщение от Business Stack!\n\nБот работает и готов принимать заявки!"
     
     apiURL := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", t.botToken)
     body := map[string]interface{}{

@@ -1,14 +1,14 @@
 // main.go
 package main
 
-// @title           SaaSPro ERP API
+// @title           Business Stack ERP API
 // @version         3.12.0
 // @description     Полноценная ERP система с управлением складом, финансами, CRM, интеграциями
 // @description     Включает модули: 1С, Bitrix24, VPN, Безопасность, AI Агенты, PWA
 // @termsOfService  http://localhost:8080/terms
 // @contact.name    API Support
 // @contact.url     http://localhost:8080/support
-// @contact.email   support@saaspro.ru
+// @contact.email   support@Business Stack.ru
 // @license.name    MIT
 // @license.url     https://opensource.org/licenses/MIT
 // @host            localhost:8080

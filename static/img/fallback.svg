@@ -1,5 +1,5 @@
 <svg width="800" height="400" xmlns="http://www.w3.org/2000/svg">
     <rect width="800" height="400" fill="#2d3748"/>
-    <text x="400" y="200" fill="#4ade80" font-size="32" text-anchor="middle">SaaSPro</text>
+    <text x="400" y="200" fill="#4ade80" font-size="32" text-anchor="middle">Business Stack</text>
     <text x="400" y="250" fill="#60a5fa" font-size="16" text-anchor="middle">Управление подписками</text>
 </svg>

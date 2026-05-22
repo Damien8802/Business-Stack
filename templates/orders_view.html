@@ -5,7 +5,7 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SaaSPro | Админ-панель заявок</title>
+    <title>Business Stack | Админ-панель заявок</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -322,7 +322,7 @@
     <div class="container">
         <div class="header">
             <h1><i class="fas fa-crown me-3"></i> Админ-панель заявок</h1>
-            <p><i class="fas fa-chart-line me-2"></i>Управление заявками на разработку | SaaSPro Premium</p>
+            <p><i class="fas fa-chart-line me-2"></i>Управление заявками на разработку | Business Stack Premium</p>
         </div>
         
         <div class="stats-grid">
@@ -392,8 +392,8 @@
             document.getElementById('newCount').innerHTML = newOrders.length;
             document.getElementById('viewedCount').innerHTML = viewedOrders.length;
             document.getElementById('todayCount').innerHTML = todayOrders.length;
-            if (newOrders.length > 0) document.title = `(${newOrders.length}) Новые заявки | SaaSPro Admin`;
-            else document.title = `Заявки | SaaSPro Admin`;
+            if (newOrders.length > 0) document.title = `(${newOrders.length}) Новые заявки | Business Stack Admin`;
+            else document.title = `Заявки | Business Stack Admin`;
         }
         
         function filterOrders(filter) {

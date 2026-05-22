@@ -304,7 +304,7 @@ func main() {
 
     r.GET("/finance", func(c *gin.Context) {
         c.HTML(http.StatusOK, "finance.html", gin.H{
-            "title": "Финансовый учет | SaaSPro",
+            "title": "Финансовый учет | Business Stack",
         })
     })
 
@@ -323,7 +323,7 @@ func main() {
     // Страница поставщиков
     r.GET("/suppliers", func(c *gin.Context) {
         c.HTML(http.StatusOK, "suppliers.html", gin.H{
-            "title": "Поставщики | SaaSPro",
+            "title": "Поставщики | Business Stack",
         })
     })
 
@@ -335,7 +335,7 @@ func main() {
         c.Header("Last-Modified", time.Now().UTC().Format(http.TimeFormat))
         c.Header("ETag", "")
         c.HTML(http.StatusOK, "purchases.html", gin.H{
-            "title": "Закупки | SaaSPro",
+            "title": "Закупки | Business Stack",
             "cacheBuster": time.Now().UnixNano(),
         })
     })
@@ -375,7 +375,7 @@ func main() {
 
     r.GET("/reports", func(c *gin.Context) {
         c.HTML(http.StatusOK, "reports.html", gin.H{
-            "title": "Отчеты и аналитика | SaaSPro",
+            "title": "Отчеты и аналитика | Business Stack",
         })
     })
 
@@ -388,7 +388,7 @@ func main() {
     r.POST("/api/1c/settings", handlers.UpdateSyncSettings)
     r.GET("/integration/1c", func(c *gin.Context) {
         c.HTML(http.StatusOK, "integration_1c.html", gin.H{
-            "title": "Интеграция с 1С | SaaSPro",
+            "title": "Интеграция с 1С | Business Stack",
         })
     })
     r.POST("/api/1c/webhook", handlers.AddWebhookHandler)
@@ -402,7 +402,7 @@ func main() {
     r.GET("/api/bitrix/logs", handlers.GetBitrixSyncLogs)
     r.GET("/integration/bitrix", func(c *gin.Context) {
         c.HTML(http.StatusOK, "integration_bitrix.html", gin.H{
-            "title": "Интеграция с Bitrix24 | SaaSPro",
+            "title": "Интеграция с Bitrix24 | Business Stack",
         })
     })
     r.POST("/api/bitrix/task", handlers.SyncTasksToBitrix)
@@ -745,7 +745,7 @@ r.Use(handlers.SecurityMiddleware())
 
     r.NoRoute(func(c *gin.Context) {
         c.HTML(http.StatusNotFound, "404.html", gin.H{
-            "Title":   "Страница не найдена - SaaSPro",
+            "Title":   "Страница не найдена - Business Stack",
             "Version": "3.0",
         })
     })
@@ -753,7 +753,7 @@ r.Use(handlers.SecurityMiddleware())
     port := ":" + cfg.Port
     baseURL := "http://localhost:" + cfg.Port
     fmt.Printf("\n============================================================\n")
-    fmt.Printf("   🚀 SaaSPro - ПОЛНАЯ ВЕРСИЯ 3.0 (УНИФИЦИРОВАННАЯ)\n")
+    fmt.Printf("   🚀 Business Stack - ПОЛНАЯ ВЕРСИЯ 3.0 (УНИФИЦИРОВАННАЯ)\n")
     fmt.Printf("============================================================\n\n")
     fmt.Printf("📍 ВСЕ ИНТЕРФЕЙСЫ ДОСТУПНЫ ПО ССЫЛКАМ:\n\n")
     fmt.Printf("   🔹 Главная           %s/\n", baseURL)

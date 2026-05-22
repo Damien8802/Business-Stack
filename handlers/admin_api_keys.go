@@ -30,7 +30,7 @@ return
 totalPages := (int(total) + limit - 1) / limit
 
 c.HTML(http.StatusOK, "admin_api_keys.html", gin.H{
-"Title":      "Управление API-ключами - SaaSPro",
+"Title":      "Управление API-ключами - Business Stack",
 "Version":    "3.0",
 "Keys":       keys,
 "Page":       page,

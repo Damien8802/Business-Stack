@@ -207,7 +207,7 @@ func TranscriptionsPage(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "transcriptions.html", gin.H{
-        "Title":     "Транскрибация звонков - SaaSPro",
+        "Title":     "Транскрибация звонков - Business Stack",
         "Version":   "3.0",
         "UserEmail": userEmail,
         "UserName":  userName,

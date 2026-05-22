@@ -14,7 +14,7 @@ import (
 // ArchivePageHandler - страница архива
 func ArchivePageHandler(c *gin.Context) {
     c.HTML(http.StatusOK, "archive_index.html", gin.H{
-        "Title": "Архив | SaaSPro",
+        "Title": "Архив | Business Stack",
     })
 }
 

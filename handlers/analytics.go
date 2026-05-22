@@ -47,7 +47,7 @@ func AnalyticsHandler(c *gin.Context) {
     data.PageLoadTime = time.Since(start).String()
 
     c.HTML(http.StatusOK, "analytics.html", gin.H{
-        "Title":   "Аналитика - SaaSPro",
+        "Title":   "Аналитика - Business Stack",
         "Data":    data,
         "Version": "3.0",
     })

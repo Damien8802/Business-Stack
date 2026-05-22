@@ -25,7 +25,7 @@ func HomeHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "index.html", gin.H{
-        "Title":           "SaaSPro - Управление подписками",
+        "Title":           "Business Stack - Управление подписками",
         "Version":         "3.0",
         "Time":            time.Now().Format("2006-01-02 15:04:05"),
         "IsAuthenticated": isAuthenticated,
@@ -49,7 +49,7 @@ func DashboardHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "dashboard.html", gin.H{
-        "Title":           "Дашборд - SaaSPro",
+        "Title":           "Дашборд - Business Stack",
         "Version":         "3.0",
         "Time":            time.Now().Format("2006-01-02 15:04:05"),
         "IsAuthenticated": isAuthenticated,
@@ -74,7 +74,7 @@ func AdminHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "admin.html", gin.H{
-        "Title":           "Админ-панель - SaaSPro",
+        "Title":           "Админ-панель - Business Stack",
         "Version":         "3.0",
         "Time":            time.Now().Format("2006-01-02 15:04:05"),
         "IsAuthenticated": isAuthenticated,
@@ -99,7 +99,7 @@ func PaymentHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "payment.html", gin.H{
-        "Title":           "Платежи - SaaSPro",
+        "Title":           "Платежи - Business Stack",
         "Version":         "3.0",
         "Time":            time.Now().Format("2006-01-02 15:04:05"),
         "IsAuthenticated": isAuthenticated,
@@ -124,7 +124,7 @@ func PricingHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "pricing.html", gin.H{
-        "Title":           "Тарифы - SaaSPro",
+        "Title":           "Тарифы - Business Stack",
         "Version":         "3.0",
         "Time":            time.Now().Format("2006-01-02 15:04:05"),
         "IsAuthenticated": isAuthenticated,
@@ -136,7 +136,7 @@ func PricingHandler(c *gin.Context) {
 // ==================== АВТОРИЗАЦИЯ (СТРАНИЦЫ) ====================
 func LoginPageHandler(c *gin.Context) {
     c.HTML(http.StatusOK, "login.html", gin.H{
-        "Title":   "Вход - SaaSPro",
+        "Title":   "Вход - Business Stack",
         "Version": "3.0",
         "Time":    time.Now().Format("2006-01-02 15:04:05"),
     })
@@ -144,7 +144,7 @@ func LoginPageHandler(c *gin.Context) {
 
 func RegisterPageHandler(c *gin.Context) {
     c.HTML(http.StatusOK, "register.html", gin.H{
-        "Title":   "Регистрация - SaaSPro",
+        "Title":   "Регистрация - Business Stack",
         "Version": "3.0",
         "Time":    time.Now().Format("2006-01-02 15:04:05"),
     })
@@ -153,7 +153,7 @@ func RegisterPageHandler(c *gin.Context) {
 // ForgotPasswordPageHandler - отображает страницу восстановления пароля
 func ForgotPasswordPageHandler(c *gin.Context) {
     c.HTML(http.StatusOK, "forgot-password.html", gin.H{
-        "Title":   "Восстановление пароля - SaaSPro",
+        "Title":   "Восстановление пароля - Business Stack",
         "Version": "3.0",
         "Time":    time.Now().Format("2006-01-02 15:04:05"),
     })
@@ -176,7 +176,7 @@ func SettingsHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "settings.html", gin.H{
-        "Title":           "Настройки - SaaSPro",
+        "Title":           "Настройки - Business Stack",
         "Version":         "3.0",
         "Time":            time.Now().Format("2006-01-02 15:04:05"),
         "IsAuthenticated": isAuthenticated,
@@ -201,7 +201,7 @@ func UsersHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "users.html", gin.H{
-        "Title":           "Пользователи - SaaSPro",
+        "Title":           "Пользователи - Business Stack",
         "Version":         "3.0",
         "Time":            time.Now().Format("2006-01-02 15:04:05"),
         "IsAuthenticated": isAuthenticated,
@@ -226,7 +226,7 @@ func MySubscriptionsHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "my-subscriptions.html", gin.H{
-        "Title":           "Мои подписки - SaaSPro",
+        "Title":           "Мои подписки - Business Stack",
         "Version":         "3.0",
         "Time":            time.Now().Format("2006-01-02 15:04:05"),
         "IsAuthenticated": isAuthenticated,
@@ -252,7 +252,7 @@ func PartnerHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "partner.html", gin.H{
-        "Title":           "Партнерская программа - SaaSPro",
+        "Title":           "Партнерская программа - Business Stack",
         "Version":         "3.0",
         "Time":            time.Now().Format("2006-01-02 15:04:05"),
         "IsAuthenticated": isAuthenticated,
@@ -277,7 +277,7 @@ func ContactHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "contact.html", gin.H{
-        "Title":           "Контакты - SaaSPro",
+        "Title":           "Контакты - Business Stack",
         "Version":         "3.0",
         "Time":            time.Now().Format("2006-01-02 15:04:05"),
         "IsAuthenticated": isAuthenticated,
@@ -302,7 +302,7 @@ func ReferralHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "referral.html", gin.H{
-        "Title":           "Реферальная программа - SaaSPro",
+        "Title":           "Реферальная программа - Business Stack",
         "Version":         "3.0",
         "Time":            time.Now().Format("2006-01-02 15:04:05"),
         "IsAuthenticated": isAuthenticated,
@@ -328,7 +328,7 @@ func SecurityHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "security.html", gin.H{
-        "Title":           "Безопасность - SaaSPro",
+        "Title":           "Безопасность - Business Stack",
         "Version":         "3.0",
         "Time":            time.Now().Format("2006-01-02 15:04:05"),
         "IsAuthenticated": isAuthenticated,
@@ -353,7 +353,7 @@ func SecurityHubHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "security-hub.html", gin.H{
-        "Title":           "Центр безопасности - SaaSPro",
+        "Title":           "Центр безопасности - Business Stack",
         "Version":         "3.0",
         "Time":            time.Now().Format("2006-01-02 15:04:05"),
         "IsAuthenticated": isAuthenticated,
@@ -378,7 +378,7 @@ func SecurityPanelHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "security-panel.html", gin.H{
-        "Title":           "Панель безопасности - SaaSPro",
+        "Title":           "Панель безопасности - Business Stack",
         "Version":         "3.0",
         "Time":            time.Now().Format("2006-01-02 15:04:05"),
         "IsAuthenticated": isAuthenticated,
@@ -404,7 +404,7 @@ func AboutHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "about.html", gin.H{
-        "Title":           "О нас - SaaSPro",
+        "Title":           "О нас - Business Stack",
         "Version":         "3.0",
         "Time":            time.Now().Format("2006-01-02 15:04:05"),
         "IsAuthenticated": isAuthenticated,
@@ -429,7 +429,7 @@ func InfoHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "info.html", gin.H{
-        "Title":           "Информация - SaaSPro",
+        "Title":           "Информация - Business Stack",
         "Version":         "3.0",
         "Time":            time.Now().Format("2006-01-02 15:04:05"),
         "IsAuthenticated": isAuthenticated,
@@ -454,7 +454,7 @@ func IntegrationsHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "integrations.html", gin.H{
-        "Title":           "Интеграции - SaaSPro",
+        "Title":           "Интеграции - Business Stack",
         "Version":         "3.0",
         "Time":            time.Now().Format("2006-01-02 15:04:05"),
         "IsAuthenticated": isAuthenticated,
@@ -479,7 +479,7 @@ func MonetizationHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "monetization.html", gin.H{
-        "Title":           "Монетизация - SaaSPro",
+        "Title":           "Монетизация - Business Stack",
         "Version":         "3.0",
         "Time":            time.Now().Format("2006-01-02 15:04:05"),
         "IsAuthenticated": isAuthenticated,
@@ -504,7 +504,7 @@ func SubscriptionsHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "subscriptions.html", gin.H{
-        "Title":           "Подписки - SaaSPro",
+        "Title":           "Подписки - Business Stack",
         "Version":         "3.0",
         "Time":            time.Now().Format("2006-01-02 15:04:05"),
         "IsAuthenticated": isAuthenticated,
@@ -530,7 +530,7 @@ func IntegrationsPageHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "integrations.html", gin.H{
-        "title":            "Integrations - SaaSPro ERP",
+        "title":            "Integrations - Business Stack ERP",
         "active":           "integrations",
         "IsAuthenticated":  isAuthenticated,
         "UserName":         userName,
@@ -555,7 +555,7 @@ func PricingPageHandler(c *gin.Context) {
     }
 
     c.HTML(http.StatusOK, "pricing.html", gin.H{
-        "Title":           "Тарифы - SaaSPro",
+        "Title":           "Тарифы - Business Stack",
         "IsAuthenticated": isAuthenticated,
         "UserName":        userName,
         "IsDeveloper":     isDeveloper,

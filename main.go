@@ -411,7 +411,7 @@ public := r.Group("/")
     // ========== БЛОГ ==========
     r.GET("/blog", func(c *gin.Context) {
         c.HTML(200, "blog.html", gin.H{
-            "title": "Блог | SaaSPro - новости и статьи",
+            "title": "Блог | Business Stack - новости и статьи",
         })
     })
 }
@@ -426,54 +426,54 @@ r.GET("/scrum", func(c *gin.Context) {
 // Страница налоговой отчётности
 r.GET("/tax-reports", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("tax-reporting"), func(c *gin.Context) {
     c.HTML(http.StatusOK, "tax_reports", gin.H{
-        "title": "Налоговая отчётность | SaaSPro",
+        "title": "Налоговая отчётность | Business Stack",
     })
 })
 // Страница расчёта зарплаты
 r.GET("/payroll", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("payroll"), func(c *gin.Context) {
     c.HTML(http.StatusOK, "payroll.html", gin.H{
-        "title": "Расчёт зарплаты | SaaSPro",
+        "title": "Расчёт зарплаты | Business Stack",
     })
 })
 // ========== СТРАНИЦЫ ДОКУМЕНТОВ ==========
 r.GET("/offer", func(c *gin.Context) {
     c.HTML(http.StatusOK, "offer.html", gin.H{
-        "title": "Договор оферты | SaaSPro",
+        "title": "Договор оферты | Business Stack",
     })
 })
 r.GET("/privacy", func(c *gin.Context) {
     c.HTML(http.StatusOK, "privacy.html", gin.H{
-        "title": "Политика конфиденциальности | SaaSPro",
+        "title": "Политика конфиденциальности | Business Stack",
     })
 })
 r.GET("/terms", func(c *gin.Context) {
     c.HTML(http.StatusOK, "terms.html", gin.H{
-        "title": "Условия использования | SaaSPro",
+        "title": "Условия использования | Business Stack",
     })
 })
 r.GET("/faq", func(c *gin.Context) {
     c.HTML(http.StatusOK, "faq.html", gin.H{
-        "title": "FAQ | SaaSPro",
+        "title": "FAQ | Business Stack",
     })
 })
 r.GET("/docs", func(c *gin.Context) {
     c.HTML(http.StatusOK, "docs.html", gin.H{
-        "title": "Документация | SaaSPro",
+        "title": "Документация | Business Stack",
     })
 })
     // ========== СТАТИКА, РЕДИРЕКТЫ ==========
 
-// ========== СКАЧИВАНИЕ SaaSPro VPN ==========
+// ========== СКАЧИВАНИЕ Business Stack VPN ==========
 r.GET("/download", func(c *gin.Context) {
     c.HTML(http.StatusOK, "download.html", gin.H{
-        "title": "SaaSPro VPN - Установить",
+        "title": "Business Stack VPN - Установить",
     })
 })
 
-r.GET("/downloads/saaspro.apk", func(c *gin.Context) {
+r.GET("/downloads/Business Stack.apk", func(c *gin.Context) {
     c.Header("Content-Type", "application/vnd.android.package-archive")
-    c.Header("Content-Disposition", "attachment; filename=saaspro.apk")
-    c.File("./static/downloads/saaspro.apk")
+    c.Header("Content-Disposition", "attachment; filename=Business Stack.apk")
+    c.File("./static/downloads/Business Stack.apk")
 })
 
 r.GET("/get-vpn", func(c *gin.Context) {
@@ -553,7 +553,7 @@ journalAPI.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("j
     // Universal AI Assistant - страница
     r.GET("/ai-assistant", func(c *gin.Context) {
         c.HTML(http.StatusOK, "ai_assistant_page.html", gin.H{
-            "title": "AI-ассистент SaaSPro",
+            "title": "AI-ассистент Business Stack",
         })
     })
 
@@ -835,7 +835,7 @@ r.GET("/api/qr/reset-status", handlers.QRResetStatusWebSocket)
 
     r.GET("/finance", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("fincore"), func(c *gin.Context) {
         c.HTML(http.StatusOK, "finance.html", gin.H{
-            "title": "Финансовый учет | SaaSPro",
+            "title": "Финансовый учет | Business Stack",
         })
     })
 
@@ -864,13 +864,13 @@ r.GET("/api/qr/reset-status", handlers.QRResetStatusWebSocket)
 r.GET("/suppliers", func(c *gin.Context) {
     // Проверяем существование шаблона
     c.HTML(http.StatusOK, "suppliers.html", gin.H{
-        "title": "Поставщики | SaaSPro",
+        "title": "Поставщики | Business Stack",
         "message": "Управление поставщиками",
     })
 })
     r.GET("/inventory/products", func(c *gin.Context) {
         c.HTML(http.StatusOK, "inventory_products.html", gin.H{
-            "title": "Товары - SaaSPro",
+            "title": "Товары - Business Stack",
         })
     })
 
@@ -882,7 +882,7 @@ r.GET("/suppliers", func(c *gin.Context) {
         c.Header("Last-Modified", time.Now().UTC().Format(http.TimeFormat))
         c.Header("ETag", "")
         c.HTML(http.StatusOK, "purchases.html", gin.H{
-            "title": "Закупки | SaaSPro",
+            "title": "Закупки | Business Stack",
             "cacheBuster": time.Now().UnixNano(),
         })
     })
@@ -947,7 +947,7 @@ r.GET("/developer-portal", middleware.AuthMiddleware(cfg), handlers.DeveloperPor
 
     r.GET("/reports", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("reports-analytics"), func(c *gin.Context) {
         c.HTML(http.StatusOK, "reports.html", gin.H{
-            "title": "Отчеты и аналитика | SaaSPro",
+            "title": "Отчеты и аналитика | Business Stack",
         })
     })
 
@@ -966,7 +966,7 @@ r.GET("/journal", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess
     r.POST("/api/1c/settings", handlers.UpdateSyncSettings)
     r.GET("/integration/1c", func(c *gin.Context) {
         c.HTML(http.StatusOK, "integration_1c.html", gin.H{
-            "title": "Интеграция с 1С | SaaSPro",
+            "title": "Интеграция с 1С | Business Stack",
         })
     })
     r.POST("/api/1c/webhook", handlers.AddWebhookHandler)
@@ -980,7 +980,7 @@ r.GET("/journal", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess
     r.GET("/api/bitrix/logs", handlers.GetBitrixSyncLogs)
     r.GET("/integration/bitrix", func(c *gin.Context) {
         c.HTML(http.StatusOK, "integration_bitrix.html", gin.H{
-            "title": "Интеграция с Bitrix24 | SaaSPro",
+            "title": "Интеграция с Bitrix24 | Business Stack",
         })
     })
     r.POST("/api/bitrix/task", handlers.SyncTasksToBitrix)
@@ -1146,7 +1146,7 @@ responsesAPI.Use(middleware.AuthMiddleware(cfg))
     // Страница WhatsApp
     r.GET("/whatsapp", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("whatsapp"), func(c *gin.Context) {
         c.HTML(http.StatusOK, "whatsapp.html", gin.H{
-            "title": "WhatsApp Business | SaaSPro",
+            "title": "WhatsApp Business | Business Stack",
         })
     })
 
@@ -1181,7 +1181,7 @@ responsesAPI.Use(middleware.AuthMiddleware(cfg))
     // Страница управления чат-ботом (ТОЛЬКО ДЛЯ АДМИНОВ И РАЗРАБОТЧИКОВ)
     r.GET("/chatbot", middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), func(c *gin.Context) {
         c.HTML(http.StatusOK, "chatbot.html", gin.H{
-            "title": "AI Чат-бот (Dev Mode) | SaaSPro",
+            "title": "AI Чат-бот (Dev Mode) | Business Stack",
         })
     })
     
@@ -1200,14 +1200,14 @@ responsesAPI.Use(middleware.AuthMiddleware(cfg))
     // Страница бэкапов
     r.GET("/backup", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("backup"), func(c *gin.Context) {
         c.HTML(http.StatusOK, "backup.html", gin.H{
-            "title": "Резервное копирование | SaaSPro",
+            "title": "Резервное копирование | Business Stack",
         })
     })
 
     // Страница банк-клиента
     r.GET("/bank", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("bank-client"), func(c *gin.Context) {
     c.HTML(http.StatusOK, "bank_integration.html", gin.H{
-        "title": "Банк-клиент | SaaSPro",
+        "title": "Банк-клиент | Business Stack",
     })
 })
 
@@ -1320,7 +1320,7 @@ taxAPI.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("tax-r
     // Страница email-маркетинга
     r.GET("/email-marketing", func(c *gin.Context) {
         c.HTML(http.StatusOK, "email_marketing.html", gin.H{
-            "title": "Email-маркетинг | SaaSPro",
+            "title": "Email-маркетинг | Business Stack",
         })
     })
 
@@ -1354,7 +1354,7 @@ taxAPI.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("tax-r
     // Страница маркетплейсов
     r.GET("/marketplace-integrations", func(c *gin.Context) {
         c.HTML(http.StatusOK, "marketplace_integrations.html", gin.H{
-            "title": "Интеграция с маркетплейсами | SaaSPro",
+            "title": "Интеграция с маркетплейсами | Business Stack",
         })
     })
 
@@ -1440,7 +1440,7 @@ vpnAlias.Use(middleware.AuthMiddleware(cfg))
     // Страница миграции
     r.GET("/migration", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("migration"), func(c *gin.Context) {
         c.HTML(http.StatusOK, "migration.html", gin.H{
-            "title": "Миграция данных 3 фазы | SaaSPro",
+            "title": "Миграция данных 3 фазы | Business Stack",
         })
     })
     
@@ -1567,7 +1567,7 @@ r.GET("/profile", middleware.AuthMiddleware(cfg), func(c *gin.Context) {
         })
     } else {
         c.HTML(200, "client_profile.html", gin.H{
-            "title": "Мой кабинет | SaaSPro",
+            "title": "Мой кабинет | Business Stack",
         })
     }
 })
@@ -1579,7 +1579,7 @@ r.GET("/client-profile", middleware.AuthMiddleware(cfg), func(c *gin.Context) {
         return
     }
     c.HTML(200, "client_profile.html", gin.H{
-        "title": "Мой кабинет | SaaSPro",
+        "title": "Мой кабинет | Business Stack",
     })
 })
 
@@ -2516,7 +2516,7 @@ r.DELETE("/api/orders/:id/delete", func(c *gin.Context) {
 // Страница просмотра заявок (админка)
 r.GET("/admin/orders-view", func(c *gin.Context) {
     c.HTML(200, "orders_view.html", gin.H{
-        "title": "Заявки | SaaSPro Admin",
+        "title": "Заявки | Business Stack Admin",
     })
 })
 
@@ -3042,7 +3042,7 @@ r.PUT("/api/orders/:id/remaining", middleware.AuthMiddleware(cfg), middleware.Ad
 
       r.NoRoute(func(c *gin.Context) {
         c.HTML(http.StatusNotFound, "404.html", gin.H{
-            "Title":   "Страница не найдена - SaaSPro",
+            "Title":   "Страница не найдена - Business Stack",
             "Version": "3.0",
         })
     })
@@ -3149,14 +3149,14 @@ r.GET("/api/ai/widget", func(c *gin.Context) {
 
     r.GET("/security-center", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("security"), func(c *gin.Context) {
         c.HTML(http.StatusOK, "security_universal.html", gin.H{
-            "title": "Security Center | SaaSPro",
+            "title": "Security Center | Business Stack",
         })
     })
 
     // Универсальная аналитика - новый путь
     r.GET("/analytics-center", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("analytics"), func(c *gin.Context) {
         c.HTML(http.StatusOK, "analytics_universal.html", gin.H{
-            "title": "Analytics Center | SaaSPro",
+            "title": "Analytics Center | Business Stack",
         })
     })
 

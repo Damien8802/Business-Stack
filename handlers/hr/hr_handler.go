@@ -13,7 +13,7 @@ import (
 // HRDashboardHandler - главная страница HR модуля
 func HRDashboardHandler(c *gin.Context) {
     c.HTML(http.StatusOK, "hr/index.html", gin.H{
-        "Title": "HR-модуль | SaaSPro",
+        "Title": "HR-модуль | Business Stack",
     })
 }
 

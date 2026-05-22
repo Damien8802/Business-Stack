@@ -12,7 +12,7 @@ func AdminDashboardHandler(c *gin.Context) {
 stats, err := models.GetAdminStats()
 if err != nil {
 c.HTML(http.StatusOK, "admin_dashboard.html", gin.H{
-"Title":   "Админ-панель - SaaSPro",
+"Title":   "Админ-панель - Business Stack",
 "Version": "3.0",
 "Stats":   &models.AdminStats{},
 "Error":   "Не удалось загрузить статистику",
@@ -20,7 +20,7 @@ c.HTML(http.StatusOK, "admin_dashboard.html", gin.H{
 return
 }
 c.HTML(http.StatusOK, "admin_dashboard.html", gin.H{
-"Title":   "Админ-панель - SaaSPro",
+"Title":   "Админ-панель - Business Stack",
 "Version": "3.0",
 "Stats":   stats,
 })

@@ -8,6 +8,6 @@ import (
 
 func SupportPageHandler(c *gin.Context) {
     c.HTML(http.StatusOK, "support.html", gin.H{
-        "Title": "Поддержка - SaaSPro",
+        "Title": "Поддержка - Business Stack",
     })
 }

@@ -65,8 +65,8 @@ func (s *OpenRouterService) Ask(prompt string, model string, temperature float64
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+s.APIKey)
-	req.Header.Set("HTTP-Referer", "https://saaspro.local")
-	req.Header.Set("X-Title", "SaaSPro CRM")
+	req.Header.Set("HTTP-Referer", "https://Business Stack.local")
+	req.Header.Set("X-Title", "Business Stack CRM")
 
 	resp, err := s.HTTPClient.Do(req)
 	if err != nil {

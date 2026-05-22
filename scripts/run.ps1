@@ -1,4 +1,4 @@
-# run.ps1 - Скрипт запуска SaaSPro 3.0 Enhanced
+# run.ps1 - Скрипт запуска Business Stack 3.0 Enhanced
 
 param(
     [string]$Mode = "dev",
@@ -19,7 +19,7 @@ if ($Help) {
     exit
 }
 
-Write-Host "🚀 SaaSPro 3.0 Enhanced" -ForegroundColor Cyan
+Write-Host "🚀 Business Stack 3.0 Enhanced" -ForegroundColor Cyan
 Write-Host "========================" -ForegroundColor Cyan
 
 # Режим запуска
@@ -35,7 +35,7 @@ if ($Mode -eq "prod") {
 if ($Build) {
     Write-Host "📦 Сборка проекта..." -ForegroundColor Yellow
     go mod tidy
-    go build -o saaspro.exe
+    go build -o Business Stack.exe
     if ($LASTEXITCODE -eq 0) {
         Write-Host "✅ Сборка успешна" -ForegroundColor Green
     } else {

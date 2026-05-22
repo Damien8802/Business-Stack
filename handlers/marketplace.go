@@ -13,7 +13,7 @@ import (
 // MarketplacePageHandler - главная страница маркетплейса
 func MarketplacePageHandler(c *gin.Context) {
     c.HTML(http.StatusOK, "marketplace_index.html", gin.H{
-        "Title": "Маркетплейс | SaaSPro",
+        "Title": "Маркетплейс | Business Stack",
     })
 }
 

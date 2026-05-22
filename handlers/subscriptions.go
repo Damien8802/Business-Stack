@@ -31,7 +31,7 @@ func MySubscriptionsPageHandler(c *gin.Context) {
     if err != nil {
         log.Printf("❌ Ошибка запроса подписок: %v", err)
         c.HTML(http.StatusOK, "my-subscriptions.html", gin.H{
-            "title":         "Мои подписки | SaaSPro",
+            "title":         "Мои подписки | Business Stack",
             "Subscriptions": []gin.H{},
             "isMaxVersion":  false,
         })
@@ -77,7 +77,7 @@ func MySubscriptionsPageHandler(c *gin.Context) {
     log.Printf("📊 Найдено активных подписок: %d, isMaxVersion=%v", len(subscriptions), isMaxVersion)
     
     c.HTML(http.StatusOK, "my-subscriptions.html", gin.H{
-        "title":         "Мои подписки | SaaSPro",
+        "title":         "Мои подписки | Business Stack",
         "Subscriptions": subscriptions,
         "isMaxVersion":  isMaxVersion,
     })

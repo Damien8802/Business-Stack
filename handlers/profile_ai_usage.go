@@ -37,7 +37,7 @@ keys = []models.APIKey{}
 }
 
 c.HTML(http.StatusOK, "profile_ai_usage.html", gin.H{
-"Title":         "Мои AI-запросы - SaaSPro",
+"Title":         "Мои AI-запросы - Business Stack",
 "Version":       "3.0",
 "TotalTokens":   totalTokens,
 "TotalRequests": totalRequests,

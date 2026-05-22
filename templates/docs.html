@@ -5,7 +5,7 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Документация | SaaSPro</title>
+    <title>Документация | Business Stack</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -110,10 +110,10 @@
         // Данные для разных разделов документации
         const sections = {
             'getting-started': {
-                title: '🚀 Начало работы с SaaSPro',
+                title: '🚀 Начало работы с Business Stack',
                 content: `
-                    <h1>🚀 Начало работы с SaaSPro</h1>
-                    <p>Добро пожаловать в SaaSPro! Эта документация поможет вам быстро освоиться с платформой.</p>
+                    <h1>🚀 Начало работы с Business Stack</h1>
+                    <p>Добро пожаловать в Business Stack! Эта документация поможет вам быстро освоиться с платформой.</p>
                     
                     <h2>Регистрация</h2>
                     <p>1. Перейдите на страницу <a href="/register" style="color: #a5b4fc;">/register</a></p>
@@ -132,27 +132,27 @@
                     <p>Для создания индивидуальной заявки перейдите в раздел <strong>Индивидуальная разработка</strong> и заполните форму.</p>
                     
                     <pre><code>// Пример запроса к API
-curl -X POST https://api.saaspro.ru/v1/ai/ask \\
+curl -X POST https://api.Business Stack.ru/v1/ai/ask \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"message":"Привет!"}'</code></pre>
                     
                     <h2>Поддержка</h2>
-                    <p>Если у вас возникли вопросы, обращайтесь в поддержку 24/7: <strong>dev@businesstack.ru</strong> или Telegram <strong>@saaspro_support</strong></p>
+                    <p>Если у вас возникли вопросы, обращайтесь в поддержку 24/7: <strong>dev@businesstack.ru</strong> или Telegram <strong>@Business Stack_support</strong></p>
                 `
             },
             'api': {
                 title: '🔌 API интеграция',
                 content: `
                     <h1>🔌 API интеграция</h1>
-                    <p>SaaSPro предоставляет мощный REST API для интеграции с вашими сервисами.</p>
+                    <p>Business Stack предоставляет мощный REST API для интеграции с вашими сервисами.</p>
                     
                     <h2>Базовый URL</h2>
-                    <pre><code>https://api.saaspro.ru/v1/</code></pre>
+                    <pre><code>https://api.Business Stack.ru/v1/</code></pre>
                     
                     <h2>Аутентификация</h2>
                     <p>Для доступа к API требуется API ключ. Получить ключ можно в разделе <strong>Настройки → API ключи</strong>.</p>
-                    <pre><code>curl -X GET https://api.saaspro.ru/v1/user/profile \\
+                    <pre><code>curl -X GET https://api.Business Stack.ru/v1/user/profile \\
   -H "Authorization: Bearer YOUR_API_KEY"</code></pre>
                     
                     <h2>Доступные эндпоинты</h2>
@@ -168,12 +168,12 @@ curl -X POST https://api.saaspro.ru/v1/ai/ask \\
                     
                     <h2>Примеры запросов</h2>
                     <pre><code>// Получение профиля
-fetch('https://api.saaspro.ru/v1/user/profile', {
+fetch('https://api.Business Stack.ru/v1/user/profile', {
     headers: { 'Authorization': 'Bearer YOUR_API_KEY' }
 }).then(r => r.json()).then(console.log);
 
 // Запрос к AI
-fetch('https://api.saaspro.ru/v1/ai/ask', {
+fetch('https://api.Business Stack.ru/v1/ai/ask', {
     method: 'POST',
     headers: {
         'Authorization': 'Bearer YOUR_API_KEY',
@@ -216,7 +216,7 @@ fetch('https://api.saaspro.ru/v1/ai/ask', {
                 title: '💳 Приём платежей',
                 content: `
                     <h1>💳 Приём платежей</h1>
-                    <p>SaaSPro поддерживает различные способы оплаты для ваших клиентов.</p>
+                    <p>Business Stack поддерживает различные способы оплаты для ваших клиентов.</p>
                     
                     <h2>Доступные способы оплаты</h2>
                     <ul>
@@ -305,7 +305,7 @@ if (signature === expected) {
             const section = sections[sectionId];
             if (section) {
                 document.getElementById('docsContent').innerHTML = section.content;
-                document.title = section.title + ' | SaaSPro';
+                document.title = section.title + ' | Business Stack';
                 // Плавный скролл к началу контента
                 document.querySelector('.docs-content').scrollTop = 0;
             }

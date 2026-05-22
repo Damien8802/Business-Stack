@@ -9,6 +9,6 @@ import (
 // GoodsReceiptsPageHandler - страница приемки товаров
 func GoodsReceiptsPageHandler(c *gin.Context) {
     c.HTML(http.StatusOK, "goods_receipts.html", gin.H{
-        "title": "Приемка товаров | SaaSPro",
+        "title": "Приемка товаров | Business Stack",
     })
 }

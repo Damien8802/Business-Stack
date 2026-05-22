@@ -57,7 +57,7 @@ c.JSON(http.StatusOK, gin.H{
 // AdvancedAnalyticsPage - отображение страницы аналитики
 func AdvancedAnalyticsPage(c *gin.Context) {
 c.HTML(http.StatusOK, "advanced_analytics.html", gin.H{
-"Title": "Расширенная аналитика - SaaSPro",
+"Title": "Расширенная аналитика - Business Stack",
 "Version": "3.0",
 "UserEmail": "admin@example.com",
 "UserName": "Администратор",

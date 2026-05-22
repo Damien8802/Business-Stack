@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  runApp(const SaaSProApp());
+  runApp(const Business StackApp());
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -15,13 +15,13 @@ void main() {
   );
 }
 
-class SaaSProApp extends StatelessWidget {
-  const SaaSProApp({super.key});
+class Business StackApp extends StatelessWidget {
+  const Business StackApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'SaaSPro VPN',
+      title: 'Business Stack VPN',
       theme: ThemeData(
         brightness: Brightness.dark,
         primaryColor: const Color(0xFF6C5CE7),
@@ -146,7 +146,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 ),
                 const SizedBox(height: 30),
                 const Text(
-                  'SaaSPro',
+                  'Business Stack',
                   style: TextStyle(
                     fontSize: 48,
                     fontWeight: FontWeight.bold,
@@ -278,7 +278,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 30),
                   const Text(
-                    'SaaSPro',
+                    'Business Stack',
                     style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 40),
@@ -554,7 +554,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 20),
         const Text(
-          'SaaSPro',
+          'Business Stack',
           style: TextStyle(
             fontSize: 44,
             fontWeight: FontWeight.bold,
@@ -848,7 +848,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 20),
           const Text(
-            'SaaSPro User',
+            'Business Stack User',
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const Text('Premium', style: TextStyle(color: Colors.white70)),

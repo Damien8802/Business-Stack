@@ -426,7 +426,7 @@ func generateRandomString(length int) string {
 // DeveloperPortalHandler - страница для разработчиков
 func DeveloperPortalHandler(c *gin.Context) {
     c.HTML(http.StatusOK, "developer-portal", gin.H{
-        "title": "Developer Portal | SaaSPro Identity Hub",
+        "title": "Developer Portal | Business Stack Identity Hub",
     })
 }
 
@@ -911,7 +911,7 @@ func IdentityHubRouter(c *gin.Context) {
     }
     
     // 1. РАЗРАБОТЧИК/АДМИН - полный доступ без триала
-    if role == "developer" || role == "admin" || email == "dev@saaspro.ru" {
+    if role == "developer" || role == "admin" || email == "dev@Business Stack.ru" {
         fmt.Println("✅ DEVELOPER/ADMIN - full access to identity-hub.html")
         c.HTML(http.StatusOK, "identity-hub.html", gin.H{
             "title":  "Identity Hub | Центр управления идентификацией",

@@ -10,7 +10,7 @@ import (
 // ReferralPageHandler - страница реферальной программы
 func ReferralPageHandler(c *gin.Context) {
     c.HTML(http.StatusOK, "referral.html", gin.H{
-        "Title": "Referral - SaaSPro",
+        "Title": "Referral - Business Stack",
     })
 }
 

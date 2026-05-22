@@ -70,7 +70,7 @@ func GetPlatformSettings(c *gin.Context) {
     c.JSON(http.StatusOK, gin.H{
         "success": true,
         "settings": gin.H{
-            "app_name":     "SaaSPro",
+            "app_name":     "Business Stack",
             "app_version":  "3.0",
             "company_name": "BusinessStack",
         },

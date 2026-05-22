@@ -1,6 +1,6 @@
-# start-dev.ps1 – запуск всех компонентов SaaSPro
+# start-dev.ps1 – запуск всех компонентов Business Stack
 
-Write-Host "🚀 Запуск всех компонентов SaaSPro..." -ForegroundColor Cyan
+Write-Host "🚀 Запуск всех компонентов Business Stack..." -ForegroundColor Cyan
 
 # 1. Запуск основного сервера (Go)
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd C:\Projects\subscription-clean-WORKS; go run main.go" -WindowStyle Normal

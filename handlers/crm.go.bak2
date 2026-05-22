@@ -266,7 +266,7 @@ func GetEntityHistory(c *gin.Context) {
 // CRMHandler отображает страницу CRM
 func CRMHandler(c *gin.Context) {
     c.HTML(http.StatusOK, "crm.html", gin.H{
-        "Title": "CRM система - SaaSPro",
+        "Title": "CRM система - Business Stack",
     })
 }
 
@@ -3001,7 +3001,7 @@ func DeleteEvent(c *gin.Context) {
 // CalendarHandler отображает страницу календаря сделок
 func CalendarHandler(c *gin.Context) {
     c.HTML(http.StatusOK, "calendar.html", gin.H{
-        "Title": "Календарь сделок - SaaSPro",
+        "Title": "Календарь сделок - Business Stack",
     })
 }
 // Конец файла

@@ -15,7 +15,7 @@ import (
 
 func HRDashboardHandler(c *gin.Context) {
     c.HTML(http.StatusOK, "hr/hr.html", gin.H{
-        "Title": "HR-модуль | SaaSPro",
+        "Title": "HR-модуль | Business Stack",
     })
 }
 

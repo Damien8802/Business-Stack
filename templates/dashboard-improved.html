@@ -5,7 +5,7 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Дашборд | SubPro v3.0</title>
+   <title>Дашборд | Business Stack</title>
     
     <!-- Bootstrap 5 Dark Theme -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-dark-5@1.1.3/dist/css/bootstrap-dark.min.css" rel="stylesheet">
@@ -23,6 +23,50 @@
             --sidebar-width: 280px;
         }
         
+/* Подсветка для всех карточек как у TeamSphere */
+.action-card {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 16px;
+    padding: 20px 12px;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-decoration: none;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 120px;
+}
+
+/* Индивидуальные цвета подсветки */
+.action-card:hover:nth-child(1) { background: linear-gradient(135deg, #10b98120, #05966920); border-color: #10b981; }
+.action-card:hover:nth-child(2) { background: linear-gradient(135deg, #667eea20, #764ba220); border-color: #667eea; }
+.action-card:hover:nth-child(3) { background: linear-gradient(135deg, #f59e0b20, #d9770620); border-color: #f59e0b; }
+.action-card:hover:nth-child(4) { background: linear-gradient(135deg, #06b6d420, #0891b220); border-color: #06b6d4; }
+.action-card:hover:nth-child(5) { background: linear-gradient(135deg, #ec489920, #be185d20); border-color: #ec4899; }
+.action-card:hover:nth-child(6) { background: linear-gradient(135deg, #8b5cf620, #6d28d920); border-color: #8b5cf6; }
+.action-card:hover:nth-child(7) { background: linear-gradient(135deg, #fbbf2420, #d9770620); border-color: #fbbf24; }
+.action-card:hover:nth-child(8) { background: linear-gradient(135deg, #34d39920, #05966920); border-color: #34d399; }
+.action-card:hover:nth-child(9) { background: linear-gradient(135deg, #a78bfa20, #8b5cf620); border-color: #a78bfa; }
+.action-card:hover:nth-child(10) { background: linear-gradient(135deg, #f472b620, #ec489920); border-color: #f472b6; }
+
+.action-card:hover {
+    background: linear-gradient(135deg, #667eea20, #764ba220);
+    border-color: #667eea;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.2);
+}
+
+.action-card:hover .action-icon {
+    transform: scale(1.05);
+}
+
+.action-card:hover .action-title {
+    color: #a78bfa;
+}
         .sidebar {
             width: var(--sidebar-width);
             height: 100vh;
@@ -140,6 +184,12 @@
             padding: 0 20px;
         }
         
+.action-card .action-icon i {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
         .action-card {
             background: #1a1a1a;
             border: 1px solid #333;
@@ -254,7 +304,169 @@
         .row.g-4 {
             margin: 0 -10px;
         }
-    </style>
+
+
+
+
+/* Главная - зелёный */
+.sidebar .bi-house-door,
+.sidebar .bi-house {
+    background: linear-gradient(135deg, #10b981, #34d399);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+}
+
+/* Дашборд - синий */
+.sidebar .bi-speedometer2 {
+    background: linear-gradient(135deg, #3b82f6, #60a5fa);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+}
+
+/* Подписки - оранжевый */
+.sidebar .bi-credit-card,
+.sidebar .bi-wallet2 {
+    background: linear-gradient(135deg, #f59e0b, #fbbf24);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+}
+
+/* Аналитика - фиолетовый */
+.sidebar .bi-graph-up-arrow {
+    background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+}
+
+/* Тарифы - зелёный */
+.sidebar .bi-currency-dollar {
+    background: linear-gradient(135deg, #10b981, #34d399);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+}
+
+/* Миграция - голубой */
+.sidebar .bi-arrow-repeat {
+    background: linear-gradient(135deg, #06b6d4, #22d3ee);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+}
+
+/* Безопасность - розовый */
+.sidebar .bi-shield-check {
+    background: linear-gradient(135deg, #ec4899, #f472b6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+}
+
+/* Рефералы - жёлтый */
+.sidebar .bi-gift {
+    background: linear-gradient(135deg, #fbbf24, #fcd34d);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+}
+
+/* HR модуль - зелёный */
+.sidebar .bi-people {
+    background: linear-gradient(135deg, #34d399, #6ee7b7);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+}
+
+/* Профиль - светло-фиолетовый */
+.sidebar .bi-person-circle {
+    background: linear-gradient(135deg, #a78bfa, #c4b5fd);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+}
+
+/* VPN - голубой */
+.sidebar .bi-shield-lock {
+    background: linear-gradient(135deg, #06b6d4, #22d3ee);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+}
+
+/* Identity Hub - жёлтый */
+.sidebar .bi-shield-lock-fill {
+    background: linear-gradient(135deg, #fbbf24, #fcd34d);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+}
+
+/* Cloud Storage - голубой */
+.sidebar .bi-cloud-upload {
+    background: linear-gradient(135deg, #06b6d4, #22d3ee);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+}
+
+/* Архив - оранжевый */
+.sidebar .bi-archive {
+    background: linear-gradient(135deg, #f59e0b, #fbbf24);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+}
+
+/* Маркетплейс - розовый */
+.sidebar .bi-shop {
+    background: linear-gradient(135deg, #ec4899, #f472b6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+}
+
+/* Складской учет - оранжевый */
+.sidebar .bi-box-seam {
+    background: linear-gradient(135deg, #f59e0b, #fbbf24);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+}
+
+/* TeamSphere - голубой */
+.sidebar .bi-globe {
+    background: linear-gradient(135deg, #06b6d4, #22d3ee);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+}
+
+/* Логистика - голубой */
+.sidebar .bi-truck {
+    background: linear-gradient(135deg, #06b6d4, #22d3ee);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+}
+
+/* Админка - серый */
+.sidebar .bi-gear {
+    background: linear-gradient(135deg, #6b7280, #9ca3af);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+}
+
+/* Hover эффект - увеличение и свечение */
+.sidebar .nav-link:hover .bi {
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 3px currentColor);
+}    </style>
 </head>
 <body>
 
@@ -263,7 +475,7 @@
         <div class="p-4 border-bottom border-secondary">
             <a href="/" class="d-flex align-items-center text-decoration-none text-light">
                 <i class="bi bi-rocket-takeoff-fill fs-3 text-primary me-2"></i>
-                <span class="fs-4 fw-bold">SaaSPro</span>
+                <span class="fs-4 fw-bold">Business Stack</span>
                 <span class="badge bg-primary ms-2">v3.0</span>
             </a>
         </div>
@@ -281,42 +493,16 @@
             
             <ul class="nav flex-column">
     <li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/"><i class="bi bi-house-door me-3"></i>Главная</a></li>
-    <li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center active bg-primary bg-opacity-25 rounded" href="/dashboard-improved"><i class="bi bi-speedometer2 me-3"></i>Дашборд</a></li>
-    <li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/my-subscriptions"><i class="bi bi-wallet2 me-3"></i>Мои подписки</a></li>
-    <li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/analytics-center"><i class="bi bi-graph-up-arrow me-3"></i>Аналитика</a></li>
-    <li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/pricing"><i class="bi bi-currency-dollar me-3"></i>Тарифы</a></li>
-    <li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/migration"><i class="bi bi-arrow-repeat me-3" style="color: #10b981;"></i>Миграция данных<span class="badge bg-info ms-2">3 фазы</span></a></li>
-    <li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/security-center"><i class="bi bi-shield-check me-3"></i>Безопасность</a></li>
-    <li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/referral"><i class="bi bi-gift me-3"></i>Рефералы</a></li>
-    <li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/hr"><i class="bi bi-people me-3"></i>HR модуль<span class="badge bg-info ms-2">Новый</span></a></li>
-    <li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/profile"><i class="bi bi-person-circle me-3"></i>Профиль</a></li>
-    <li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/vpn"><i class="bi bi-shield-lock me-3"></i>VPN</a></li>
+ <li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/profile"><i class="bi bi-person-circle me-3"></i>Профиль</a></li>
+       <li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/my-subscriptions"><i class="bi bi-wallet2 me-3"></i>Мои подписки</a></li>
+ <li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/referral"><i class="bi bi-gift me-3"></i>Рефералы</a></li>
+       <li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/pricing"><i class="bi bi-currency-dollar me-3"></i>Тарифы</a></li>
+       <li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/security-center"><i class="bi bi-shield-check me-3"></i>Безопасность</a></li>
+           <li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/vpn"><i class="bi bi-shield-lock me-3"></i>VPN</a></li>
     <li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/identity-hub"><i class="bi bi-shield-lock-fill me-3"></i>Identity Hub</a></li>
     <li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/cloud"><i class="bi bi-cloud-upload me-2" style="color: #06b6d4;"></i>Cloud Storage</a></li>
     <li class="nav-item"><a class="nav-link text-light d-flex align-items-center" href="/archive"><i class="bi bi-archive me-3"></i>Архив</a></li>
-    <li class="nav-item"><a class="nav-link text-light d-flex align-items-center" href="/marketplace"><i class="bi bi-shop me-3"></i>Маркетплейс</a></li>
-    <li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/inventory"><i class="bi bi-box-seam me-3"></i>Складской учет</a></li>
-    <li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/teamsphere"><i class="bi bi-globe me-3"></i>TeamSphere</a></li>
-    <li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/logistics"><i class="bi bi-truck me-3"></i>Логистика</a></li>
-</ul>
-<!-- ========== FINCORE МЕНЮ ========== -->
-<li class="nav-item mt-3">
-    <div class="border-top border-secondary pt-3"></div>
-    <div class="text-muted small text-uppercase mt-2 mb-2 px-3">
-        <i class="bi bi-coins me-1"></i> FinCore
-    </div>
-</li>
-<li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/finance"><i class="bi bi-graph-up me-3"></i>Финансовый учёт</a></li>
-<li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/reports"><i class="bi bi-bar-chart-steps me-3"></i>Отчёты и аналитика</a></li>
-<li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/reconciliation-acts"><i class="bi bi-file-text me-3"></i>Акты сверки</a></li>
-<li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/journal"><i class="bi bi-journal-bookmark-fill me-3"></i>Журнал проводок</a></li>
-<li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/management"><i class="bi bi-tags me-3"></i>Управленческий учёт</a></li>
-<li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/bank"><i class="bi bi-bank2 me-3"></i>Банк-клиент</a></li>
-<li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/payroll"><i class="bi bi-calculator me-3"></i>Расчёт зарплаты</a></li>
-<li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/tax-reports"><i class="bi bi-file-earmark-spreadsheet me-3"></i>Налоговая отчётность</a></li>
-<li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/import-excel"><i class="bi bi-file-arrow-up me-3"></i>Импорт Excel</a></li>
-<li class="nav-item mb-2"><a class="nav-link text-light d-flex align-items-center" href="/month-end"><i class="bi bi-calendar-check me-3"></i>Закрытие месяца</a></li>
-                {{ if .IsAdmin }}
+                          {{ if .IsAdmin }}
                 <li class="nav-item mb-2 mt-3"><div class="border-top border-secondary pt-3"></div><a class="nav-link text-light d-flex align-items-center" href="/admin"><i class="bi bi-gear me-3"></i>Админка</a></li>
                 {{ end }}
             </ul>
@@ -367,23 +553,32 @@
         <div class="container-fluid py-4">
             <!-- Быстрые действия -->
             <div class="quick-actions">
-                <a href="/profile" class="action-card text-decoration-none">
-                    <div class="action-icon"><i class="bi bi-person-circle"></i></div>
-                    <div class="action-title">Профиль</div>
-                    <div class="action-desc">Настройки аккаунта</div>
-                </a>
-                
+              
+            <!-- FinCore -->
+            <a href="/finance" class="action-card text-decoration-none">
+    <div class="action-icon">💰</div>
+    <div class="action-title">FinCore</div>
+    <div class="action-desc">Финансы и бухгалтерия</div>
+</a>
+
+<a href="/teamsphere" class="action-card text-decoration-none">
+    <div class="action-icon"><i class="bi bi-globe"></i></div>
+    <div class="action-title">TeamSphere</div>
+    <div class="action-desc">Управление командой, проектами и задачами</div>
+</a>
+
+            <a href="/migration" class="action-card text-decoration-none">
+                <div class="action-icon">
+                    <i class="bi bi-arrow-repeat" style="background: linear-gradient(135deg, #10b981, #34d399); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: 2rem;"></i>
+                </div>
+                <div class="action-title">Миграция данных</div>
+                <div class="action-desc">Перенос из 1С, Bitrix24</div>
+            </a>
                 <a href="/ai-agents" class="action-card text-decoration-none" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
                     <div class="action-icon"><i class="bi bi-robot"></i></div>
                     <div class="action-title">ИИ-агенты</div>
                     <div class="action-desc">Автоматические помощники 24/7</div>
                     <span class="badge bg-light text-dark mt-2">Новинка</span>
-                </a>
-                
-                <a href="/my-subscriptions" class="action-card text-decoration-none">
-                    <div class="action-icon"><i class="bi bi-wallet2"></i></div>
-                    <div class="action-title">Подписки</div>
-                    <div class="action-desc">Управление тарифами</div>
                 </a>
                 
                 <a href="/inventory" class="action-card text-decoration-none">
@@ -392,41 +587,39 @@
                     <div class="action-desc">Управление товарами и заказами</div>
                 </a>
                 
-                <a href="/teamsphere" class="action-card text-decoration-none" style="background: linear-gradient(135deg, #667eea20, #764ba220); border: 1px solid rgba(102,126,234,0.3);">
-                    <div class="action-icon"><i class="bi bi-globe"></i></div>
-                    <div class="action-title">TeamSphere</div>
-                    <div class="action-desc">Управление командой, проектами и задачами</div>
-                </a>
-                
-                <a href="/vpn" class="action-card text-decoration-none">
-                    <div class="action-icon"><i class="bi bi-shield-lock"></i></div>
-                    <div class="action-title">VPN</div>
-                    <div class="action-desc">Безопасный доступ из любой точки мира</div>
-                </a>
-                
-                <a href="/security-center" class="action-card text-decoration-none">
-                    <div class="action-icon"><i class="bi bi-shield-check"></i></div>
-                    <div class="action-title">Безопасность</div>
-                    <div class="action-desc">2FA, резервные коды, защита</div>
-                </a>
-                
                 <a href="/analytics-center" class="action-card text-decoration-none">
                     <div class="action-icon"><i class="bi bi-graph-up-arrow"></i></div>
                     <div class="action-title">Аналитика</div>
                     <div class="action-desc">Графики, отчеты, статистика</div>
                 </a>
                 
-                <a href="/identity-hub" class="action-card text-decoration-none">
-                    <div class="action-icon"><i class="bi bi-shield-lock-fill"></i></div>
-                    <div class="action-title">Identity Hub</div>
-                    <div class="action-desc">Единый вход для всех сервисов</div>
-                </a>
+                      <a href="/marketplace" class="action-card text-decoration-none">
+                <div class="action-icon">🛒</div>
+                <div class="action-title">Маркетплейс</div>
+                <div class="action-desc">Приложения и интеграции</div>
+            </a>
+                           <a href="/logistics" class="action-card text-decoration-none">
+                <div class="action-icon">
+                    <i class="bi bi-truck" style="background: linear-gradient(135deg, #06b6d4, #22d3ee); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: 2rem;"></i>
+                </div>
+                <div class="action-title">Логистика</div>
+                <div class="action-desc">Доставка и отслеживание</div>
+            </a>
+
                 
                 <a href="/fusion-portal" class="action-card text-decoration-none">
                     <div class="action-icon">⚡</div>
                     <div class="action-title">FusionAPI</div>
                     <div class="action-desc">Управление API ключами и AI агентами</div>
                 </a>
+
+            <a href="/hr" class="action-card text-decoration-none">
+                <div class="action-icon">
+                    <i class="bi bi-people" style="background: linear-gradient(135deg, #34d399, #6ee7b7); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: 2rem;"></i>
+                </div>
+                <div class="action-title">HR модуль</div>
+                <div class="action-desc">Кадры и рекрутинг</div>
+            </a>
                 
                 <a href="/support" class="action-card text-decoration-none">
                     <div class="action-icon"><i class="bi bi-headset"></i></div>
@@ -657,21 +850,6 @@
         });
     </script>
 
-    <!-- Кнопка назад -->
-    <a href="javascript:history.back()" class="back-button" title="Назад">
-        <i class="fas fa-arrow-left"></i> Назад
-    </a>
-<div class="ai-floating-widget">
-    <div class="ai-widget-button" onclick="openAIAssistant()">
-        🤖
-        <div class="ai-widget-badge">●</div>
-    </div>
-    <div class="ai-widget-tooltip">💬 Спросить AI ассистента</div>
-</div>
-<script>
-function openAIAssistant() {
-    window.open('/ai-assistant', '_blank', 'width=500,height=700,left=' + (screen.width - 520) + ',top=100');
-}
 </script>
 </body>
 </html>

@@ -130,7 +130,7 @@ DNS = 8.8.8.8, 1.1.1.1
 
 [Peer]
 PublicKey = SERVER_PUBLIC_KEY
-Endpoint = vpn.saaspro.ru:51820
+Endpoint = vpn.Business Stack.ru:51820
 AllowedIPs = 0.0.0.0/0
 PersistentKeepalive = 25`, privateKey, clientIP)
     

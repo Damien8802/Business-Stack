@@ -62,7 +62,7 @@ func GenerateTwoFASecret(c *gin.Context) {
     }
     
     key, err := totp.Generate(totp.GenerateOpts{
-        Issuer:      "SaaSPro",
+        Issuer:      "Business Stack",
         AccountName: email,
         Period:      30,
         Digits:      6,

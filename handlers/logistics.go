@@ -14,7 +14,7 @@ var logisticsService = services.NewLogisticsService()
 // Страницы
 func LogisticsDashboardHandler(c *gin.Context) {
     c.HTML(http.StatusOK, "logistics_dashboard.html", gin.H{
-        "title": "Логистика | SaaSPro",
+        "title": "Логистика | Business Stack",
         "page":  "dashboard",
     })
 }
@@ -28,13 +28,13 @@ func LogisticsOrdersHandler(c *gin.Context) {
 
 func LogisticsHandler(c *gin.Context) {
     c.HTML(http.StatusOK, "logistics_dashboard.html", gin.H{
-        "title": "Логистика | SaaSPro",
+        "title": "Логистика | Business Stack",
     })
 }
 
 func DeliveryHandler(c *gin.Context) {
     c.HTML(http.StatusOK, "delivery.html", gin.H{
-        "title": "Доставка | SaaSPro",
+        "title": "Доставка | Business Stack",
     })
 }
 

@@ -32,7 +32,7 @@ stats, _ := models.GetSubscriptionStats()
 totalPages := (int(total) + limit - 1) / limit
 
 c.HTML(http.StatusOK, "admin_subscriptions.html", gin.H{
-"Title":      "Управление подписками - SaaSPro",
+"Title":      "Управление подписками - Business Stack",
 "Version":    "3.0",
 "Subs":       subs,
 "Page":       page,

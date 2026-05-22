@@ -338,7 +338,7 @@ func CreateFullBackup(c *gin.Context) {
     defer zipWriter.Close()
     
     dbBackupFile := fmt.Sprintf("%s/db_backup_%d.sql", backupDir, time.Now().Unix())
-    cmd := exec.Command("pg_dump", "-U", "postgres", "-d", "saaspro", "-f", dbBackupFile)
+    cmd := exec.Command("pg_dump", "-U", "postgres", "-d", "Business Stack", "-f", dbBackupFile)
     if err := cmd.Run(); err == nil {
         addFileToZip(zipWriter, dbBackupFile, "database.sql")
         os.Remove(dbBackupFile)

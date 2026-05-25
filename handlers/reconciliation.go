@@ -2709,3 +2709,191 @@ func MassAutoCreateActs(c *gin.Context) {
         "period_end":   periodEnd,
     })
 }
+
+// GetActDetails - получить детализацию акта
+func GetActDetails(c *gin.Context) {
+    actID := c.Param("id")
+    tenantID := getTenantIDString(c)
+    
+    // Проверяем, что акт принадлежит этому tenant
+    var actExists bool
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT EXISTS(SELECT 1 FROM reconciliation_acts 
+        WHERE id = $1::uuid AND tenant_id = $2::uuid)
+    `, actID, tenantID).Scan(&actExists)
+    
+    if err != nil || !actExists {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Акт не найден"})
+        return
+    }
+    
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT id, document_type, document_number, document_date,
+               debit_amount, credit_amount, description, created_at
+        FROM reconciliation_act_details
+        WHERE act_id = $1::uuid
+        ORDER BY document_date DESC, created_at DESC
+    `, actID)
+    
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    defer rows.Close()
+    
+    var details []gin.H
+    for rows.Next() {
+        var id uuid.UUID
+        var docType, docNumber, description string
+        var docDate time.Time
+        var debit, credit float64
+        var createdAt time.Time
+        
+        err := rows.Scan(&id, &docType, &docNumber, &docDate, &debit, &credit, &description, &createdAt)
+        if err != nil {
+            continue
+        }
+        
+        details = append(details, gin.H{
+            "id":              id.String(),
+            "document_type":   docType,
+            "document_number": docNumber,
+            "document_date":   docDate.Format("2006-01-02"),
+            "debit_amount":    debit,
+            "credit_amount":   credit,
+            "description":     description,
+            "created_at":      createdAt.Format("2006-01-02 15:04:05"),
+        })
+    }
+    
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "data":    details,
+    })
+}
+// AddActDetail - добавить детализацию к акту
+func AddActDetail(c *gin.Context) {
+    actID := c.Param("id")
+    tenantID := getTenantIDString(c)
+    userID := c.GetString("user_id")
+    
+    // Проверяем существование акта и права доступа
+    var exists bool
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT EXISTS(SELECT 1 FROM reconciliation_acts 
+        WHERE id = $1::uuid AND tenant_id = $2::uuid)
+    `, actID, tenantID).Scan(&exists)
+    
+    if err != nil || !exists {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Акт не найден"})
+        return
+    }
+    
+    var req struct {
+        DocumentType   string  `json:"document_type" binding:"required"`
+        DocumentNumber string  `json:"document_number"`
+        DocumentDate   string  `json:"document_date"`
+        DebitAmount    float64 `json:"debit_amount"`
+        CreditAmount   float64 `json:"credit_amount"`
+        Description    string  `json:"description"`
+    }
+    
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    
+    docDate, _ := time.Parse("2006-01-02", req.DocumentDate)
+    if docDate.IsZero() {
+        docDate = time.Now()
+    }
+    
+    detailID := uuid.New()
+    _, err = database.Pool.Exec(c.Request.Context(), `
+        INSERT INTO reconciliation_act_details (
+            id, act_id, document_type, document_number, document_date,
+            debit_amount, credit_amount, description, created_by, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+    `, detailID, actID, req.DocumentType, req.DocumentNumber, docDate,
+        req.DebitAmount, req.CreditAmount, req.Description, userID)
+    
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка добавления"})
+        return
+    }
+    
+    // Обновляем суммы в акте
+    _, err = database.Pool.Exec(c.Request.Context(), `
+        UPDATE reconciliation_acts 
+        SET total_debit = (
+            SELECT COALESCE(SUM(debit_amount), 0) FROM reconciliation_act_details WHERE act_id = $1
+        ),
+        total_credit = (
+            SELECT COALESCE(SUM(credit_amount), 0) FROM reconciliation_act_details WHERE act_id = $1
+        ),
+        closing_balance = (
+            SELECT COALESCE(SUM(debit_amount), 0) - COALESCE(SUM(credit_amount), 0) 
+            FROM reconciliation_act_details WHERE act_id = $1
+        ),
+        updated_at = NOW()
+        WHERE id = $1::uuid
+    `, actID)
+    
+    c.JSON(http.StatusOK, gin.H{
+        "success":    true,
+        "message":    "Документ добавлен",
+        "detail_id":  detailID.String(),
+    })
+}
+// DeleteActDetail - удалить детализацию
+func DeleteActDetail(c *gin.Context) {
+    actID := c.Param("id")
+    detailID := c.Param("detail_id")
+    tenantID := getTenantIDString(c)
+    
+    // Проверяем, что детализация принадлежит акту этого tenant
+    var exists bool
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT EXISTS(
+            SELECT 1 FROM reconciliation_act_details d
+            JOIN reconciliation_acts a ON d.act_id = a.id
+            WHERE d.id = $1::uuid AND a.id = $2::uuid AND a.tenant_id = $3::uuid
+        )
+    `, detailID, actID, tenantID).Scan(&exists)
+    
+    if err != nil || !exists {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Документ не найден"})
+        return
+    }
+    
+    _, err = database.Pool.Exec(c.Request.Context(), `
+        DELETE FROM reconciliation_act_details WHERE id = $1::uuid
+    `, detailID)
+    
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка удаления"})
+        return
+    }
+    
+    // Обновляем суммы в акте
+    _, err = database.Pool.Exec(c.Request.Context(), `
+        UPDATE reconciliation_acts 
+        SET total_debit = (
+            SELECT COALESCE(SUM(debit_amount), 0) FROM reconciliation_act_details WHERE act_id = $1
+        ),
+        total_credit = (
+            SELECT COALESCE(SUM(credit_amount), 0) FROM reconciliation_act_details WHERE act_id = $1
+        ),
+        closing_balance = (
+            SELECT COALESCE(SUM(debit_amount), 0) - COALESCE(SUM(credit_amount), 0) 
+            FROM reconciliation_act_details WHERE act_id = $1
+        ),
+        updated_at = NOW()
+        WHERE id = $1::uuid
+    `, actID)
+    
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "message": "Документ удален",
+    })
+}

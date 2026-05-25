@@ -536,6 +536,11 @@ reconciliationAPI.POST("/acts/:id/reconcile-bank", handlers.AutoReconcileWithBan
 reconciliationAPI.GET("/acts/:id/bank-status", handlers.GetBankReconciliationStatus)
 reconciliationAPI.GET("/banks", handlers.GetAvailableBanks)
 reconciliationAPI.POST("/mass-create-acts", handlers.MassAutoCreateActs)
+
+// Детализация актов
+reconciliationAPI.GET("/acts/:id/details", handlers.GetActDetails)
+reconciliationAPI.POST("/acts/:id/details", handlers.AddActDetail)
+reconciliationAPI.DELETE("/acts/:id/details/:detail_id", handlers.DeleteActDetail)
 }
 
 // Настройки компании (для FinCore)

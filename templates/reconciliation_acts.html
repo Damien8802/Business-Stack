@@ -858,6 +858,7 @@
     let emailActId = null;
     let trashActs = [];
     let currentSelectedActId = null;
+    let currentAddDocumentActId = null;
 
     function calculateBalance() {
         let debit = parseFloat(document.getElementById('actTotalDebit').value) || 0;
@@ -988,17 +989,19 @@
                 <td class="text-end"><strong>${(parseFloat(a.closing_balance)||0).toLocaleString()} ₽</strong></td>
                 <td>${getStatusBadge(a.status)}</td>
                 <td>${getSignatureIcon(a)}</td>
-                <td class="action-buttons" onclick="event.stopPropagation()">
-                    <button class="action-btn" onclick="viewActDetails('${a.id}')" title="Просмотр">👁️</button>
-                    <button class="action-btn" onclick="openEditModal('${a.id}')" title="Редактировать">✏️</button>
-                    <button class="action-btn" onclick="downloadAct('${a.id}')" title="Скачать HTML">📥</button>
-                    <button class="action-btn" onclick="downloadPDF('${a.id}')" title="Скачать PDF">📄</button>
-                    <button class="action-btn" onclick="openEmailModal('${a.id}')" title="Отправить на email">📧</button>
-                    <button class="action-btn" onclick="reconcileWithBank('${a.id}')" title="Сверить с банком">🏦</button>
-                    ${a.status !== 'signed' && a.status !== 'partially_signed' ? `<button class="action-btn" onclick="openSignModal('${a.id}')" title="Подписать">✍️</button>` : ''}
-                    ${a.status !== 'signed' ? `<button class="action-btn" onclick="moveToTrash('${a.id}')" title="В корзину">🗑️</button>` : ''}
-                    <button class="action-btn" onclick="openSendToCounterpartyModal('${a.id}')" title="Отправить контрагенту на подпись">✉️</button>
-                </td>
+               <td class="action-buttons" onclick="event.stopPropagation()">
+    <button class="action-btn" onclick="viewActDetails('${a.id}')" title="Просмотр">👁️</button>
+    <button class="action-btn" onclick="openEditModal('${a.id}')" title="Редактировать">✏️</button>
+    <button class="action-btn" onclick="downloadAct('${a.id}')" title="Скачать HTML">📥</button>
+    <button class="action-btn" onclick="downloadPDF('${a.id}')" title="Скачать PDF">📄</button>
+    <button class="action-btn" onclick="openEmailModal('${a.id}')" title="Отправить на email">📧</button>
+    <button class="action-btn" onclick="reconcileWithBank('${a.id}')" title="Сверить с банком">🏦</button>
+    <button class="action-btn" onclick="showActDetails('${a.id}')" title="Детализация">📋</button>
+<button class="action-btn" onclick="openAddDocumentModal('${a.id}')" title="Добавить документ">📄+</button>
+    ${a.status !== 'signed' && a.status !== 'partially_signed' ? `<button class="action-btn" onclick="openSignModal('${a.id}')" title="Подписать">✍️</button>` : ''}
+    ${a.status !== 'signed' ? `<button class="action-btn" onclick="moveToTrash('${a.id}')" title="В корзину">🗑️</button>` : ''}
+    <button class="action-btn" onclick="openSendToCounterpartyModal('${a.id}')" title="Отправить партнеру на подпись">✉️</button>
+</td>
             </tr>
         `).join('');
 
@@ -2742,6 +2745,205 @@ async function importAndCreateActs() {
         showToast('❌ Ошибка', 'error');
     }
 }
+
+// Показать детализацию акта
+// Показать детализацию акта
+async function showActDetails(actId) {
+    try {
+        const res = await fetch(`/api/reconciliation/acts/${actId}/details`, {
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'X-Tenant-ID': tenantId
+            }
+        });
+        const data = await res.json();
+        
+        // Проверяем, что data.data существует и это массив
+        if (data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
+            let message = `📋 ДЕТАЛИЗАЦИЯ АКТА\n\n`;
+            message += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+            data.data.forEach((doc, idx) => {
+                message += `${idx+1}. ${doc.document_type || '?'} ${doc.document_number || ''}\n`;
+                message += `   Дата: ${doc.document_date || '—'}\n`;
+                message += `   Дебет: ${(doc.debit_amount || 0).toLocaleString()} ₽\n`;
+                message += `   Кредит: ${(doc.credit_amount || 0).toLocaleString()} ₽\n`;
+                if (doc.description) message += `   Описание: ${doc.description}\n`;
+                message += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+            });
+            showModalMessage('📋 Детализация акта', message, 'info');
+        } else {
+            // Если нет детализации
+            showModalMessage('📋 Детализация акта', 'Нет детализации для этого акта\n\nЧтобы добавить документы, нажмите кнопку "Добавить документ"', 'info');
+        }
+    } catch(e) {
+        console.error('Ошибка:', e);
+        showToast('❌ Ошибка загрузки детализации', 'error');
+    }
+}
+// Добавить документ к акту (для теста)
+async function addTestDocumentToAct(actId) {
+    const data = {
+        document_type: 'Счет-фактура',
+        document_number: 'СФ-00' + Math.floor(Math.random() * 100),
+        document_date: new Date().toISOString().slice(0,10),
+        debit_amount: Math.floor(Math.random() * 10000),
+        credit_amount: 0,
+        description: 'Тестовый документ'
+    };
+    
+    try {
+        const res = await fetch(`/api/reconciliation/acts/${actId}/details`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token,
+                'X-Tenant-ID': tenantId
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await res.json();
+        
+        if (result.success) {
+            showToast('✅ Тестовый документ добавлен', 'success');
+            loadActs();
+        } else {
+            showToast('❌ Ошибка: ' + (result.error || 'Неизвестная ошибка'), 'error');
+        }
+    } catch(e) {
+        showToast('❌ Ошибка сети', 'error');
+    }
+}
+
+// Открыть модальное окно для добавления документа
+function openAddDocumentModal(actId) {
+    currentAddDocumentActId = actId;
+    
+    // Очищаем форму
+    document.getElementById('docType').value = 'Счет-фактура';
+    document.getElementById('docNumber').value = '';
+    document.getElementById('docDate').value = new Date().toISOString().slice(0,10);
+    document.getElementById('docDebit').value = '0';
+    document.getElementById('docCredit').value = '0';
+    document.getElementById('docDescription').value = '';
+    
+    // Показываем модальное окно
+    new bootstrap.Modal(document.getElementById('addDocumentModal')).show();
+}
+
+// Сохранить документ
+async function saveDocument() {
+    if (!currentAddDocumentActId) {
+        showToast('Ошибка: акт не выбран', 'error');
+        return;
+    }
+    
+    const docType = document.getElementById('docType').value;
+    const docNumber = document.getElementById('docNumber').value;
+    const docDate = document.getElementById('docDate').value;
+    const debitAmount = parseFloat(document.getElementById('docDebit').value) || 0;
+    const creditAmount = parseFloat(document.getElementById('docCredit').value) || 0;
+    const description = document.getElementById('docDescription').value;
+    
+    if (!docType) {
+        showToast('Выберите тип документа', 'error');
+        return;
+    }
+    
+    if (debitAmount === 0 && creditAmount === 0) {
+        showToast('Укажите сумму дебета или кредита', 'error');
+        return;
+    }
+    
+    const data = {
+        document_type: docType,
+        document_number: docNumber,
+        document_date: docDate,
+        debit_amount: debitAmount,
+        credit_amount: creditAmount,
+        description: description
+    };
+    
+    const btn = document.querySelector('#addDocumentModal .btn-primary');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Сохранение...';
+    
+    try {
+        const res = await fetch(`/api/reconciliation/acts/${currentAddDocumentActId}/details`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token,
+                'X-Tenant-ID': tenantId
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await res.json();
+        
+        if (result.success) {
+            showToast('✅ Документ добавлен успешно', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('addDocumentModal')).hide();
+            loadActs(); // Обновляем список актов
+        } else {
+            showToast('❌ Ошибка: ' + (result.error || 'Неизвестная ошибка'), 'error');
+        }
+    } catch(e) {
+        console.error('Ошибка:', e);
+        showToast('❌ Ошибка сети: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+// Показать детализацию акта (обновленная версия)
+async function showActDetails(actId) {
+    try {
+        const res = await fetch(`/api/reconciliation/acts/${actId}/details`, {
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'X-Tenant-ID': tenantId
+            }
+        });
+        const data = await res.json();
+        
+        if (data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
+            let message = `📋 ДЕТАЛИЗАЦИЯ АКТА\n\n`;
+            message += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+            let totalDebit = 0;
+            let totalCredit = 0;
+            
+            data.data.forEach((doc, idx) => {
+                message += `${idx+1}. ${doc.document_type} ${doc.document_number || ''}\n`;
+                message += `   📅 Дата: ${doc.document_date || '—'}\n`;
+                if (doc.debit_amount > 0) {
+                    message += `   💚 Дебет: ${doc.debit_amount.toLocaleString()} ₽\n`;
+                    totalDebit += doc.debit_amount;
+                }
+                if (doc.credit_amount > 0) {
+                    message += `   ❤️ Кредит: ${doc.credit_amount.toLocaleString()} ₽\n`;
+                    totalCredit += doc.credit_amount;
+                }
+                if (doc.description) message += `   📝 ${doc.description}\n`;
+                message += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+            });
+            
+            message += `\n📊 ИТОГО ПО АКТУ:\n`;
+            message += `   💚 Дебет: ${totalDebit.toLocaleString()} ₽\n`;
+            message += `   ❤️ Кредит: ${totalCredit.toLocaleString()} ₽\n`;
+            message += `   ⚖️ Сальдо: ${(totalDebit - totalCredit).toLocaleString()} ₽\n`;
+            
+            showModalMessage('📋 Детализация акта', message, 'info');
+        } else {
+            showModalMessage('📋 Детализация акта', 'Нет добавленных документов\n\nНажмите кнопку 📄+ чтобы добавить документ', 'info');
+        }
+    } catch(e) {
+        console.error('Ошибка:', e);
+        showToast('❌ Ошибка загрузки детализации', 'error');
+    }
+}
     document.addEventListener('DOMContentLoaded', () => {
         loadActs();
         loadReconciliationDashboard();
@@ -2749,6 +2951,117 @@ async function importAndCreateActs() {
         document.getElementById('actTotalCredit')?.addEventListener('input', calculateBalance);
     });
 </script>
+
+<!-- МОДАЛЬНОЕ ОКНО ДЛЯ ДОБАВЛЕНИЯ ДОКУМЕНТА -->
+<div class="modal fade" id="addDocumentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-file-invoice"></i> Добавить документ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Тип документа</label>
+                    <select class="form-select" id="docType">
+                        <option value="Счет-фактура">Счет-фактура</option>
+                        <option value="Платежное поручение">Платежное поручение</option>
+                        <option value="Акт">Акт</option>
+                        <option value="Накладная">Накладная</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Номер документа</label>
+                    <input type="text" class="form-control" id="docNumber">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Дата документа</label>
+                    <input type="date" class="form-control" id="docDate">
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Дебет</label>
+                        <input type="number" class="form-control" id="docDebit" step="0.01" value="0">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Кредит</label>
+                        <input type="number" class="form-control" id="docCredit" step="0.01" value="0">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Описание</label>
+                    <textarea class="form-control" id="docDescription" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-outline" data-bs-dismiss="modal">Отмена</button>
+                <button class="btn-primary" onclick="saveDocument()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО ДЛЯ ДОБАВЛЕНИЯ ДОКУМЕНТА -->
+<div class="modal fade" id="addDocumentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-file-invoice"></i> Добавить документ к акту</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Тип документа <span class="text-danger">*</span></label>
+                    <select class="form-select" id="docType">
+                        <option value="Счет-фактура">📄 Счет-фактура</option>
+                        <option value="Платежное поручение">💰 Платежное поручение</option>
+                        <option value="Акт выполненных работ">📋 Акт выполненных работ</option>
+                        <option value="Накладная">🚚 Накладная</option>
+                        <option value="Договор">📝 Договор</option>
+                        <option value="Счет на оплату">💳 Счет на оплату</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Номер документа</label>
+                    <input type="text" class="form-control" id="docNumber" placeholder="СФ-001">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Дата документа</label>
+                    <input type="date" class="form-control" id="docDate">
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-success">Дебет (приход)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₽</span>
+                            <input type="number" class="form-control" id="docDebit" step="0.01" value="0" placeholder="0.00">
+                        </div>
+                        <small class="text-muted">Увеличение долга/активов</small>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-danger">Кредит (расход)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₽</span>
+                            <input type="number" class="form-control" id="docCredit" step="0.01" value="0" placeholder="0.00">
+                        </div>
+                        <small class="text-muted">Уменьшение долга/активов</small>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Описание</label>
+                    <textarea class="form-control" id="docDescription" rows="3" placeholder="Например: Оплата по договору №123 от 01.05.2026"></textarea>
+                </div>
+                <div class="alert alert-info small">
+                    <i class="fas fa-info-circle"></i> Суммы автоматически обновят дебет и кредит акта
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-outline" data-bs-dismiss="modal">Отмена</button>
+                <button class="btn-primary" onclick="saveDocument()">💾 Сохранить документ</button>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>
 {{end}}

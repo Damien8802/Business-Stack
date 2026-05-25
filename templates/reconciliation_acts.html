@@ -280,12 +280,11 @@
         .btn-outline.active { background: linear-gradient(135deg, #667eea, #764ba2); border-color: #667eea; }
         @media print { .navbar, .stats-row, .filter-bar, .card-header .btn-outline, .action-buttons, .btn-primary { display: none; } }
 
-              #actsTable tr.selected {
+        #actsTable tr.selected {
             background: rgba(102,126,234,0.3) !important;
             border-left: 3px solid #667eea;
         }
 
-        /* Стили для подписей в PDF - подписи рядом, печати под ними */
         .signature-row {
             display: flex;
             justify-content: space-between;
@@ -379,7 +378,7 @@
 <div class="container">
     <div class="header animate">
         <h1><i class="fas fa-file-signature"></i> Акты сверки PRO</h1>
-       <p class="mb-0">Создание, просмотр, подписание и отправка актов сверки с партнёрами</p>
+        <p class="mb-0">Создание, просмотр, подписание и отправка актов сверки с партнёрами</p>
     </div>
 
     <div class="stats-row">
@@ -399,6 +398,12 @@
             <div class="stat-card-left">
                 <div class="stat-icon">⏳</div>
                 <div class="stat-info"><h3 id="pendingActs">0</h3><p>В работе</p></div>
+            </div>
+        </div>
+        <div class="stat-card" onclick="filterByStatus('draft')">
+            <div class="stat-card-left">
+                <div class="stat-icon">📝</div>
+                <div class="stat-info"><h3 id="draftActs">0</h3><p>Черновики</p></div>
             </div>
         </div>
         <div class="stat-card" onclick="showAnalytics()">
@@ -507,29 +512,28 @@
         </div>
     </div>
 
-    <div class="card animate">
-        <div class="card-header">
-            <h4><i class="fas fa-filter"></i> Фильтры</h4>
-            <div>
-                <button class="btn-primary" onclick="openCreateModal()"><i class="fas fa-plus"></i> Создать акт</button>
-                <button class="btn-outline" onclick="openTrash()"><i class="fas fa-trash-alt"></i> Корзина</button>
-            </div>
+    <div class="card-header">
+        <h4><i class="fas fa-filter"></i> Фильтры</h4>
+        <div>
+            <button class="btn-primary" onclick="openCreateModal()"><i class="fas fa-plus"></i> Создать акт</button>
+            <button class="btn-primary" onclick="openBatchCreateModal()"><i class="fas fa-layer-group"></i> Массовое создание</button>
+            <button class="btn-outline" onclick="openTrash()"><i class="fas fa-trash-alt"></i> Корзина</button>
         </div>
-        <div class="filter-bar">
-            <input type="text" class="form-control" id="searchCounterparty" placeholder="🔍 Поиск по партнёру" onkeyup="applyFilters()">
-            <input type="date" class="form-control" id="dateFrom" onchange="applyFilters()">
-            <input type="date" class="form-control" id="dateTo" onchange="applyFilters()">
-            <select class="form-select" id="statusFilter" onchange="applyFilters()">
-                <option value="">Все статусы</option>
-                <option value="draft">📝 Черновик</option>
-                <option value="generated">📄 Сформирован</option>
-                <option value="partially_signed">🔄 Частично подписан</option>
-                <option value="signed">✅ Подписан</option>
-            </select>
-            <button class="btn-outline" onclick="resetFilters()"><i class="fas fa-undo"></i> Сбросить</button>
-            <button class="btn-outline" onclick="exportToExcel()"><i class="fas fa-file-excel"></i> Excel</button>
-            <button class="btn-outline" onclick="showAnalytics()"><i class="fas fa-chart-pie"></i> Аналитика</button>
-        </div>
+    </div>
+    <div class="filter-bar">
+        <input type="text" class="form-control" id="searchCounterparty" placeholder="🔍 Поиск по партнёру" onkeyup="applyFilters()">
+        <input type="date" class="form-control" id="dateFrom" onchange="applyFilters()">
+        <input type="date" class="form-control" id="dateTo" onchange="applyFilters()">
+        <select class="form-select" id="statusFilter" onchange="applyFilters()">
+            <option value="">Все статусы</option>
+            <option value="draft">📝 Черновик</option>
+            <option value="generated">📄 Сформирован</option>
+            <option value="partially_signed">🔄 Частично подписан</option>
+            <option value="signed">✅ Подписан</option>
+        </select>
+        <button class="btn-outline" onclick="resetFilters()"><i class="fas fa-undo"></i> Сбросить</button>
+        <button class="btn-outline" onclick="exportToExcel()"><i class="fas fa-file-excel"></i> Excel</button>
+        <button class="btn-outline" onclick="showAnalytics()"><i class="fas fa-chart-pie"></i> Аналитика</button>
     </div>
 
     <div class="card animate">
@@ -553,11 +557,25 @@
                     </tr>
                 </thead>
                 <tbody id="actsTable">
-                    <tr><td colspan="10" class="text-center"><div class="spinner-border text-primary"></div> Загрузка...<\/td><\/tr>
+                    <tr><td colspan="10" class="text-center"><div class="spinner-border text-primary"></div> Загрузка...</td></tr>
                 </tbody>
             </table>
         </div>
         <div id="pagination" style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;"></div>
+    </div>
+</div>
+
+<!-- График динамики -->
+<div class="row g-4 mb-4" id="reconciliationChart" style="display: none;">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="fas fa-chart-line"></i> Динамика сверок</h4>
+            </div>
+            <div class="card-body">
+                <canvas id="reconciliationTrendChart" height="100"></canvas>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -577,6 +595,44 @@
                 <div class="alert alert-info small"><i class="fas fa-calculator"></i> Сальдо = Дебет - Кредит</div>
             </div>
             <div class="modal-footer"><button class="btn-outline" data-bs-dismiss="modal">Отмена</button><button class="btn-primary" onclick="createAct()">Создать</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно массового создания -->
+<div class="modal fade" id="batchCreateModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-layer-group"></i> Массовое создание актов</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Период с</label>
+                    <input type="date" class="form-control" id="batchPeriodStart">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Период по</label>
+                    <input type="date" class="form-control" id="batchPeriodEnd">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Выберите партнера</label>
+                    <div id="counterpartyCheckboxes" style="max-height: 300px; overflow-y: auto;">
+                        <div class="text-center py-3">Загрузка...</div>
+                    </div>
+                </div>
+                <div id="batchProgress" style="display: none;">
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+                    </div>
+                    <p class="mt-2 small" id="batchStatus">Создание...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-outline" data-bs-dismiss="modal">Отмена</button>
+                <button class="btn-primary" onclick="batchCreateActs()">Создать акты</button>
+            </div>
         </div>
     </div>
 </div>
@@ -661,9 +717,72 @@
     </div>
 </div>
 
+<div class="modal fade" id="emailModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title"><i class="fas fa-envelope"></i> Отправить акт на email</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div class="mb-3"><label class="form-label">Email получателя <span class="text-danger">*</span></label><input type="email" class="form-control" id="emailRecipient" placeholder="client@example.com"></div>
+                <div class="mb-3"><label class="form-label">Сообщение (необязательно)</label><textarea class="form-control" id="emailMessage" rows="3" placeholder="Уважаемый партнёр, направляем вам акт сверки..."></textarea></div>
+                <div class="alert alert-info small"><i class="fas fa-info-circle"></i> Акт будет отправлен в формате PDF</div>
+            </div>
+            <div class="modal-footer"><button class="btn-outline" data-bs-dismiss="modal">Отмена</button><button class="btn-primary" onclick="sendEmailNow()">Отправить</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО ДЛЯ ОТПРАВКИ НА ПОДПИСЬ КОНТРАГЕНТУ -->
+<div class="modal fade" id="sendToCounterpartyModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-paper-plane"></i> Отправить партнёру на подпись</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info" id="sendActInfo">
+                    <strong>Акт №<span id="sendActIdShort">---</span></strong><br>
+                    Партнёр: <span id="sendActCounterparty">---</span>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Email партнёра <span class="text-danger">*</span></label>
+                    <input type="email" class="form-control" id="counterpartyEmail" placeholder="kontragent@example.com">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Сообщение (необязательно)</label>
+                    <textarea class="form-control" id="sendMessage" rows="3" placeholder="Уважаемый партнер, просим подписать акт сверки..."></textarea>
+                </div>
+                <div class="alert alert-info small">
+                    <i class="fas fa-info-circle"></i> Партнёр получит ссылку для подписания. Ссылка действительна 7 дней.
+                </div>
+                <div id="sendResult" class="alert" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-outline" data-bs-dismiss="modal">Отмена</button>
+                <button class="btn-primary" id="sendToCounterpartyBtn" onclick="sendToCounterparty()">
+                    <i class="fas fa-envelope"></i> Отправить на подпись
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const token = localStorage.getItem('token');
+    // ✅ ДОБАВЛЕНА СТРОКА - tenant_id из localStorage или тестовый
+    const tenantId = localStorage.getItem('tenant_id') || '11111111-1111-1111-1111-111111111111';
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     let allActs = [], filteredActs = [], currentPage = 1, itemsPerPage = 10;
     let currentViewAct = null, currentSignAct = null, currentEditAct = null;
     let analyticsChart = null, debitCreditChart = null;
@@ -673,22 +792,22 @@
 
     // ========== ОСНОВНЫЕ ФУНКЦИИ ==========
 
-  function calculateBalance() {
-    let debit = parseFloat(document.getElementById('actTotalDebit').value) || 0;
-    let credit = parseFloat(document.getElementById('actTotalCredit').value) || 0;
-    let balance = debit - credit;
-    let balanceField = document.getElementById('actClosingBalance');
-    if (balanceField) {
-        balanceField.value = balance.toFixed(2);
-        if (balance > 0) {
-            balanceField.style.color = '#10b981';
-        } else if (balance < 0) {
-            balanceField.style.color = '#ef4444';
-        } else {
-            balanceField.style.color = '#fff';
+    function calculateBalance() {
+        let debit = parseFloat(document.getElementById('actTotalDebit').value) || 0;
+        let credit = parseFloat(document.getElementById('actTotalCredit').value) || 0;
+        let balance = debit - credit;
+        let balanceField = document.getElementById('actClosingBalance');
+        if (balanceField) {
+            balanceField.value = balance.toFixed(2);
+            if (balance > 0) {
+                balanceField.style.color = '#10b981';
+            } else if (balance < 0) {
+                balanceField.style.color = '#ef4444';
+            } else {
+                balanceField.style.color = '#fff';
+            }
         }
     }
-}
 
     function openCreateModal() {
         document.getElementById('actCounterpartyName').value = '';
@@ -703,7 +822,12 @@
 
     async function loadActs() {
         try {
-            const res = await fetch('/api/reconciliation/acts', { headers: { 'Authorization': 'Bearer ' + token } });
+            const res = await fetch('/api/reconciliation/acts', { 
+                headers: { 
+                    'Authorization': 'Bearer ' + token,
+                    'X-Tenant-ID': tenantId
+                } 
+            });
             const data = await res.json();
             allActs = (data.success && data.data) ? data.data : [];
             updateStats();
@@ -713,12 +837,15 @@
 
     function updateStats() {
         const total = allActs.length;
-        const signedByUs = allActs.filter(a => a.signed_by_our === true).length;
-        const pending = allActs.filter(a => a.signed_by_our !== true).length;
+        const signed = allActs.filter(a => a.status === 'signed').length;
+        const inProgress = allActs.filter(a => a.status === 'partially_signed' || a.status === 'generated').length;
+        const draft = allActs.filter(a => a.status === 'draft').length;
         const totalAmount = allActs.reduce((sum, a) => sum + (Math.abs(parseFloat(a.closing_balance) || 0)), 0);
+        
         document.getElementById('totalActs').innerHTML = total;
-        document.getElementById('signedActs').innerHTML = signedByUs;
-        document.getElementById('pendingActs').innerHTML = pending;
+        document.getElementById('signedActs').innerHTML = signed;
+        document.getElementById('pendingActs').innerHTML = inProgress;
+        document.getElementById('draftActs').innerHTML = draft;
         document.getElementById('totalAmount').innerHTML = totalAmount.toLocaleString() + ' ₽';
     }
 
@@ -732,15 +859,34 @@
         return map[s] || '<span class="badge badge-draft">📝 Черновик</span>';
     }
 
-    function getSignatureIcon(a) {
-        if (a.status === 'signed') return '✅✅';
-        if (a.signed_by_our) return '✅👤';
-        return '⏳';
+   function getSignatureIcon(a) {
+    if (a.signed_by_our === true && a.signed_by_their === true) {
+        return '✅✅';
     }
+    if (a.signed_by_our === true) {
+        return '✅👤';
+    }
+    if (a.signed_by_their === true) {
+        return '👤✅';
+    }
+    return '⏳';
+}
 
     function formatDate(d) { return d ? new Date(d).toLocaleDateString('ru-RU') : '—'; }
 
-    function filterByStatus(status) { document.getElementById('statusFilter').value = status; applyFilters(); }
+    function filterByStatus(statusType) {
+        if (statusType === 'pending') {
+            filteredActs = allActs.filter(a => a.status === 'generated' || a.status === 'partially_signed');
+        } else if (statusType === 'draft') {
+            filteredActs = allActs.filter(a => a.status === 'draft');
+        } else if (statusType === 'signed') {
+            filteredActs = allActs.filter(a => a.status === 'signed');
+        } else {
+            filteredActs = [...allActs];
+        }
+        currentPage = 1;
+        renderTable();
+    }
 
     function applyFilters() {
         const search = document.getElementById('searchCounterparty').value.toLowerCase();
@@ -760,7 +906,7 @@
         const pageActs = filteredActs.slice(start, start+itemsPerPage);
         const tbody = document.getElementById('actsTable');
         if (!pageActs.length) {
-            tbody.innerHTML = '<tr><td colspan="10" class="text-center">📋 Нет актов сверки<\/td><\/tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center">📋 Нет актов сверки</td></tr>';
             document.getElementById('pagination').innerHTML = '';
             return;
         }
@@ -783,7 +929,7 @@
                     <button class="action-btn" onclick="openEmailModal('${a.id}')" title="Отправить на email">📧</button>
                     ${a.status !== 'signed' && a.status !== 'partially_signed' ? `<button class="action-btn" onclick="openSignModal('${a.id}')" title="Подписать">✍️</button>` : ''}
                     ${a.status !== 'signed' ? `<button class="action-btn" onclick="moveToTrash('${a.id}')" title="В корзину">🗑️</button>` : ''}
-<button class="action-btn" onclick="openSendToCounterpartyModal('${a.id}')" title="Отправить контрагенту на подпись">✉️</button>
+                    <button class="action-btn" onclick="openSendToCounterpartyModal('${a.id}')" title="Отправить контрагенту на подпись">✉️</button>
                 </td>
             </tr>
         `).join('');
@@ -846,7 +992,11 @@
         }
         const res = await fetch('/api/reconciliation/generate', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            headers: { 
+                'Content-Type': 'application/json', 
+                'Authorization': 'Bearer ' + token,
+                'X-Tenant-ID': tenantId
+            },
             body: JSON.stringify(data)
         });
         const r = await res.json();
@@ -868,7 +1018,7 @@
             <div class="row">
                 <div class="col-md-6">
                     <div class="detail-row"><strong>Номер:</strong> ${a.id.slice(0,8)}</div>
-                   <div class="detail-row"><strong>Партнёр:</strong> ${a.counterparty_name}</div>
+                    <div class="detail-row"><strong>Партнёр:</strong> ${a.counterparty_name}</div>
                     <div class="detail-row"><strong>ИНН:</strong> ${a.counterparty_inn}</div>
                     <div class="detail-row"><strong>Период:</strong> ${formatDate(a.period_start)} — ${formatDate(a.period_end)}</div>
                 </div>
@@ -888,55 +1038,51 @@
     }
 
     function openEditModal(id) {
-    const a = allActs.find(a=>a.id===id);
-    if(!a) return;
-    if(a.status==='signed') {
-        showToast('Подписанный акт нельзя редактировать', 'error');
-        return;
+        const a = allActs.find(a=>a.id===id);
+        if(!a) return;
+        if(a.status==='signed') {
+            showToast('Подписанный акт нельзя редактировать', 'error');
+            return;
+        }
+        currentEditAct = a;
+        currentSelectedActId = a.id;
+        document.getElementById('editActId').value = a.id;
+        document.getElementById('editCounterpartyName').value = a.counterparty_name;
+        document.getElementById('editCounterpartyINN').value = a.counterparty_inn;
+        document.getElementById('editPeriodStart').value = a.period_start;
+        document.getElementById('editPeriodEnd').value = a.period_end;
+        document.getElementById('editTotalDebit').value = a.total_debit;
+        document.getElementById('editTotalCredit').value = a.total_credit;
+        document.getElementById('editClosingBalance').value = a.closing_balance;
+        
+        function recalcEditBalance() {
+            let debit = parseFloat(document.getElementById('editTotalDebit').value) || 0;
+            let credit = parseFloat(document.getElementById('editTotalCredit').value) || 0;
+            let balance = debit - credit;
+            let balanceField = document.getElementById('editClosingBalance');
+            if (balanceField) {
+                balanceField.value = balance.toFixed(2);
+                if (balance > 0) {
+                    balanceField.style.color = '#10b981';
+                } else if (balance < 0) {
+                    balanceField.style.color = '#ef4444';
+                } else {
+                    balanceField.style.color = '#fff';
+                }
+            }
+        }
+        
+        document.getElementById('editTotalDebit').oninput = recalcEditBalance;
+        document.getElementById('editTotalCredit').oninput = recalcEditBalance;
+        
+        new bootstrap.Modal(document.getElementById('editActModal')).show();
     }
-    currentEditAct = a;
-    currentSelectedActId = a.id;
-    document.getElementById('editActId').value = a.id;
-    document.getElementById('editCounterpartyName').value = a.counterparty_name;
-    document.getElementById('editCounterpartyINN').value = a.counterparty_inn;
-    document.getElementById('editPeriodStart').value = a.period_start;
-    document.getElementById('editPeriodEnd').value = a.period_end;
-    document.getElementById('editTotalDebit').value = a.total_debit;
-    document.getElementById('editTotalCredit').value = a.total_credit;
-    document.getElementById('editClosingBalance').value = a.closing_balance;
-    
-    // ========== ДОБАВЬТЕ ЭТУ ФУНКЦИЮ ДЛЯ ПЕРЕСЧЁТА ==========
-    function recalcEditBalance() {
+
+    async function saveEditAct() {
         let debit = parseFloat(document.getElementById('editTotalDebit').value) || 0;
         let credit = parseFloat(document.getElementById('editTotalCredit').value) || 0;
         let balance = debit - credit;
-        let balanceField = document.getElementById('editClosingBalance');
-        if (balanceField) {
-            balanceField.value = balance.toFixed(2);
-            if (balance > 0) {
-                balanceField.style.color = '#10b981';
-            } else if (balance < 0) {
-                balanceField.style.color = '#ef4444';
-            } else {
-                balanceField.style.color = '#fff';
-            }
-        }
-    }
-    
-    // Вешаем события на поля ввода
-    document.getElementById('editTotalDebit').oninput = recalcEditBalance;
-    document.getElementById('editTotalCredit').oninput = recalcEditBalance;
-    // ======================================================
-    
-    new bootstrap.Modal(document.getElementById('editActModal')).show();
-}
-
-    async function saveEditAct() {
-  // Пересчитываем сальдо перед сохранением
-    let debit = parseFloat(document.getElementById('editTotalDebit').value) || 0;
-    let credit = parseFloat(document.getElementById('editTotalCredit').value) || 0;
-    let balance = debit - credit;
-    document.getElementById('editClosingBalance').value = balance.toFixed(2);
+        document.getElementById('editClosingBalance').value = balance.toFixed(2);
         const id = document.getElementById('editActId').value;
         const data = {
             counterparty_name: document.getElementById('editCounterpartyName').value.trim(),
@@ -949,7 +1095,11 @@
         };
         const res = await fetch(`/api/reconciliation/acts/${id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            headers: { 
+                'Content-Type': 'application/json', 
+                'Authorization': 'Bearer ' + token,
+                'X-Tenant-ID': tenantId
+            },
             body: JSON.stringify(data)
         });
         if (res.ok) {
@@ -972,7 +1122,10 @@
         let companySettings = {};
         try {
             const res = await fetch('/api/company/settings', {
-                headers: { 'Authorization': 'Bearer ' + token }
+                headers: { 
+                    'Authorization': 'Bearer ' + token,
+                    'X-Tenant-ID': tenantId
+                }
             });
             const data = await res.json();
             if (data.success && data.data) {
@@ -1007,7 +1160,10 @@
         let companySettings = {};
         try {
             const res = await fetch('/api/company/settings', {
-                headers: { 'Authorization': 'Bearer ' + token }
+                headers: { 
+                    'Authorization': 'Bearer ' + token,
+                    'X-Tenant-ID': tenantId
+                }
             });
             const data = await res.json();
             if (data.success && data.data) {
@@ -1023,7 +1179,11 @@
         try {
             const res = await fetch('/api/reconciliation/generate-pdf', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'Authorization': 'Bearer ' + token,
+                    'X-Tenant-ID': tenantId
+                },
                 body: JSON.stringify({ act_id: actId, html: pdfHtml })
             });
             if (res.ok) {
@@ -1046,236 +1206,156 @@
         } catch(e) { showToast('❌ Ошибка генерации PDF', 'error'); }
     }
 
-    function generatePDFHtml(act, company) {
-        const companySettings = company || {};
-        const signatureStatus = (act.status === 'signed' || act.status === 'partially_signed') ? 'ПОДПИСАНО' : 'НЕ ПОДПИСАН';
-        const signatureBgColor = act.status === 'signed' ? '#d1fae5' : (act.status === 'partially_signed' ? '#fef3c7' : '#fee2e2');
+function generatePDFHtml(act, company) {
+    const companySettings = company || {};
+    const isOurSigned = act.signed_by_our === true;
+    const isTheirSigned = act.signed_by_their === true;
 
-        const companyName = companySettings.company_name || 'OOO Business Stack';
+    let stampUrl = companySettings.stamp_url || '';
+    if (stampUrl && stampUrl.startsWith('/')) {
+        stampUrl = window.location.origin + stampUrl;
+    }
 
-        let stampUrl = companySettings.stamp_url || '';
-        if (stampUrl && stampUrl.startsWith('/')) {
-            stampUrl = window.location.origin + stampUrl;
-        }
+    // ========== НАША СТОРОНА (слева) ==========
+    // Название компании - берем из настроек, НЕ из акта!
+    let ourCompanyName = companySettings.company_name || 'ООО Business Stack';
+    let ourSignerName = '—';
+    let ourSignerPosition = '—';
+    let ourSignerTime = '—';
+    
+    if (isOurSigned && act.signed_by_our_name) {
+        const parts = act.signed_by_our_name.split(' | ');
+        // parts[0] - это название компании из акта (НЕ используем!)
+        // parts[1] - ФИО подписанта
+        // parts[2] - должность
+        // parts[3] - дата
+        ourSignerName = parts[1] || '—';
+        ourSignerPosition = parts[2] || '—';
+        ourSignerTime = parts[3] || '—';
+    }
 
-       // Наша подпись
-let ourSignatureName = '', ourSignerName = '', ourSignerPosition = '', ourSignerTime = '';
-if (act.signed_by_our) {
-    const parts = act.signed_by_our_name?.split(' | ') || [];
-    ourSignatureName = parts[0] || act.counterparty_name;
-    ourSignerName = parts[1] || '—';
-    ourSignerPosition = parts[2] || '—';
-    ourSignerTime = parts[3] || new Date().toLocaleString('ru-RU');
-} else {
-    ourSignatureName = act.counterparty_name;
-    ourSignerName = '—';
-    ourSignerPosition = '—';
-    ourSignerTime = '—';
-}
+    // ========== СТОРОНА ПАРТНЕРА (справа) ==========
+    let theirCompanyName = act.counterparty_name || '—';
+    let theirSignerName = '—';
+    let theirSignerPosition = '—';
+    let theirSignerTime = '—';
+    
+    if (isTheirSigned && act.signed_by_their_name) {
+        const parts = act.signed_by_their_name.split(' | ');
+        theirCompanyName = parts[0] || act.counterparty_name;
+        theirSignerName = parts[1] || '—';
+        theirSignerPosition = parts[2] || '—';
+        theirSignerTime = parts[3] || '—';
+    }
 
-// Подпись партнёра
-let theirSignatureName = '', theirSignerName = '', theirSignerPosition = '', theirSignerTime = '';
-if (act.signed_by_their) {
-    const parts = act.signed_by_their_name?.split(' | ') || [];
-    theirSignatureName = parts[0] || act.counterparty_name;
-    theirSignerName = parts[1] || '—';
-    theirSignerPosition = parts[2] || '—';
-    theirSignerTime = parts[3] || new Date().toLocaleString('ru-RU');
-} else {
-    theirSignatureName = act.counterparty_name;
-    theirSignerName = '—';
-    theirSignerPosition = '—';
-    theirSignerTime = '—';
-}
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
 
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/[&<>]/g, function(m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
-            });
-        }
-
-        const companyHeader = `
-        <div style="text-align: center; margin-bottom: 15px;">
-            <h2 style="margin: 0; color: #667eea; font-size: 20px;">${escapeHtml(companyName)}</h2>
-        </div>
-        `;
-
-        return `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Акт сверки N ${act.id.slice(0,8)}</title>
+    <title>Акт сверки № ${act.id.slice(0,8)}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'DejaVu Sans', 'Arial', sans-serif;
-            padding: 20px;
+            padding: 50px;
             color: #333;
-            line-height: 1.4;
             font-size: 12px;
         }
-        .header { text-align: center; margin-bottom: 15px; }
-        .header h1 { color: #667eea; margin: 0; font-size: 20px; }
-        .header p { color: #666; margin: 5px 0 0; font-size: 10px; }
-        .signature-status {
-            background: ${signatureBgColor};
-            padding: 8px;
-            border-radius: 8px;
-            text-align: center;
-            margin-bottom: 15px;
-            font-size: 14px;
-            font-weight: bold;
-        }
-        .info-block {
-            margin-bottom: 15px;
-            padding: 12px;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-        .info-row { padding: 5px 0; border-bottom: 1px solid #e9ecef; }
-        .info-label { font-weight: bold; width: 140px; display: inline-block; color: #495057; font-size: 11px; }
-        .totals {
-            margin: 15px 0;
-            padding: 12px;
-            background: linear-gradient(135deg, #667eea15, #764ba215);
-            border-radius: 10px;
-        }
-        .total-row { font-size: 13px; padding: 4px 0; }
-        .amount { font-size: 16px; font-weight: bold; color: #667eea; }
-
-            .signature-table {
-            width: 100%;
-            margin: 30px 0 20px;
-            border-collapse: collapse;
-        }
-        .signature-table td {
-            width: 50%;
-            vertical-align: top;
-            padding: 0 15px;
-        }
-        .signature-box {
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 12px;
-            border-left: 4px solid #667eea;
-            text-align: center;
-        }
-        .signature-box.their {
-            border-left-color: #10b981;
-            background: #f0fdf4;
-        }
-        .signature-title {
-            font-weight: bold;
-            margin-bottom: 12px;
-            font-size: 16px;
-            text-align: center;
-        }
-        .signature-name {
-            font-weight: bold;
-            font-size: 14px;
-            margin: 8px 0;
-        }
-        .signature-position {
-            font-size: 12px;
-            color: #6c757d;
-            margin: 5px 0;
-        }
-        .signature-date {
-            font-size: 11px;
-            color: #6c757d;
-            margin-top: 10px;
-        }
-        .stamp-container {
-            text-align: center;
-            margin-top: 15px;
-            padding: 10px;
-        }
-        .stamp-placeholder {
-            width: 70px;
-            height: 70px;
-            border: 1px solid #ccc;
-            border-radius: 50%;
-            margin: 0 auto;
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: #667eea; font-size: 20px; margin-bottom: 5px; }
+        .info-block { margin-bottom: 25px; }
+        .info-row { padding: 5px 0; }
+        .info-label { font-weight: bold; width: 120px; display: inline-block; }
+        .totals { margin: 25px 0; padding: 15px; background: #f5f5f5; border-radius: 8px; }
+        .total-row { padding: 5px 0; font-size: 14px; }
+        .amount { font-weight: bold; color: #667eea; font-size: 16px; }
+        
+        .signatures {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            color: #999;
+            justify-content: space-between;
+            margin-top: 60px;
+            gap: 60px;
         }
-        .stamp-img {
-            max-width: 80px;
-            max-height: 80px;
-            margin-bottom: 5px;
+        .signature-col {
+            flex: 1;
+            text-align: center;
         }
-
-          @page {
-            size: A4;
-            margin: 1.5cm;
+        .signature-line {
+            border-top: 1px solid #000;
+            width: 80%;
+            margin: 0 auto 20px auto;
         }
+        .company-name { font-weight: bold; font-size: 14px; margin-bottom: 10px; }
+        .signer-name { font-size: 13px; margin: 5px 0; font-weight: bold; }
+        .signer-position { font-size: 11px; color: #666; margin: 3px 0; }
+        .signature-date { font-size: 10px; color: #999; margin-top: 5px; }
+        .stamp { margin-top: 20px; }
+        .stamp-img { max-width: 70px; }
+        .stamp-placeholder { width: 60px; height: 60px; border: 1px solid #ccc; border-radius: 50%; margin: 0 auto; }
+        .footer { margin-top: 50px; text-align: center; font-size: 9px; color: #999; border-top: 1px solid #eee; padding-top: 15px; }
+        @page { size: A4; margin: 2cm; }
     </style>
 </head>
 <body>
-    ${companyHeader}
-
     <div class="header">
-        <h1>АКТ СВЕРКИ ВЗАИМНЫХ РАСЧЕТОВ N ${act.id.slice(0,8)}</h1>
-        <p>Дата формирования: ${new Date().toLocaleString('ru-RU')}</p>
-        <p><span class="electronic-seal">ЭЛЕКТРОННАЯ ПОДПИСЬ</span></p>
+        <h1>АКТ СВЕРКИ ВЗАИМНЫХ РАСЧЕТОВ № ${act.id.slice(0,8)}</h1>
     </div>
 
-    <div class="signature-status">${signatureStatus}</div>
-
     <div class="info-block">
-        <div class="info-row"><span class="info-label">Контрагент:</span><span><strong>${escapeHtml(act.counterparty_name)}</strong> (ИНН: ${escapeHtml(act.counterparty_inn)})</span></div>
-        <div class="info-row"><span class="info-label">Период:</span><span>${act.period_start} — ${act.period_end}</span></div>
-        <div class="info-row"><span class="info-label">Тип подписи:</span><span><strong>${act.signature_type || 'электронная'}</strong></span></div>
+        <div class="info-row"><span class="info-label">Контрагент:</span> ${escapeHtml(act.counterparty_name)} (ИНН: ${escapeHtml(act.counterparty_inn)})</div>
+        <div class="info-row"><span class="info-label">Период:</span> ${act.period_start} — ${act.period_end}</div>
+        <div class="info-row"><span class="info-label">Тип подписи:</span> электронная</div>
     </div>
 
     <div class="totals">
-        <div class="total-row" style="font-size:14px;font-weight:bold;margin-bottom:6px;">ИТОГИ ЗА ПЕРИОД:</div>
-        <div class="total-row"><strong>Дебет:</strong> <span class="amount">${parseFloat(act.total_debit).toLocaleString()} ₽</span></div>
-        <div class="total-row"><strong>Кредит:</strong> <span class="amount">${parseFloat(act.total_credit).toLocaleString()} ₽</span></div>
-        <div class="total-row"><strong>Сальдо:</strong> <span style="font-size:18px;font-weight:bold;color:#667eea;">${parseFloat(act.closing_balance).toLocaleString()} ₽</span></div>
+        <div class="total-row"><strong>Дебет:</strong> <span class="amount">${(parseFloat(act.total_debit) || 0).toLocaleString()} ₽</span></div>
+        <div class="total-row"><strong>Кредит:</strong> <span class="amount">${(parseFloat(act.total_credit) || 0).toLocaleString()} ₽</span></div>
+        <div class="total-row"><strong>Сальдо:</strong> <span class="amount">${(parseFloat(act.closing_balance) || 0).toLocaleString()} ₽</span></div>
     </div>
 
-  <table class="signature-table" style="width: 100%; margin: 30px 0 20px; border-collapse: collapse;">
-    <tr>
-        <td style="width: 50%; vertical-align: top; padding: 0 15px;">
-            <div class="signature-box" style="padding: 20px; background: #f8f9fa; border-radius: 12px; border-left: 4px solid #667eea; text-align: center;">
-                <div class="signature-name" style="font-weight: bold; font-size: 14px; margin: 8px 0;">${escapeHtml(ourSignatureName)}</div>
-                <div class="signature-name" style="font-size: 14px; margin: 8px 0;">${escapeHtml(ourSignerName)}</div>
-                <div class="signature-position" style="font-size: 12px; color: #6c757d;">${escapeHtml(ourSignerPosition)}</div>
-                <div class="signature-date" style="font-size: 11px; color: #6c757d; margin-top: 10px;">Дата: ${escapeHtml(ourSignerTime)}</div>
-                <div class="stamp-container" style="text-align: center; margin-top: 15px;">
-                    ${stampUrl ? `<img src="${stampUrl}" style="max-width: 70px;">` : '<div style="width: 60px; height: 60px; border: 1px dashed #ccc; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 10px;">М.П.</div>'}
-                </div>
+    <div class="signatures">
+        <!-- НАША СТОРОНА (слева) - компания клиента -->
+        <div class="signature-col">
+            <div class="signature-line"></div>
+            <div class="company-name">${escapeHtml(ourCompanyName)}</div>
+            <div class="signer-name">${escapeHtml(ourSignerName)}</div>
+            <div class="signer-position">${escapeHtml(ourSignerPosition)}</div>
+            <div class="signature-date">${escapeHtml(ourSignerTime)}</div>
+            <div class="stamp">
+                ${stampUrl ? `<img src="${stampUrl}" class="stamp-img">` : '<div class="stamp-placeholder"></div>'}
             </div>
-        </td>
-        <td style="width: 50%; vertical-align: top; padding: 0 15px;">
-            <div class="signature-box their" style="padding: 20px; background: #f0fdf4; border-radius: 12px; border-left: 4px solid #10b981; text-align: center;">
-                <div class="signature-name" style="font-weight: bold; font-size: 14px; margin: 8px 0;">${escapeHtml(theirSignatureName)}</div>
-                <div class="signature-name" style="font-size: 14px; margin: 8px 0;">${escapeHtml(theirSignerName)}</div>
-                <div class="signature-position" style="font-size: 12px; color: #6c757d;">${escapeHtml(theirSignerPosition)}</div>
-                <div class="signature-date" style="font-size: 11px; color: #6c757d; margin-top: 10px;">Дата: ${escapeHtml(theirSignerTime)}</div>
-                <div class="stamp-container" style="text-align: center; margin-top: 15px;">
-                    <div style="width: 60px; height: 60px; border: 1px dashed #ccc; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 10px;">М.П.</div>
-                </div>
+        </div>
+
+        <!-- СТОРОНА ПАРТНЕРА (справа) -->
+        <div class="signature-col">
+            <div class="signature-line"></div>
+            <div class="company-name">${escapeHtml(theirCompanyName)}</div>
+            <div class="signer-name">${escapeHtml(theirSignerName)}</div>
+            <div class="signer-position">${escapeHtml(theirSignerPosition)}</div>
+            <div class="signature-date">${escapeHtml(theirSignerTime)}</div>
+            <div class="stamp">
+                <div class="stamp-placeholder"></div>
             </div>
-        </td>
-    </tr>
-</table>
+        </div>
+    </div>
 
     <div class="footer">
-        <p>Акт сверки подписан электронной подписью и имеет юридическую силу согласно Федеральному закону N 63-ФЗ</p>
-        <p>© ${new Date().getFullYear()} BusinessStack FinCore. Все права защищены.</p>
+        <p>Акт сверки подписан электронной подписью и имеет юридическую силу согласно Федеральному закону №63-ФЗ</p>
+        <p>© ${new Date().getFullYear()} BusinessStack FinCore</p>
     </div>
 </body>
 </html>`;
-    }
+}
 
     function openEmailModal(actId) {
         emailActId = actId;
@@ -1298,7 +1378,11 @@ if (act.signed_by_their) {
         try {
             const res = await fetch('/api/reconciliation/send-email', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'Authorization': 'Bearer ' + token,
+                    'X-Tenant-ID': tenantId
+                },
                 body: JSON.stringify({ act_id: emailActId, email: email, message: message || 'Акт сверки' })
             });
             const data = await res.json();
@@ -1321,7 +1405,10 @@ if (act.signed_by_their) {
         try {
             const res = await fetch(`/api/reconciliation/acts/${id}`, {
                 method: 'DELETE',
-                headers: { 'Authorization': 'Bearer ' + token }
+                headers: { 
+                    'Authorization': 'Bearer ' + token,
+                    'X-Tenant-ID': tenantId
+                }
             });
             const data = await res.json();
             if(data.success) {
@@ -1338,7 +1425,10 @@ if (act.signed_by_their) {
     async function openTrash() {
         try {
             const res = await fetch('/api/reconciliation/trash', {
-                headers: { 'Authorization': 'Bearer ' + token }
+                headers: { 
+                    'Authorization': 'Bearer ' + token,
+                    'X-Tenant-ID': tenantId
+                }
             });
             const data = await res.json();
             if (!data.success || !data.data || data.data.length === 0) {
@@ -1424,7 +1514,10 @@ if (act.signed_by_their) {
         try {
             const res = await fetch(`/api/reconciliation/acts/${id}/restore`, {
                 method: 'POST',
-                headers: { 'Authorization': 'Bearer ' + token }
+                headers: { 
+                    'Authorization': 'Bearer ' + token,
+                    'X-Tenant-ID': tenantId
+                }
             });
             const data = await res.json();
             if (data.success) {
@@ -1444,7 +1537,11 @@ if (act.signed_by_their) {
         try {
             const res = await fetch('/api/reconciliation/trash/selected', {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'Authorization': 'Bearer ' + token,
+                    'X-Tenant-ID': tenantId
+                },
                 body: JSON.stringify({ act_ids: [id] })
             });
             const data = await res.json();
@@ -1474,7 +1571,11 @@ if (act.signed_by_their) {
         try {
             const res = await fetch('/api/reconciliation/trash/selected', {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'Authorization': 'Bearer ' + token,
+                    'X-Tenant-ID': tenantId
+                },
                 body: JSON.stringify({ act_ids: selected })
             });
             const data = await res.json();
@@ -1496,7 +1597,10 @@ if (act.signed_by_their) {
         try {
             const res = await fetch('/api/reconciliation/trash', {
                 method: 'DELETE',
-                headers: { 'Authorization': 'Bearer ' + token }
+                headers: { 
+                    'Authorization': 'Bearer ' + token,
+                    'X-Tenant-ID': tenantId
+                }
             });
             const data = await res.json();
             if(data.success) {
@@ -1554,7 +1658,11 @@ if (act.signed_by_their) {
         const pos = document.getElementById('signerPosition').value.trim();
         const res = await fetch(`/api/reconciliation/acts/${currentSignAct.id}/sign`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            headers: { 
+                'Content-Type': 'application/json', 
+                'Authorization': 'Bearer ' + token,
+                'X-Tenant-ID': tenantId
+            },
             body: JSON.stringify({
                 sign_our: true,
                 sign_their: false,
@@ -1608,14 +1716,12 @@ if (act.signed_by_their) {
             </tr>
         </thead>
         <tbody>`;
-
         filteredActs.forEach((a) => {
             const period = `${formatDate(a.period_start)} - ${formatDate(a.period_end)}`;
             const debit = (parseFloat(a.total_debit) || 0).toLocaleString();
             const credit = (parseFloat(a.total_credit) || 0).toLocaleString();
             const balance = (parseFloat(a.closing_balance) || 0).toLocaleString();
             const status = (a.status === 'signed' || a.status === 'partially_signed') ? 'Подписан' : 'Черновик';
-
             html += `<tr>
                 <td style="font-family: monospace;">${a.id?.slice(0,8) || '—'}</td>
                 <td>${a.counterparty_name || '—'}</td>
@@ -1628,7 +1734,6 @@ if (act.signed_by_their) {
                 <td>${formatDate(a.created_at)}</td>
             </tr>`;
         });
-
         html += `</tbody>
     </table>
     <div style="margin-top: 20px; font-size: 11px; color: #666; text-align: center;">
@@ -1637,7 +1742,6 @@ if (act.signed_by_their) {
     </div>
 </body>
 </html>`;
-
         const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
@@ -1655,7 +1759,10 @@ if (act.signed_by_their) {
         modal.show();
         try {
             const res = await fetch('/api/reconciliation/statistics', {
-                headers: { 'Authorization': 'Bearer ' + token }
+                headers: { 
+                    'Authorization': 'Bearer ' + token,
+                    'X-Tenant-ID': tenantId
+                }
             });
             const result = await res.json();
             if (result.success && result.data) {
@@ -1773,8 +1880,6 @@ if (act.signed_by_their) {
         showToast('Отчет аналитики экспортирован', 'success');
     }
 
-    // ========== ИНТЕЛЛЕКТУАЛЬНЫЙ АНАЛИЗ АКТА ==========
-
     async function refreshCurrentActData() {
         if (currentSelectedActId) {
             await loadActs();
@@ -1809,12 +1914,17 @@ if (act.signed_by_their) {
             return;
         }
         try {
-            const res = await fetch(`/api/reconciliation/qr/${act.id}`, { headers: { 'Authorization': 'Bearer ' + token } });
+            const res = await fetch(`/api/reconciliation/qr/${act.id}`, { 
+                headers: { 
+                    'Authorization': 'Bearer ' + token,
+                    'X-Tenant-ID': tenantId
+                } 
+            });
             const data = await res.json();
             if (data.qr_data) {
                 document.getElementById('qrCodeContainer').innerHTML = `
                     <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(data.qr_data)}" style="width:200px; height:200px;">
-                   <p class="mt-3"><strong>Акт №${act.id.slice(0,8)}</strong><br>Партнёр: ${act.counterparty_name}</p>
+                    <p class="mt-3"><strong>Акт №${act.id.slice(0,8)}</strong><br>Партнёр: ${act.counterparty_name}</p>
                     <button class="btn-outline mt-2" onclick="copyToClipboard('${data.qr_data}')">📋 Скопировать ссылку</button>
                 `;
                 new bootstrap.Modal(document.getElementById('qrModal')).show();
@@ -1824,61 +1934,50 @@ if (act.signed_by_their) {
         }
     }
 
-   async function verifyBlockchain() {
-    const act = getSelectedAct();
-    if (!act) {
-        showModalMessage('⚠️ Выбор акта', 'Пожалуйста, выберите акт из таблицы (кликните по строке)', 'warning');
-        return;
+    async function verifyBlockchain() {
+        const act = getSelectedAct();
+        if (!act) {
+            showModalMessage('⚠️ Выбор акта', 'Пожалуйста, выберите акт из таблицы (кликните по строке)', 'warning');
+            return;
+        }
+        const ourHash = act.our_signature_hash;
+        const theirHash = act.their_signature_hash;
+        const isSignedByUs = act.signed_by_our === true;
+        const isSignedByThem = act.signed_by_their === true;
+        let message = `Акт №${act.id.slice(0,8)}\nПартнёр: ${act.counterparty_name}\n\n`;
+        if (isSignedByUs && isSignedByThem) {
+            message += `✅ Акт ПОДПИСАН двумя сторонами!\n\n`;
+            if (ourHash) {
+                message += `🔑 Наша подпись: ${ourHash.substring(0, 40)}...\n`;
+            }
+            if (theirHash) {
+                message += `🔑 Подпись партнера: ${theirHash.substring(0, 40)}...\n\n`;
+            }
+            message += `✅ Подпись верифицирована\nАкт имеет полную юридическую силу`;
+            showModalMessage('🔗 Блокчейн верификация', message, 'success');
+        } else if (isSignedByUs && !isSignedByThem) {
+            message += `✅ Наша сторона: ПОДПИСАНО\n`;
+            message += `⏳ Партнер: ОЖИДАЕТ ПОДПИСАНИЯ\n\n`;
+            if (ourHash) {
+                message += `🔑 Хеш нашей подписи: ${ourHash.substring(0, 40)}...\n\n`;
+            }
+            message += `Акт вступит в полную юридическую силу после подписания партнёром.`;
+            showModalMessage('🔗 Блокчейн верификация', message, 'info');
+        } else if (!isSignedByUs && isSignedByThem) {
+            message += `⏳ Наша сторона: ОЖИДАЕТ ПОДПИСАНИЯ\n`;
+            message += `✅ Партнер: ПОДПИСАНО\n\n`;
+            if (theirHash) {
+                message += `🔑 Хеш подписи партнера: ${theirHash.substring(0, 40)}...\n\n`;
+            }
+            message += `Подпишите акт со своей стороны для вступления в силу.`;
+            showModalMessage('🔗 Блокчейн верификация', message, 'info');
+        } else {
+            message += `❌ Акт НЕ ПОДПИСАН\n\n`;
+            message += `Для получения юридической силы необходимо подписание с обеих сторон.\n\n`;
+            message += `После подписания будет сгенерирован уникальный хеш подписи.`;
+            showModalMessage('🔗 Блокчейн верификация', message, 'warning');
+        }
     }
-    
-    // Используем правильные поля
-    const ourHash = act.our_signature_hash;
-    const theirHash = act.their_signature_hash;
-    const isSignedByUs = act.signed_by_our === true;
-    const isSignedByThem = act.signed_by_their === true;
-    
-    let message = `Акт №${act.id.slice(0,8)}\nПартнёр: ${act.counterparty_name}\n\n`;
-    
-    if (isSignedByUs && isSignedByThem) {
-        // Подписан двумя сторонами
-        message += `✅ Акт ПОДПИСАН двумя сторонами!\n\n`;
-        if (ourHash) {
-            message += `🔑 Наша подпись: ${ourHash.substring(0, 40)}...\n`;
-        }
-        if (theirHash) {
-            message += `🔑 Подпись партнера: ${theirHash.substring(0, 40)}...\n\n`;
-        }
-        message += `✅ Подпись верифицирована\nАкт имеет полную юридическую силу`;
-        showModalMessage('🔗 Блокчейн верификация', message, 'success');
-        
-    } else if (isSignedByUs && !isSignedByThem) {
-        // Подписан только нашей стороной
-        message += `✅ Наша сторона: ПОДПИСАНО\n`;
-        message += `⏳ Партнер: ОЖИДАЕТ ПОДПИСАНИЯ\n\n`;
-        if (ourHash) {
-            message += `🔑 Хеш нашей подписи: ${ourHash.substring(0, 40)}...\n\n`;
-        }
-        message += `Акт вступит в полную юридическую силу после подписания партнёром.`;
-        showModalMessage('🔗 Блокчейн верификация', message, 'info');
-        
-    } else if (!isSignedByUs && isSignedByThem) {
-        // Подписан только контрагентом
-        message += `⏳ Наша сторона: ОЖИДАЕТ ПОДПИСАНИЯ\n`;
-        message += `✅ Партнер: ПОДПИСАНО\n\n`;
-        if (theirHash) {
-            message += `🔑 Хеш подписи партнера: ${theirHash.substring(0, 40)}...\n\n`;
-        }
-        message += `Подпишите акт со своей стороны для вступления в силу.`;
-        showModalMessage('🔗 Блокчейн верификация', message, 'info');
-        
-    } else {
-        // Не подписан никем
-        message += `❌ Акт НЕ ПОДПИСАН\n\n`;
-        message += `Для получения юридической силы необходимо подписание с обеих сторон.\n\n`;
-        message += `После подписания будет сгенерирован уникальный хеш подписи.`;
-        showModalMessage('🔗 Блокчейн верификация', message, 'warning');
-    }
-}
 
     async function aiVerifyAct() {
         const act = getSelectedAct();
@@ -1887,7 +1986,12 @@ if (act.signed_by_their) {
             return;
         }
         try {
-            const res = await fetch(`/api/reconciliation/ai-verify/${act.id}`, { headers: { 'Authorization': 'Bearer ' + token } });
+            const res = await fetch(`/api/reconciliation/ai-verify/${act.id}`, { 
+                headers: { 
+                    'Authorization': 'Bearer ' + token,
+                    'X-Tenant-ID': tenantId
+                } 
+            });
             const data = await res.json();
             const isVerified = data.verified || (act.signed_by_our === true);
             showModalMessage('🤖 AI верификация подписи',
@@ -1906,7 +2010,12 @@ if (act.signed_by_their) {
             return;
         }
         try {
-            const res = await fetch(`/api/reconciliation/compare/${act.id}`, { headers: { 'Authorization': 'Bearer ' + token } });
+            const res = await fetch(`/api/reconciliation/compare/${act.id}`, { 
+                headers: { 
+                    'Authorization': 'Bearer ' + token,
+                    'X-Tenant-ID': tenantId
+                } 
+            });
             const data = await res.json();
             showModalMessage('📊 Сравнение с прошлым периодом',
                 `Акт №${act.id.slice(0,8)}\nДебет: ${data.diff_percent?.debit > 0 ? '+' : ''}${data.diff_percent?.debit?.toFixed(1) || 0}%\nКредит: ${data.diff_percent?.credit > 0 ? '+' : ''}${data.diff_percent?.credit?.toFixed(1) || 0}%\n\nТренд: ${data.trend || 'нет данных'}\n\nРекомендация: ${data.recommendation || 'Данных для сравнения пока нет'}`,
@@ -1958,19 +2067,24 @@ if (act.signed_by_their) {
             if (!chatId) return;
             fetch(`/api/reconciliation/telegram/${act.id}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'Authorization': 'Bearer ' + token,
+                    'X-Tenant-ID': tenantId
+                },
                 body: JSON.stringify({ chat_id: chatId })
             }).then(() => showModalMessage('✅ Отправлено', 'Сообщение отправлено в Telegram', 'success'))
               .catch(() => showModalMessage('Ошибка', 'Не удалось отправить', 'error'));
         } else if (platform === '2') {
             const phone = prompt('Введите номер телефона в формате: 79001234567');
             if (!phone) return;
-            const link = `https://wa.me/${phone}?text=Акт сверки с ${act.counterparty_name} на сумму ${act.closing_balance} ₽`;                    window.open(link, '_blank');
+            const link = `https://wa.me/${phone}?text=Акт сверки с ${act.counterparty_name} на сумму ${act.closing_balance} ₽`;
+            window.open(link, '_blank');
             showModalMessage('✅ Открыт WhatsApp', 'Отправьте сообщение партнеру', 'success');
         }
     }
 
-  function checkActStatus() {
+   function checkActStatus() {
     const act = getSelectedAct();
     if (!act) {
         showModalMessage('⚠️ Выбор акта', 'Пожалуйста, выберите акт из таблицы (кликните по строке)', 'warning');
@@ -1978,27 +2092,72 @@ if (act.signed_by_their) {
     }
     
     let statusText = '';
-    if (act.status === 'signed' || act.status === 'partially_signed') {
-        statusText = 'ПОДПИСАН';
+    if (act.status === 'signed') {
+        statusText = 'ПОДПИСАН ОБЕИМИ СТОРОНАМИ';
+    } else if (act.status === 'partially_signed') {
+        statusText = 'ЧАСТИЧНО ПОДПИСАН';
     } else if (act.status === 'generated') {
         statusText = 'СФОРМИРОВАН';
     } else {
         statusText = 'ЧЕРНОВИК';
     }
     
+    // Используем прямые поля из акта
+    const isSignedByUs = act.signed_by_our === true;
+    const isSignedByThem = act.signed_by_their === true;
     const hasOurSignature = act.our_signature_hash && act.our_signature_hash !== '';
     const hasTheirSignature = act.their_signature_hash && act.their_signature_hash !== '';
+    
+    let ourSignatureInfo = '❌ Нет';
+    if (isSignedByUs) {
+        ourSignatureInfo = '✅ Да';
+        if (act.signed_by_our_name) {
+            const parts = act.signed_by_our_name.split(' | ');
+            if (parts.length >= 2) {
+                ourSignatureInfo += ` (${parts[1]}, ${parts[2] || 'должность не указана'})`;
+            }
+        }
+        if (hasOurSignature) {
+            ourSignatureInfo += ` [хеш: ${act.our_signature_hash.substring(0, 16)}...]`;
+        }
+    }
+    
+    let theirSignatureInfo = '❌ Нет';
+    if (isSignedByThem) {
+        theirSignatureInfo = '✅ Да';
+        if (act.signed_by_their_name) {
+            const parts = act.signed_by_their_name.split(' | ');
+            if (parts.length >= 2) {
+                theirSignatureInfo += ` (${parts[1]}, ${parts[2] || 'должность не указана'})`;
+            }
+        }
+        if (hasTheirSignature) {
+            theirSignatureInfo += ` [хеш: ${act.their_signature_hash.substring(0, 16)}...]`;
+        }
+    }
+    
+    let legalForce = '';
+    if (isSignedByUs && isSignedByThem) {
+        legalForce = '✅ Документ имеет полную юридическую силу. Подписан обеими сторонами.';
+    } else if (isSignedByUs && !isSignedByThem) {
+        legalForce = '⚠️ Частичная юридическая сила. Ожидает подписания со стороны партнера.';
+    } else if (!isSignedByUs && isSignedByThem) {
+        legalForce = '⚠️ Частичная юридическая сила. Ожидает подписания с вашей стороны.';
+    } else {
+        legalForce = '❌ Документ не имеет юридической силы. Требуется подписание обеими сторонами.';
+    }
     
     showModalMessage('📋 Юридический статус акта',
         `Акт №${act.id.slice(0,8)}\n` +
         `Партнёр: ${act.counterparty_name}\n` +
-        `Статус: ${statusText}\n` +
-        `Подписан нашей стороной: ${act.signed_by_our ? '✅ Да' : '❌ Нет'} ${hasOurSignature ? '(с хешем)' : '(без хеша)'}\n` +
-        `Подписан партнером: ${act.signed_by_their ? '✅ Да' : '❌ Нет'} ${hasTheirSignature ? '(с хешем)' : '(без хеша)'}\n\n` +
-        `Юридическая сила: ${(act.signed_by_our && act.signed_by_their) ? '✅ Документ имеет полную юридическую силу' : (act.signed_by_our ? '⚠️ Частичная сила (ждём подпись партнера)' : '❌ Документ не имеет юридической силы (не подписан)')}`,
-        'info'
+        `Статус: ${statusText}\n\n` +
+        `📝 Наша сторона: ${ourSignatureInfo}\n` +
+        `📝 Партнер: ${theirSignatureInfo}\n\n` +
+        `⚖️ ${legalForce}`,
+        (isSignedByUs && isSignedByThem) ? 'success' : 'info'
     );
 }
+
     function printAct() {
         const act = getSelectedAct();
         if (!act) {
@@ -2025,148 +2184,245 @@ if (act.signed_by_their) {
         setTimeout(() => div.remove(), 3000);
     }
 
-// ========== ОТПРАВКА КОНТРАГЕНТУ НА ПОДПИСЬ ==========
+    let currentSendActId = null;
 
-let currentSendActId = null;
-
-function openSendToCounterpartyModal(actId) {
-    const act = allActs.find(a => a.id === actId);
-    if (!act) {
-        showToast('Акт не найден', 'error');
-        return;
-    }
-    
-    currentSendActId = actId;
-    document.getElementById('sendActIdShort').innerText = act.id.slice(0,8);
-    document.getElementById('sendActCounterparty').innerText = act.counterparty_name;
-    document.getElementById('counterpartyEmail').value = '';
-    document.getElementById('sendMessage').value = '';
-    document.getElementById('sendResult').style.display = 'none';
-    
-    new bootstrap.Modal(document.getElementById('sendToCounterpartyModal')).show();
-}
-
-async function sendToCounterparty() {
-    const email = document.getElementById('counterpartyEmail').value.trim();
-    const message = document.getElementById('sendMessage').value.trim();
-    
-    if (!email) {
-        showResult('Введите email партнера', 'error');
-        return;
-    }
-    
-    if (!currentSendActId) {
-        showResult('Акт не найден', 'error');
-        return;
-    }
-    
-    const btn = document.getElementById('sendToCounterpartyBtn');
-    const originalText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Отправка...';
-    
-    try {
-        const response = await fetch(`/api/reconciliation/send-to-counterparty/${currentSendActId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + token
-            },
-            body: JSON.stringify({
-                email: email,
-                message: message || 'Просим подписать акт сверки'
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showResult(`✅ Акт отправлен на ${email}\n\n📎 Ссылка для подписания:\n${data.sign_link}`, 'success');
-            showToast(`Акт отправлен партнеру на ${email}`, 'success');
-            
-            if (data.sign_link) {
-                navigator.clipboard.writeText(data.sign_link);
-                showToast('🔗 Ссылка для подписания скопирована', 'info');
-            }
-            
-            setTimeout(() => {
-                bootstrap.Modal.getInstance(document.getElementById('sendToCounterpartyModal')).hide();
-            }, 3000);
-        } else {
-            showResult('❌ Ошибка: ' + (data.error || 'Не удалось отправить'), 'error');
+    function openSendToCounterpartyModal(actId) {
+        const act = allActs.find(a => a.id === actId);
+        if (!act) {
+            showToast('Акт не найден', 'error');
+            return;
         }
-    } catch(e) {
-        console.error('Ошибка:', e);
-        showResult('❌ Ошибка сети: ' + e.message, 'error');
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
+        currentSendActId = actId;
+        document.getElementById('sendActIdShort').innerText = act.id.slice(0,8);
+        document.getElementById('sendActCounterparty').innerText = act.counterparty_name;
+        document.getElementById('counterpartyEmail').value = '';
+        document.getElementById('sendMessage').value = '';
+        document.getElementById('sendResult').style.display = 'none';
+        new bootstrap.Modal(document.getElementById('sendToCounterpartyModal')).show();
     }
-}
 
-function showResult(message, type) {
-    const resultDiv = document.getElementById('sendResult');
-    resultDiv.innerHTML = message.replace(/\n/g, '<br>');
-    resultDiv.className = 'alert alert-' + (type === 'success' ? 'success' : (type === 'error' ? 'danger' : 'info'));
-    resultDiv.style.display = 'block';
-}
+    async function sendToCounterparty() {
+        const email = document.getElementById('counterpartyEmail').value.trim();
+        const message = document.getElementById('sendMessage').value.trim();
+        if (!email) {
+            showResult('Введите email партнера', 'error');
+            return;
+        }
+        if (!currentSendActId) {
+            showResult('Акт не найден', 'error');
+            return;
+        }
+        const btn = document.getElementById('sendToCounterpartyBtn');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Отправка...';
+        try {
+            const response = await fetch(`/api/reconciliation/send-to-counterparty/${currentSendActId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token,
+                    'X-Tenant-ID': tenantId
+                },
+                body: JSON.stringify({
+                    email: email,
+                    message: message || 'Просим подписать акт сверки'
+                })
+            });
+            const data = await response.json();
+            if (data.success) {
+                showResult(`✅ Акт отправлен на ${email}\n\n📎 Ссылка для подписания:\n${data.sign_link}`, 'success');
+                showToast(`Акт отправлен партнеру на ${email}`, 'success');
+                if (data.sign_link) {
+                    navigator.clipboard.writeText(data.sign_link);
+                    showToast('🔗 Ссылка для подписания скопирована', 'info');
+                }
+                setTimeout(() => {
+                    bootstrap.Modal.getInstance(document.getElementById('sendToCounterpartyModal')).hide();
+                }, 3000);
+            } else {
+                showResult('❌ Ошибка: ' + (data.error || 'Не удалось отправить'), 'error');
+            }
+        } catch(e) {
+            console.error('Ошибка:', e);
+            showResult('❌ Ошибка сети: ' + e.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+
+    function showResult(message, type) {
+        const resultDiv = document.getElementById('sendResult');
+        resultDiv.innerHTML = message.replace(/\n/g, '<br>');
+        resultDiv.className = 'alert alert-' + (type === 'success' ? 'success' : (type === 'error' ? 'danger' : 'info'));
+        resultDiv.style.display = 'block';
+    }
+
+    async function openBatchCreateModal() {
+        await loadCounterpartiesForBatch();
+        new bootstrap.Modal(document.getElementById('batchCreateModal')).show();
+    }
+
+    async function loadCounterpartiesForBatch() {
+        const container = document.getElementById('counterpartyCheckboxes');
+        try {
+            const res = await fetch('/api/crm/partners', {
+                headers: { 
+                    'Authorization': 'Bearer ' + token,
+                    'X-Tenant-ID': tenantId
+                }
+            });
+            const data = await res.json();
+            if (data.data && data.data.length) {
+                container.innerHTML = data.data.map(p => `
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" value="${p.id}" id="partner_${p.id}">
+                        <label class="form-check-label" for="partner_${p.id}">
+                            <strong>${escapeHtml(p.name)}</strong> ${p.inn ? `(ИНН: ${p.inn})` : ''}
+                        </label>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<div class="text-muted text-center py-3">Нет партнёров. Создайте сначала партнёров в CRM.</div>';
+            }
+        } catch(e) {
+            console.error('Ошибка загрузки партнёров:', e);
+            container.innerHTML = '<div class="text-danger text-center py-3">Ошибка загрузки партнёров</div>';
+        }
+    }
+
+    async function batchCreateActs() {
+        const startDate = document.getElementById('batchPeriodStart').value;
+        const endDate = document.getElementById('batchPeriodEnd').value;
+        if (!startDate || !endDate) {
+            showToast('Выберите период', 'error');
+            return;
+        }
+        const selectedIds = Array.from(document.querySelectorAll('#counterpartyCheckboxes input:checked')).map(cb => cb.value);
+        if (selectedIds.length === 0) {
+            showToast('Выберите хотя бы одного партнёра', 'error');
+            return;
+        }
+        const progressDiv = document.getElementById('batchProgress');
+        const progressBar = progressDiv.querySelector('.progress-bar');
+        const statusText = document.getElementById('batchStatus');
+        progressDiv.style.display = 'block';
+        progressBar.style.width = '50%';
+        statusText.textContent = `Создание актов для ${selectedIds.length} партнёров...`;
+        try {
+            const res = await fetch('/api/reconciliation/batch-create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token,
+                    'X-Tenant-ID': tenantId
+                },
+                body: JSON.stringify({
+                    counterparty_ids: selectedIds,
+                    period_start: startDate,
+                    period_end: endDate
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                progressBar.style.width = '100%';
+                const errors = data.errors || [];
+                if (data.created_count > 0) {
+                    statusText.innerHTML = `✅ Создано актов: ${data.created_count}<br>${errors.length ? '⚠️ Ошибок: ' + errors.length : ''}`;
+                    showToast(`Создано ${data.created_count} актов`, 'success');
+                    setTimeout(() => {
+                        bootstrap.Modal.getInstance(document.getElementById('batchCreateModal')).hide();
+                        loadActs();
+                    }, 2000);
+                } else {
+                    const errorMsg = errors.join(', ') || 'Неизвестная ошибка';
+                    statusText.innerHTML = `❌ ${errorMsg}`;
+                    showToast(errorMsg, 'error');
+                }
+            } else {
+                statusText.innerHTML = '❌ Ошибка: ' + (data.error || 'Неизвестная ошибка');
+                showToast('Ошибка при массовом создании', 'error');
+            }
+        } catch(e) {
+            console.error('Ошибка:', e);
+            statusText.innerHTML = '❌ Ошибка соединения: ' + e.message;
+            showToast('Ошибка соединения: ' + e.message, 'error');
+        }
+    }
+
+    async function loadReconciliationDashboard() {
+        try {
+            const res = await fetch('/api/reconciliation/dashboard', {
+                headers: { 
+                    'Authorization': 'Bearer ' + token,
+                    'X-Tenant-ID': tenantId
+                }
+            });
+            const data = await res.json();
+            if (data.stats) {
+                const dashTotal = document.getElementById('dashTotal');
+                if (dashTotal) dashTotal.innerText = data.stats.total || 0;
+                const dashSigned = document.getElementById('dashSigned');
+                if (dashSigned) dashSigned.innerText = data.stats.signed || 0;
+                const dashPending = document.getElementById('dashPending');
+                if (dashPending) dashPending.innerText = data.stats.pending || 0;
+                const dashDraft = document.getElementById('dashDraft');
+                if (dashDraft) dashDraft.innerText = data.stats.draft || 0;
+                const dashboardDiv = document.getElementById('reconciliationDashboard');
+                if (dashboardDiv) dashboardDiv.style.display = 'flex';
+                if (data.trend && data.trend.length) {
+                    const chartCanvas = document.getElementById('reconciliationTrendChart');
+                    if (chartCanvas) {
+                        drawReconciliationChart(data.trend);
+                        const chartDiv = document.getElementById('reconciliationChart');
+                        if (chartDiv) chartDiv.style.display = 'flex';
+                    }
+                }
+            }
+        } catch(e) {
+            console.error('Ошибка загрузки дашборда:', e);
+        }
+    }
+
+    function drawReconciliationChart(trend) {
+        const ctx = document.getElementById('reconciliationTrendChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: trend.map(t => t.month),
+                datasets: [
+                    {
+                        label: 'Создано актов',
+                        data: trend.map(t => t.created),
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102,126,234,0.1)',
+                        fill: true
+                    },
+                    {
+                        label: 'Подписано',
+                        data: trend.map(t => t.signed),
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16,185,129,0.1)',
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { legend: { labels: { color: '#fff' } } }
+            }
+        });
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
         loadActs();
+        loadReconciliationDashboard();
         document.getElementById('actTotalDebit')?.addEventListener('input', calculateBalance);
         document.getElementById('actTotalCredit')?.addEventListener('input', calculateBalance);
     });
 </script>
-
-<div class="modal fade" id="emailModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header"><h5 class="modal-title"><i class="fas fa-envelope"></i> Отправить акт на email</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body">
-                <div class="mb-3"><label class="form-label">Email получателя <span class="text-danger">*</span></label><input type="email" class="form-control" id="emailRecipient" placeholder="client@example.com"></div>
-                <div class="mb-3"><label class="form-label">Сообщение (необязательно)</label><textarea class="form-control" id="emailMessage" rows="3" placeholder="Уважаемый партнёр, направляем вам акт сверки..."></textarea></div>
-                <div class="alert alert-info small"><i class="fas fa-info-circle"></i> Акт будет отправлен в формате PDF</div>
-            </div>
-            <div class="modal-footer"><button class="btn-outline" data-bs-dismiss="modal">Отмена</button><button class="btn-primary" onclick="sendEmailNow()">Отправить</button></div>
-        </div>
-    </div>
-</div>
-
-<!-- МОДАЛЬНОЕ ОКНО ДЛЯ ОТПРАВКИ НА ПОДПИСЬ КОНТРАГЕНТУ -->
-<div class="modal fade" id="sendToCounterpartyModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-paper-plane"></i> Отправить партнёру на подпись</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-info" id="sendActInfo">
-                  <strong>Акт №<span id="sendActIdShort">---</span></strong><br>
-                  Партнёр: <span id="sendActCounterparty">---</span>
-                </div>
-                <div class="mb-3">
-                   <label class="form-label">Email партнёра <span class="text-danger">*</span></label>
-                    <input type="email" class="form-control" id="counterpartyEmail" placeholder="kontragent@example.com">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Сообщение (необязательно)</label>
-                    <textarea class="form-control" id="sendMessage" rows="3" placeholder="Уважаемый партнер, просим подписать акт сверки..."></textarea>
-                </div>
-                <div class="alert alert-info small">
-                    <i class="fas fa-info-circle"></i> Партнёр получит ссылку для подписания. Ссылка действительна 7 дней.
-                </div>
-                <div id="sendResult" class="alert" style="display: none;"></div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-outline" data-bs-dismiss="modal">Отмена</button>
-                <button class="btn-primary" id="sendToCounterpartyBtn" onclick="sendToCounterparty()">
-                    <i class="fas fa-envelope"></i> Отправить на подпись
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 </body>
 </html>
 {{end}}

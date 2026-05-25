@@ -12,31 +12,65 @@ import (
     "net/http"
     "strings"
     "time"
-    
+
     "github.com/gin-gonic/gin"
     "github.com/google/uuid"
-    
+
     "subscription-system/database"
     "subscription-system/middleware"
 )
 
+// ========== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ДЛЯ ПОЛУЧЕНИЯ TENANT_ID ==========
+
+// getTenantIDString - получает tenant_id как строку из разных источников
+func getTenantIDString(c *gin.Context) string {
+    // 1. Пробуем из заголовка
+    tenantID := c.GetHeader("X-Tenant-ID")
+    if tenantID != "" && tenantID != "00000000-0000-0000-0000-000000000000" {
+        return tenantID
+    }
+
+    // 2. Пробуем из контекста (устанавливается middleware)
+    tenantID = c.GetString("tenant_id")
+    if tenantID != "" && tenantID != "00000000-0000-0000-0000-000000000000" {
+        return tenantID
+    }
+
+    // 3. Пробуем через middleware
+    if tid := middleware.GetTenantIDFromContext(c); tid != uuid.Nil {
+        tenantID = tid.String()
+        if tenantID != "00000000-0000-0000-0000-000000000000" {
+            return tenantID
+        }
+    }
+
+    // 4. Для владельца платформы - специальный tenant
+    userEmail := c.GetString("user_email")
+    if userEmail == "dev@businessstack.ru" {
+        return "11111111-1111-1111-1111-111111111111"
+    }
+
+    // 5. Tenant по умолчанию
+    return "11111111-1111-1111-1111-111111111111"
+}
+
 func GenerateReconciliationAct(c *gin.Context) {
-    tenantID := middleware.GetTenantIDFromContext(c)
+    tenantID := getTenantIDString(c)
     userID := c.GetString("user_id")
-    
+
     body, _ := io.ReadAll(c.Request.Body)
     log.Printf("🔍 Получен запрос на создание акта. TenantID: %v, UserID: %v", tenantID, userID)
     log.Printf("🔍 Raw body: %s", string(body))
-    
+
     c.Request.Body = io.NopCloser(strings.NewReader(string(body)))
-    
+
     var req struct {
         CounterpartyName string `json:"counterparty_name"`
         CounterpartyINN  string `json:"counterparty_inn"`
         PeriodStart      string `json:"period_start"`
         PeriodEnd        string `json:"period_end"`
     }
-    
+
     if err := c.ShouldBindJSON(&req); err != nil {
         log.Printf("❌ Ошибка парсинга JSON: %v", err)
         c.JSON(http.StatusBadRequest, gin.H{
@@ -45,10 +79,10 @@ func GenerateReconciliationAct(c *gin.Context) {
         })
         return
     }
-    
-    log.Printf("📝 Распарсенные данные: Name=%s, INN=%s, Start=%s, End=%s", 
+
+    log.Printf("📝 Распарсенные данные: Name=%s, INN=%s, Start=%s, End=%s",
         req.CounterpartyName, req.CounterpartyINN, req.PeriodStart, req.PeriodEnd)
-    
+
     if req.CounterpartyName == "" {
         c.JSON(http.StatusBadRequest, gin.H{"error": "counterparty_name обязателен"})
         return
@@ -65,32 +99,32 @@ func GenerateReconciliationAct(c *gin.Context) {
         c.JSON(http.StatusBadRequest, gin.H{"error": "period_end обязателен"})
         return
     }
-    
+
     periodStart, err := time.Parse("2006-01-02", req.PeriodStart)
     if err != nil {
         log.Printf("❌ Ошибка парсинга period_start: %v", err)
         c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат даты начала. Используйте YYYY-MM-DD"})
         return
     }
-    
+
     periodEnd, err := time.Parse("2006-01-02", req.PeriodEnd)
     if err != nil {
         log.Printf("❌ Ошибка парсинга period_end: %v", err)
         c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат даты окончания. Используйте YYYY-MM-DD"})
         return
     }
-    
+
     if periodEnd.Before(periodStart) {
         c.JSON(http.StatusBadRequest, gin.H{"error": "Дата окончания не может быть раньше даты начала"})
         return
     }
-    
+
     actID := uuid.New()
-    
+
     totalDebit := 0.0
     totalCredit := 0.0
     closingBalance := 0.0
-    
+
     query := `
         INSERT INTO reconciliation_acts (
             id, tenant_id, counterparty_name, counterparty_inn,
@@ -101,12 +135,12 @@ func GenerateReconciliationAct(c *gin.Context) {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'generated', $10, NOW(), false, false, 'simple', false)
         RETURNING id
     `
-    
+
     var newID string
     err = database.Pool.QueryRow(c.Request.Context(), query,
         actID, tenantID, req.CounterpartyName, req.CounterpartyINN,
         periodStart, periodEnd, totalDebit, totalCredit, closingBalance, userID).Scan(&newID)
-    
+
     if err != nil {
         log.Printf("❌ Ошибка создания акта: %v", err)
         c.JSON(http.StatusInternalServerError, gin.H{
@@ -114,9 +148,9 @@ func GenerateReconciliationAct(c *gin.Context) {
         })
         return
     }
-    
+
     log.Printf("✅ Акт сверки создан и сохранен в БД: id=%s", newID)
-    
+
     c.JSON(http.StatusOK, gin.H{
         "success": true,
         "message": "Акт сверки успешно создан",
@@ -135,63 +169,60 @@ func GenerateReconciliationAct(c *gin.Context) {
 }
 
 func GetReconciliationActs(c *gin.Context) {
-    tenantID := middleware.GetTenantIDFromContext(c)
-    
-    log.Printf("📝 Получение списка актов для tenantID: %v", tenantID)
-    
+    tenantID := getTenantIDString(c)
+    log.Printf("📋 Получение актов для tenantID: %s", tenantID)
+
     rows, err := database.Pool.Query(c.Request.Context(), `
         SELECT id, counterparty_name, counterparty_inn, 
                period_start, period_end, 
                COALESCE(total_debit, 0) as total_debit,
                COALESCE(total_credit, 0) as total_credit,
                COALESCE(closing_balance, 0) as closing_balance,
-               status, 
+               status,
+               created_at,
                COALESCE(signed_by_our, false) as signed_by_our,
                COALESCE(signed_by_their, false) as signed_by_their,
-               COALESCE(signed_by_our_name, ''), COALESCE(signed_by_their_name, ''),
-               COALESCE(signature_type, 'simple') as signature_type,
+               COALESCE(signed_by_our_name, '') as signed_by_our_name,
+               COALESCE(signed_by_their_name, '') as signed_by_their_name,
                COALESCE(our_signature_hash, '') as our_signature_hash,
-               COALESCE(their_signature_hash, '') as their_signature_hash,
-               created_at
+               COALESCE(their_signature_hash, '') as their_signature_hash
         FROM reconciliation_acts
-        WHERE tenant_id = $1 AND (is_deleted IS NULL OR is_deleted = false)
+        WHERE (is_deleted IS NULL OR is_deleted = false)
+          AND tenant_id = $1::uuid
         ORDER BY created_at DESC
     `, tenantID)
-    
+
     if err != nil {
-        log.Printf("❌ Ошибка получения списка актов: %v", err)
-        c.JSON(http.StatusInternalServerError, gin.H{
-            "success": false,
-            "error":   "Ошибка получения списка актов",
-        })
+        log.Printf("❌ Ошибка запроса: %v", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
         return
     }
     defer rows.Close()
-    
-    var acts []gin.H
+
+    acts := make([]gin.H, 0)
+
     for rows.Next() {
         var id uuid.UUID
         var counterpartyName, counterpartyINN, status string
-        var signedByOurName, signedByTheirName, signatureType, ourSignatureHash, theirSignatureHash string
         var periodStart, periodEnd, createdAt time.Time
         var totalDebit, totalCredit, closingBalance float64
         var signedByOur, signedByTheir bool
-        
+        var signedByOurName, signedByTheirName, ourSignatureHash, theirSignatureHash string
+
         err := rows.Scan(
             &id, &counterpartyName, &counterpartyINN,
             &periodStart, &periodEnd,
             &totalDebit, &totalCredit, &closingBalance,
-            &status, &signedByOur, &signedByTheir,
+            &status, &createdAt,
+            &signedByOur, &signedByTheir,
             &signedByOurName, &signedByTheirName,
-            &signatureType,
             &ourSignatureHash, &theirSignatureHash,
-            &createdAt,
         )
         if err != nil {
-            log.Printf("⚠️ Ошибка сканирования строки: %v", err)
+            log.Printf("⚠️ Ошибка сканирования: %v", err)
             continue
         }
-        
+
         acts = append(acts, gin.H{
             "id":                    id.String(),
             "counterparty_name":     counterpartyName,
@@ -202,38 +233,37 @@ func GetReconciliationActs(c *gin.Context) {
             "total_credit":          totalCredit,
             "closing_balance":       closingBalance,
             "status":                status,
+            "created_at":            createdAt.Format("2006-01-02 15:04:05"),
             "signed_by_our":         signedByOur,
             "signed_by_their":       signedByTheir,
             "signed_by_our_name":    signedByOurName,
             "signed_by_their_name":  signedByTheirName,
-            "signature_type":        signatureType,
             "our_signature_hash":    ourSignatureHash,
             "their_signature_hash":  theirSignatureHash,
-            "created_at":            createdAt.Format("2006-01-02 15:04:05"),
         })
     }
-    
+
     log.Printf("✅ Найдено актов: %d", len(acts))
-    
+
     c.JSON(http.StatusOK, gin.H{
         "success": true,
         "data":    acts,
     })
 }
-
+   
 func GetReconciliationActByID(c *gin.Context) {
     actID := c.Param("id")
-    tenantID := middleware.GetTenantIDFromContext(c)
-    
-    log.Printf("📝 Получение акта по ID: %s", actID)
-    
+    tenantID := getTenantIDString(c)
+
+    log.Printf("📝 Получение акта по ID: %s, tenantID: %s", actID, tenantID)
+
     var id uuid.UUID
     var counterpartyName, counterpartyINN, status string
     var signedByOurName, signedByTheirName, signatureType string
     var periodStart, periodEnd, createdAt, signedAt time.Time
     var totalDebit, totalCredit, closingBalance float64
     var signedByOur, signedByTheir bool
-    
+
     err := database.Pool.QueryRow(c.Request.Context(), `
         SELECT id, counterparty_name, counterparty_inn, 
                period_start, period_end, 
@@ -243,7 +273,7 @@ func GetReconciliationActByID(c *gin.Context) {
                COALESCE(signature_type, 'simple'),
                created_at, signed_at
         FROM reconciliation_acts
-        WHERE id = $1 AND tenant_id = $2
+        WHERE id = $1::uuid AND tenant_id = $2::uuid
     `, actID, tenantID).Scan(
         &id, &counterpartyName, &counterpartyINN,
         &periodStart, &periodEnd,
@@ -253,7 +283,7 @@ func GetReconciliationActByID(c *gin.Context) {
         &signatureType,
         &createdAt, &signedAt,
     )
-    
+
     if err != nil {
         log.Printf("❌ Акт не найден: %v", err)
         c.JSON(http.StatusNotFound, gin.H{
@@ -262,7 +292,7 @@ func GetReconciliationActByID(c *gin.Context) {
         })
         return
     }
-    
+
     result := gin.H{
         "id":                    id.String(),
         "counterparty_name":     counterpartyName,
@@ -280,11 +310,11 @@ func GetReconciliationActByID(c *gin.Context) {
         "signature_type":        signatureType,
         "created_at":            createdAt.Format("2006-01-02 15:04:05"),
     }
-    
+
     if !signedAt.IsZero() {
         result["signed_at"] = signedAt.Format("2006-01-02 15:04:05")
     }
-    
+
     c.JSON(http.StatusOK, gin.H{
         "success": true,
         "data":    result,
@@ -293,38 +323,42 @@ func GetReconciliationActByID(c *gin.Context) {
 
 func SignReconciliationAct(c *gin.Context) {
     actID := c.Param("id")
-    tenantID := middleware.GetTenantIDFromContext(c)
+    tenantID := getTenantIDString(c)
+
+    log.Printf("🔍🔍🔍 actID = %s", actID)
+    log.Printf("🔍🔍🔍 tenantID = %s", tenantID)
     userID := c.GetString("user_id")
     userName := c.GetString("user_name")
     userEmail := c.GetString("user_email")
-    
+
     var counterpartyName string
     var currentSignedOur, currentSignedTheir bool
     var currentStatus string
     var currentOurSigner, currentTheirSigner string
-    
+
     err := database.Pool.QueryRow(c.Request.Context(), `
         SELECT counterparty_name,
                COALESCE(signed_by_our, false), COALESCE(signed_by_their, false), status,
                COALESCE(signed_by_our_name, ''), COALESCE(signed_by_their_name, '')
         FROM reconciliation_acts 
-        WHERE id = $1 AND tenant_id = $2
+        WHERE id = $1::uuid AND tenant_id = $2::uuid
     `, actID, tenantID).Scan(
         &counterpartyName,
         &currentSignedOur, &currentSignedTheir, &currentStatus,
         &currentOurSigner, &currentTheirSigner)
-    
+
     if err != nil {
         log.Printf("❌ Ошибка получения данных акта: %v", err)
         c.JSON(http.StatusNotFound, gin.H{"error": "Акт не найден"})
         return
     }
-    
+
     if currentStatus == "signed" {
         c.JSON(http.StatusBadRequest, gin.H{"error": "Акт уже полностью подписан"})
         return
     }
-    
+
+    // Получаем ФИО пользователя
     var userFullName string
     err = database.Pool.QueryRow(c.Request.Context(), `
         SELECT COALESCE(full_name, name, email) FROM users WHERE id = $1
@@ -335,11 +369,11 @@ func SignReconciliationAct(c *gin.Context) {
             userFullName = strings.Split(userEmail, "@")[0]
         }
     }
-    
+
     displayName := counterpartyName
-    
-    log.Printf("📝 Подписание акта: ID=%s, Организация из акта=%s, ФИО пользователя=%s", actID, displayName, userFullName)
-    
+
+    log.Printf("📝 Подписание акта: ID=%s, Организация=%s, ФИО=%s", actID, displayName, userFullName)
+
     var req struct {
         SignOur        bool   `json:"sign_our"`
         SignTheir      bool   `json:"sign_their"`
@@ -348,7 +382,7 @@ func SignReconciliationAct(c *gin.Context) {
         SignerName     string `json:"signer_name"`
         SignerPosition string `json:"signer_position"`
     }
-    
+
     if err := c.ShouldBindJSON(&req); err != nil {
         log.Printf("❌ Ошибка парсинга JSON: %v", err)
         c.JSON(http.StatusBadRequest, gin.H{
@@ -357,14 +391,16 @@ func SignReconciliationAct(c *gin.Context) {
         })
         return
     }
-    
+
     documentHash := generateDocumentHash(actID)
-    
+
     newSignedOur := currentSignedOur || req.SignOur
     newSignedTheir := currentSignedTheir || req.SignTheir
-    
+
     newOurSigner := currentOurSigner
     ourSignatureHash := ""
+    
+    // Сохраняем данные подписанта
     if req.SignOur && !currentSignedOur {
         signerFullName := req.SignerName
         if signerFullName == "" {
@@ -375,29 +411,31 @@ func SignReconciliationAct(c *gin.Context) {
         }
         signerPosition := req.SignerPosition
         if signerPosition == "" {
-            signerPosition = "Представитель"
+            signerPosition = "Генеральный директор"
         }
-        
-        newOurSigner = fmt.Sprintf("%s | %s | %s | %s | %s", 
-            displayName, 
-            signerFullName, 
+
+        // Формат: "Организация | ФИО | Должность | Дата | Хеш"
+        newOurSigner = fmt.Sprintf("%s | %s | %s | %s | %s",
+            displayName,
+            signerFullName,
             signerPosition,
             time.Now().Format("02.01.2006 15:04:05"),
             documentHash[:16])
         ourSignatureHash = generateSignatureHash(documentHash, req.Signature, userID)
-        log.Printf("📝 Подпись сохранена: %s", newOurSigner)
+        log.Printf("📝 Наша подпись сохранена: %s", newOurSigner)
     }
-    
+
     newTheirSigner := currentTheirSigner
     theirSignatureHash := ""
-    
+
     newStatus := currentStatus
     if newSignedOur && newSignedTheir {
         newStatus = "signed"
     } else if newSignedOur {
         newStatus = "partially_signed"
     }
-    
+
+    // ОБНОВЛЯЕМ АКТ С ПОДПИСЬЮ
     _, err = database.Pool.Exec(c.Request.Context(), `
         UPDATE reconciliation_acts 
         SET signed_by_our = $1, 
@@ -410,36 +448,29 @@ func SignReconciliationAct(c *gin.Context) {
             signed_at = NOW(),
             signature_type = 'electronic',
             updated_at = NOW()
-        WHERE id = $8 AND tenant_id = $9
+        WHERE id = $8::uuid AND tenant_id = $9::uuid
     `, newSignedOur, newSignedTheir, newOurSigner, newTheirSigner,
         ourSignatureHash, theirSignatureHash,
         newStatus, actID, tenantID)
-    
+
     if err != nil {
         log.Printf("❌ Ошибка обновления: %v", err)
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка подписания акта: " + err.Error()})
         return
     }
-    
+
+    // Проверяем, что статус обновился
     var verifyStatus string
     err = database.Pool.QueryRow(c.Request.Context(), `
-        SELECT status FROM reconciliation_acts WHERE id = $1
-    `, actID).Scan(&verifyStatus)
-    
-    if err == nil && verifyStatus != newStatus {
-        log.Printf("⚠️ Статус не обновился! Был: %s, Стал: %s. Принудительно обновляем...", verifyStatus, newStatus)
-        _, err = database.Pool.Exec(c.Request.Context(), `
-            UPDATE reconciliation_acts 
-            SET status = $1, updated_at = NOW()
-            WHERE id = $2
-        `, newStatus, actID)
-        if err == nil {
-            log.Printf("✅ Принудительно установлен статус: %s", newStatus)
-        }
+        SELECT status, signed_by_our, signed_by_our_name FROM reconciliation_acts WHERE id = $1::uuid
+    `, actID).Scan(&verifyStatus, &newSignedOur, &newOurSigner)
+
+    if err == nil {
+        log.Printf("✅ После обновления: статус=%s, signed_by_our=%v, подпись=%s", verifyStatus, newSignedOur, newOurSigner)
     }
-    
+
     log.Printf("✅ Акт %s подписан, статус: %s", actID, newStatus)
-    
+
     c.JSON(http.StatusOK, gin.H{
         "success":            true,
         "message":            fmt.Sprintf("✅ Акт подписан: %s", displayName),
@@ -466,17 +497,17 @@ func generateSignatureHash(documentHash, signature, signerID string) string {
 
 func DownloadReconciliationAct(c *gin.Context) {
     actID := c.Param("id")
-    tenantID := middleware.GetTenantIDFromContext(c)
-    
-    log.Printf("📝 Скачивание акта: ID=%s", actID)
-    
+    tenantID := getTenantIDString(c)
+
+    log.Printf("📝 Скачивание акта: ID=%s, tenantID=%s", actID, tenantID)
+
     var counterpartyName, counterpartyINN, status string
     var signedByOurName, signedByTheirName, signatureType, ourSignatureHash, theirSignatureHash string
     var periodStart, periodEnd time.Time
     var signedAt sql.NullTime
     var totalDebit, totalCredit, closingBalance float64
     var signedByOur, signedByTheir bool
-    
+
     err := database.Pool.QueryRow(c.Request.Context(), `
         SELECT counterparty_name, counterparty_inn, period_start, period_end, 
                total_debit, total_credit, closing_balance, status,
@@ -486,7 +517,7 @@ func DownloadReconciliationAct(c *gin.Context) {
                COALESCE(our_signature_hash, ''), COALESCE(their_signature_hash, ''),
                signed_at
         FROM reconciliation_acts
-        WHERE id = $1 AND tenant_id = $2
+        WHERE id = $1::uuid AND tenant_id = $2::uuid
     `, actID, tenantID).Scan(
         &counterpartyName, &counterpartyINN, &periodStart, &periodEnd,
         &totalDebit, &totalCredit, &closingBalance, &status,
@@ -496,20 +527,20 @@ func DownloadReconciliationAct(c *gin.Context) {
         &ourSignatureHash, &theirSignatureHash,
         &signedAt,
     )
-    
+
     if err != nil {
         log.Printf("❌ Ошибка получения акта: %v", err)
         c.JSON(http.StatusNotFound, gin.H{"error": "Акт не найден"})
         return
     }
-    
+
     log.Printf("📊 Статус акта: signed_by_our=%v", signedByOur)
-    
+
     organizationName := ""
     signerFullName := ""
     signerPosition := ""
     signerTime := ""
-    
+
     if signedByOur && signedByOurName != "" {
         parts := strings.Split(signedByOurName, " | ")
         if len(parts) > 0 {
@@ -525,19 +556,19 @@ func DownloadReconciliationAct(c *gin.Context) {
             signerTime = parts[3]
         }
     }
-    
+
     if signerTime == "" && signedAt.Valid {
         signerTime = signedAt.Time.Format("02.01.2006 15:04:05")
     }
-    
+
     var signatureStatus string
     var signatureBgColor string
     var signatureBlockHtml string
-    
+
     if signedByOur {
         signatureStatus = "✅ ПОДПИСАНО"
         signatureBgColor = "#d1fae5"
-        
+
         signatureBlockHtml = fmt.Sprintf(`
             <div class="signature-block">
                 <h3>📝 ЭЛЕКТРОННАЯ ПОДПИСЬ</h3>
@@ -548,9 +579,9 @@ func DownloadReconciliationAct(c *gin.Context) {
                     <p class="signature-details">Дата и время подписания: %s</p>
                     %s
                 </div>
-            </div>`, 
-            organizationName, 
-            signerFullName, 
+            </div>`,
+            organizationName,
+            signerFullName,
             signerPosition,
             signerTime,
             getSignatureHashHTML(ourSignatureHash, true))
@@ -566,7 +597,7 @@ func DownloadReconciliationAct(c *gin.Context) {
                 </div>
             </div>`
     }
-    
+
     html := fmt.Sprintf(`<!DOCTYPE html>
 <html>
 <head>
@@ -660,7 +691,7 @@ func DownloadReconciliationAct(c *gin.Context) {
         signatureBlockHtml,
         time.Now().Year(),
     )
-    
+
     c.Header("Content-Type", "text/html; charset=utf-8")
     c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=act_%s.html", actID[:8]))
     c.String(http.StatusOK, html)
@@ -679,8 +710,8 @@ func getSignatureHashHTML(hash string, signed bool) string {
 
 func UpdateReconciliationAct(c *gin.Context) {
     actID := c.Param("id")
-    tenantID := middleware.GetTenantIDFromContext(c)
-    
+    tenantID := getTenantIDString(c)
+
     var req struct {
         CounterpartyName string  `json:"counterparty_name"`
         CounterpartyINN  string  `json:"counterparty_inn"`
@@ -690,51 +721,51 @@ func UpdateReconciliationAct(c *gin.Context) {
         TotalCredit      float64 `json:"total_credit"`
         ClosingBalance   float64 `json:"closing_balance"`
     }
-    
+
     if err := c.ShouldBindJSON(&req); err != nil {
         log.Printf("❌ Ошибка парсинга JSON: %v", err)
         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
         return
     }
-    
+
     periodStart, err := time.Parse("2006-01-02", req.PeriodStart)
     if err != nil {
         c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат даты начала"})
         return
     }
-    
+
     periodEnd, err := time.Parse("2006-01-02", req.PeriodEnd)
     if err != nil {
         c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат даты окончания"})
         return
     }
-    
+
     result, err := database.Pool.Exec(c.Request.Context(), `
         UPDATE reconciliation_acts 
         SET counterparty_name = $1, counterparty_inn = $2,
             period_start = $3, period_end = $4,
             total_debit = $5, total_credit = $6, closing_balance = $7,
             updated_at = NOW()
-        WHERE id = $8 AND tenant_id = $9 AND status IN ('draft', 'generated', 'partially_signed')
+        WHERE id = $8::uuid AND tenant_id = $9::uuid AND status IN ('draft', 'generated', 'partially_signed')
     `, req.CounterpartyName, req.CounterpartyINN,
         periodStart, periodEnd,
         req.TotalDebit, req.TotalCredit, req.ClosingBalance,
         actID, tenantID)
-    
+
     if err != nil {
         log.Printf("❌ Ошибка обновления: %v", err)
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка обновления"})
         return
     }
-    
+
     rowsAffected := result.RowsAffected()
     if rowsAffected == 0 {
         c.JSON(http.StatusBadRequest, gin.H{"error": "Акт нельзя редактировать (возможно, уже подписан)"})
         return
     }
-    
+
     log.Printf("✅ Акт %s обновлен", actID)
-    
+
     c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
@@ -742,43 +773,45 @@ func UpdateReconciliationAct(c *gin.Context) {
 
 func DeleteReconciliationAct(c *gin.Context) {
     actID := c.Param("id")
-    tenantID := middleware.GetTenantIDFromContext(c)
+    tenantID := getTenantIDString(c)
     userID := c.GetString("user_id")
-    
+
+    log.Printf("🗑️ Удаление акта: actID=%s, tenantID=%s", actID, tenantID)
+
     var status string
     err := database.Pool.QueryRow(c.Request.Context(), `
         SELECT status FROM reconciliation_acts 
-        WHERE id = $1 AND tenant_id = $2 AND (is_deleted IS NULL OR is_deleted = false)
+        WHERE id = $1::uuid AND tenant_id = $2::uuid AND (is_deleted IS NULL OR is_deleted = false)
     `, actID, tenantID).Scan(&status)
-    
+
     if err != nil {
         log.Printf("❌ Акт не найден: %v", err)
         c.JSON(http.StatusNotFound, gin.H{"error": "Акт не найден"})
         return
     }
-    
+
     result, err := database.Pool.Exec(c.Request.Context(), `
         UPDATE reconciliation_acts 
         SET is_deleted = true, 
             deleted_at = NOW(),
-            deleted_by = $1
-        WHERE id = $2 AND tenant_id = $3 AND (is_deleted IS NULL OR is_deleted = false)
+            deleted_by = $1::uuid
+        WHERE id = $2::uuid AND tenant_id = $3::uuid AND (is_deleted IS NULL OR is_deleted = false)
     `, userID, actID, tenantID)
-    
+
     if err != nil {
         log.Printf("❌ Ошибка перемещения в корзину: %v", err)
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка удаления"})
         return
     }
-    
+
     rowsAffected := result.RowsAffected()
     if rowsAffected == 0 {
         c.JSON(http.StatusNotFound, gin.H{"error": "Акт не найден"})
         return
     }
-    
+
     log.Printf("✅ Акт %s перемещен в корзину (статус: %s)", actID, status)
-    
+
     c.JSON(http.StatusOK, gin.H{
         "success": true,
         "message": "Акт перемещен в корзину",
@@ -788,24 +821,24 @@ func DeleteReconciliationAct(c *gin.Context) {
 
 func RestoreReconciliationAct(c *gin.Context) {
     actID := c.Param("id")
-    tenantID := middleware.GetTenantIDFromContext(c)
-    
+    tenantID := getTenantIDString(c)
+
     result, err := database.Pool.Exec(c.Request.Context(), `
         UPDATE reconciliation_acts 
         SET is_deleted = false, 
             deleted_at = NULL,
             deleted_by = NULL,
             restored_at = NOW()
-        WHERE id = $1 AND tenant_id = $2 AND is_deleted = true
+        WHERE id = $1::uuid AND tenant_id = $2::uuid AND is_deleted = true
     `, actID, tenantID)
-    
+
     if err != nil || result.RowsAffected() == 0 {
         c.JSON(http.StatusNotFound, gin.H{"error": "Акт не найден в корзине"})
         return
     }
-    
+
     log.Printf("✅ Акт %s восстановлен из корзины", actID)
-    
+
     c.JSON(http.StatusOK, gin.H{
         "success": true,
         "message": "Акт восстановлен из корзины",
@@ -813,8 +846,8 @@ func RestoreReconciliationAct(c *gin.Context) {
 }
 
 func GetTrashReconciliationActs(c *gin.Context) {
-    tenantID := middleware.GetTenantIDFromContext(c)
-    
+    tenantID := getTenantIDString(c)
+
     rows, err := database.Pool.Query(c.Request.Context(), `
         SELECT id, counterparty_name, counterparty_inn, 
                period_start, period_end, 
@@ -830,16 +863,16 @@ func GetTrashReconciliationActs(c *gin.Context) {
                deleted_at,
                COALESCE((SELECT name FROM users WHERE id = deleted_by), '') as deleted_by_name
         FROM reconciliation_acts
-        WHERE tenant_id = $1 AND is_deleted = true
+        WHERE tenant_id = $1::uuid AND is_deleted = true
         ORDER BY deleted_at DESC
     `, tenantID)
-    
+
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения корзины"})
         return
     }
     defer rows.Close()
-    
+
     var acts []gin.H
     for rows.Next() {
         var id uuid.UUID
@@ -848,7 +881,7 @@ func GetTrashReconciliationActs(c *gin.Context) {
         var periodStart, periodEnd, createdAt, deletedAt time.Time
         var totalDebit, totalCredit, closingBalance float64
         var signedByOur, signedByTheir bool
-        
+
         err := rows.Scan(
             &id, &counterpartyName, &counterpartyINN,
             &periodStart, &periodEnd,
@@ -861,7 +894,7 @@ func GetTrashReconciliationActs(c *gin.Context) {
         if err != nil {
             continue
         }
-        
+
         acts = append(acts, gin.H{
             "id":                    id.String(),
             "counterparty_name":     counterpartyName,
@@ -882,7 +915,7 @@ func GetTrashReconciliationActs(c *gin.Context) {
             "deleted_by":            deletedByName,
         })
     }
-    
+
     c.JSON(http.StatusOK, gin.H{
         "success": true,
         "data":    acts,
@@ -891,21 +924,21 @@ func GetTrashReconciliationActs(c *gin.Context) {
 }
 
 func ClearTrashReconciliationActs(c *gin.Context) {
-    tenantID := middleware.GetTenantIDFromContext(c)
-    
+    tenantID := getTenantIDString(c)
+
     result, err := database.Pool.Exec(c.Request.Context(), `
         DELETE FROM reconciliation_acts 
-        WHERE tenant_id = $1 AND is_deleted = true
+        WHERE tenant_id = $1::uuid AND is_deleted = true
     `, tenantID)
-    
+
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка очистки корзины"})
         return
     }
-    
+
     deletedCount := result.RowsAffected()
     log.Printf("🗑️ Корзина очищена, удалено %d актов для tenant %s", deletedCount, tenantID)
-    
+
     c.JSON(http.StatusOK, gin.H{
         "success":       true,
         "message":       fmt.Sprintf("Корзина очищена, удалено %d актов", deletedCount),
@@ -915,20 +948,20 @@ func ClearTrashReconciliationActs(c *gin.Context) {
 
 func PermanentDeleteReconciliationAct(c *gin.Context) {
     actID := c.Param("id")
-    tenantID := middleware.GetTenantIDFromContext(c)
-    
+    tenantID := getTenantIDString(c)
+
     result, err := database.Pool.Exec(c.Request.Context(), `
         DELETE FROM reconciliation_acts 
-        WHERE id = $1 AND tenant_id = $2 AND is_deleted = true
+        WHERE id = $1::uuid AND tenant_id = $2::uuid AND is_deleted = true
     `, actID, tenantID)
-    
+
     if err != nil || result.RowsAffected() == 0 {
         c.JSON(http.StatusNotFound, gin.H{"error": "Акт не найден в корзине"})
         return
     }
-    
+
     log.Printf("💥 Акт %s полностью удален из корзины", actID)
-    
+
     c.JSON(http.StatusOK, gin.H{
         "success": true,
         "message": "Акт полностью удален",
@@ -939,27 +972,27 @@ func PermanentDeleteReconciliationAct(c *gin.Context) {
 
 func GetActHistory(c *gin.Context) {
     actID := c.Param("id")
-    tenantID := middleware.GetTenantIDFromContext(c)
-    
-    log.Printf("📜 Получение истории для акта: %s", actID)
-    
+    tenantID := getTenantIDString(c)
+
+    log.Printf("📜 Получение истории для акта: %s, tenantID: %s", actID, tenantID)
+
     var exists bool
     err := database.Pool.QueryRow(c.Request.Context(), `
-        SELECT EXISTS(SELECT 1 FROM reconciliation_acts WHERE id = $1 AND tenant_id = $2)
+        SELECT EXISTS(SELECT 1 FROM reconciliation_acts WHERE id = $1::uuid AND tenant_id = $2::uuid)
     `, actID, tenantID).Scan(&exists)
-    
+
     if err != nil {
         log.Printf("❌ Ошибка проверки акта: %v", err)
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка проверки акта"})
         return
     }
-    
+
     if !exists {
         log.Printf("❌ Акт не найден: %s", actID)
         c.JSON(http.StatusNotFound, gin.H{"error": "Акт не найден"})
         return
     }
-    
+
     rows, err := database.Pool.Query(c.Request.Context(), `
         SELECT id, action, user_name, user_email, old_data, new_data, created_at
         FROM reconciliation_act_logs
@@ -967,30 +1000,30 @@ func GetActHistory(c *gin.Context) {
         ORDER BY created_at DESC
         LIMIT 50
     `, actID)
-    
+
     if err != nil {
         log.Printf("❌ Ошибка получения истории: %v", err)
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка получения истории"})
         return
     }
     defer rows.Close()
-    
+
     var history []gin.H
     for rows.Next() {
         var id int
         var action, userName, userEmail string
         var oldData, newData []byte
         var createdAt time.Time
-        
+
         err := rows.Scan(&id, &action, &userName, &userEmail, &oldData, &newData, &createdAt)
         if err != nil {
             continue
         }
-        
+
         var oldDataMap, newDataMap interface{}
         json.Unmarshal(oldData, &oldDataMap)
         json.Unmarshal(newData, &newDataMap)
-        
+
         history = append(history, gin.H{
             "id":         id,
             "action":     action,
@@ -1001,9 +1034,9 @@ func GetActHistory(c *gin.Context) {
             "created_at": createdAt.Format("2006-01-02 15:04:05"),
         })
     }
-    
+
     log.Printf("✅ Найдено записей истории: %d", len(history))
-    
+
     c.JSON(http.StatusOK, gin.H{
         "success": true,
         "data":    history,
@@ -1011,14 +1044,14 @@ func GetActHistory(c *gin.Context) {
 }
 
 func GetActStatistics(c *gin.Context) {
-    tenantID := middleware.GetTenantIDFromContext(c)
-    
-    log.Printf("📊 Получение статистики для tenantID: %v", tenantID)
-    
+    tenantID := getTenantIDString(c)
+
+    log.Printf("📊 Получение статистики для tenantID: %s", tenantID)
+
     var totalActs int
     var totalDebit, totalCredit, totalBalance float64
     var signedCount, draftCount int
-    
+
     err := database.Pool.QueryRow(c.Request.Context(), `
         SELECT 
             COALESCE(COUNT(*), 0) as total_acts,
@@ -1028,9 +1061,9 @@ func GetActStatistics(c *gin.Context) {
             COALESCE(SUM(CASE WHEN status = 'signed' THEN 1 ELSE 0 END), 0) as signed_count,
             COALESCE(SUM(CASE WHEN status IN ('draft', 'generated', 'partially_signed') THEN 1 ELSE 0 END), 0) as draft_count
         FROM reconciliation_acts
-        WHERE tenant_id = $1
+        WHERE tenant_id = $1::uuid
     `, tenantID).Scan(&totalActs, &totalDebit, &totalCredit, &totalBalance, &signedCount, &draftCount)
-    
+
     if err != nil {
         log.Printf("❌ Ошибка получения статистики: %v", err)
         c.JSON(http.StatusOK, gin.H{
@@ -1050,7 +1083,7 @@ func GetActStatistics(c *gin.Context) {
         })
         return
     }
-    
+
     rows, err := database.Pool.Query(c.Request.Context(), `
         SELECT 
             DATE_TRUNC('month', created_at) as month,
@@ -1059,12 +1092,12 @@ func GetActStatistics(c *gin.Context) {
             COALESCE(SUM(total_credit), 0) as credit,
             COALESCE(SUM(closing_balance), 0) as balance
         FROM reconciliation_acts
-        WHERE tenant_id = $1
+        WHERE tenant_id = $1::uuid
         GROUP BY DATE_TRUNC('month', created_at)
         ORDER BY month DESC
         LIMIT 12
     `, tenantID)
-    
+
     if err != nil {
         c.JSON(http.StatusOK, gin.H{
             "success": true,
@@ -1084,24 +1117,24 @@ func GetActStatistics(c *gin.Context) {
         return
     }
     defer rows.Close()
-    
+
     var months []string
     var debitData []float64
     var creditData []float64
     var balanceData []float64
-    
+
     for rows.Next() {
         var month time.Time
         var count int
         var debit, credit, balance float64
-        
+
         rows.Scan(&month, &count, &debit, &credit, &balance)
         months = append([]string{month.Format("Jan 2006")}, months...)
         debitData = append([]float64{debit}, debitData...)
         creditData = append([]float64{credit}, creditData...)
         balanceData = append([]float64{balance}, balanceData...)
     }
-    
+
     c.JSON(http.StatusOK, gin.H{
         "success": true,
         "data": gin.H{
@@ -1120,22 +1153,22 @@ func GetActStatistics(c *gin.Context) {
 }
 
 func BulkDeleteReconciliationActs(c *gin.Context) {
-    tenantID := middleware.GetTenantIDFromContext(c)
-    
+    tenantID := getTenantIDString(c)
+
     var req struct {
         ActIDs []string `json:"act_ids"`
     }
-    
+
     if err := c.ShouldBindJSON(&req); err != nil {
         c.JSON(http.StatusBadRequest, gin.H{"error": "Неверные данные"})
         return
     }
-    
+
     if len(req.ActIDs) == 0 {
         c.JSON(http.StatusBadRequest, gin.H{"error": "Не выбраны акты для удаления"})
         return
     }
-    
+
     placeholders := make([]string, len(req.ActIDs))
     args := make([]interface{}, len(req.ActIDs)+1)
     args[0] = tenantID
@@ -1143,40 +1176,40 @@ func BulkDeleteReconciliationActs(c *gin.Context) {
         placeholders[i] = fmt.Sprintf("$%d", i+2)
         args[i+1] = id
     }
-    
+
     query := fmt.Sprintf(`
         SELECT id, status, counterparty_name FROM reconciliation_acts 
-        WHERE tenant_id = $1 AND id IN (%s)
+        WHERE tenant_id = $1::uuid AND id IN (%s)
     `, strings.Join(placeholders, ","))
-    
+
     rows, err := database.Pool.Query(c.Request.Context(), query, args...)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка проверки актов"})
         return
     }
     defer rows.Close()
-    
+
     var toDelete []string
     var toSkip []string
-    
+
     for rows.Next() {
         var id string
         var status string
         var counterpartyName string
         rows.Scan(&id, &status, &counterpartyName)
-        
+
         if status == "signed" {
             toSkip = append(toSkip, counterpartyName)
         } else {
             toDelete = append(toDelete, id)
         }
     }
-    
+
     if len(toDelete) == 0 {
         c.JSON(http.StatusBadRequest, gin.H{"error": "Выбранные акты нельзя удалить (подписаны)"})
         return
     }
-    
+
     deletePlaceholders := make([]string, len(toDelete))
     deleteArgs := make([]interface{}, len(toDelete)+1)
     deleteArgs[0] = tenantID
@@ -1184,25 +1217,25 @@ func BulkDeleteReconciliationActs(c *gin.Context) {
         deletePlaceholders[i] = fmt.Sprintf("$%d", i+2)
         deleteArgs[i+1] = id
     }
-    
+
     deleteQuery := fmt.Sprintf(`
         DELETE FROM reconciliation_acts 
-        WHERE tenant_id = $1 AND id IN (%s)
+        WHERE tenant_id = $1::uuid AND id IN (%s)
     `, strings.Join(deletePlaceholders, ","))
-    
+
     result, err := database.Pool.Exec(c.Request.Context(), deleteQuery, deleteArgs...)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка массового удаления"})
         return
     }
-    
+
     rowsAffected := result.RowsAffected()
-    
+
     message := fmt.Sprintf("Удалено актов: %d", rowsAffected)
     if len(toSkip) > 0 {
         message += fmt.Sprintf("\nПропущено (подписаны): %d - %s", len(toSkip), strings.Join(toSkip, ", "))
     }
-    
+
     c.JSON(http.StatusOK, gin.H{
         "success":       true,
         "message":       message,
@@ -1217,28 +1250,28 @@ func SendReconciliationActEmail(c *gin.Context) {
         Email   string `json:"email"`
         Message string `json:"message"`
     }
-    
+
     if err := c.ShouldBindJSON(&req); err != nil {
         c.JSON(http.StatusBadRequest, gin.H{"error": "Неверные данные"})
         return
     }
-    
+
     if req.ActID == "" || req.Email == "" {
         c.JSON(http.StatusBadRequest, gin.H{"error": "Не указан ID акта или email"})
         return
     }
-    
-    tenantID := middleware.GetTenantIDFromContext(c)
+
+    tenantID := getTenantIDString(c)
     userEmail := c.GetString("user_email")
     userName := c.GetString("user_name")
     userCompany := c.GetString("company_name")
-    
+
     var counterpartyName, counterpartyINN, status string
     var periodStart, periodEnd, signedAt time.Time
     var totalDebit, totalCredit, closingBalance float64
     var signedByOur, signedByTheir bool
     var signedByOurName, signedByTheirName string
-    
+
     err := database.Pool.QueryRow(c.Request.Context(), `
         SELECT counterparty_name, counterparty_inn, period_start, period_end, 
                total_debit, total_credit, closing_balance, status,
@@ -1246,7 +1279,7 @@ func SendReconciliationActEmail(c *gin.Context) {
                COALESCE(signed_by_our_name, ''), COALESCE(signed_by_their_name, ''),
                signed_at
         FROM reconciliation_acts
-        WHERE id = $1 AND tenant_id = $2
+        WHERE id = $1::uuid AND tenant_id = $2::uuid
     `, req.ActID, tenantID).Scan(
         &counterpartyName, &counterpartyINN, &periodStart, &periodEnd,
         &totalDebit, &totalCredit, &closingBalance, &status,
@@ -1254,18 +1287,18 @@ func SendReconciliationActEmail(c *gin.Context) {
         &signedByOurName, &signedByTheirName,
         &signedAt,
     )
-    
+
     if err != nil {
         log.Printf("❌ Ошибка получения акта для email: %v", err)
         c.JSON(http.StatusNotFound, gin.H{"error": "Акт не найден"})
         return
     }
-    
+
     organizationName := ""
     signerFullName := ""
     signerPosition := ""
     signerTime := ""
-    
+
     if signedByOur && signedByOurName != "" {
         parts := strings.Split(signedByOurName, " | ")
         if len(parts) > 0 {
@@ -1281,11 +1314,11 @@ func SendReconciliationActEmail(c *gin.Context) {
             signerTime = parts[3]
         }
     }
-    
+
     if signerTime == "" && !signedAt.IsZero() {
         signerTime = signedAt.Format("02.01.2006 15:04:05")
     }
-    
+
     signatureHtml := ""
     if signedByOur {
         signatureHtml = fmt.Sprintf(`
@@ -1296,7 +1329,7 @@ func SendReconciliationActEmail(c *gin.Context) {
                 <p><strong>Дата:</strong> %s</p>
             </div>`, organizationName, signerFullName, signerPosition, signerTime)
     }
-    
+
     fromName := userName
     if fromName == "" {
         fromName = strings.Split(userEmail, "@")[0]
@@ -1305,23 +1338,23 @@ func SendReconciliationActEmail(c *gin.Context) {
     if fromCompany == "" {
         fromCompany = organizationName
     }
-    
+
     token := generateSignToken(req.ActID)
-    
+
     _, err = database.Pool.Exec(c.Request.Context(), `
         UPDATE reconciliation_acts 
         SET their_sign_token = $1, 
             their_sign_expires = NOW() + INTERVAL '7 days'
         WHERE id = $2
     `, token, req.ActID)
-    
+
     if err != nil {
         log.Printf("⚠️ Ошибка сохранения токена: %v", err)
     }
-    
+
     baseURL := getBaseURL(c)
     signLink := fmt.Sprintf("%s/sign-act/%s?token=%s", baseURL, req.ActID, token)
-    
+
     emailHTML := fmt.Sprintf(`<!DOCTYPE html>
 <html>
 <head>
@@ -1405,22 +1438,20 @@ func SendReconciliationActEmail(c *gin.Context) {
         getEmailMessageHtml(req.Message),
         signLink,
     )
-    
-    // ========== ОТПРАВКА EMAIL ==========
+
     subject := fmt.Sprintf("Акт сверки №%s от %s", req.ActID[:8], fromName)
-   if err := sendEmail([]string{req.Email}, subject, emailHTML); err != nil {
-    log.Printf("❌ Ошибка отправки email: %v", err)
-    c.JSON(http.StatusInternalServerError, gin.H{
-        "success": false,
-        "error":   "Ошибка отправки email",
-    })
-    return
-}
-    // ===================================
-    
+    if err := sendEmail([]string{req.Email}, subject, emailHTML); err != nil {
+        log.Printf("❌ Ошибка отправки email: %v", err)
+        c.JSON(http.StatusInternalServerError, gin.H{
+            "success": false,
+            "error":   "Ошибка отправки email",
+        })
+        return
+    }
+
     log.Printf("📧 Отправка акта %s на email от %s (%s) контрагенту %s", req.ActID[:8], fromName, userEmail, req.Email)
     log.Printf("📧 Ссылка для подписания: %s", signLink)
-    
+
     c.JSON(http.StatusOK, gin.H{
         "success":   true,
         "message":   fmt.Sprintf("Акт отправлен контрагенту %s от %s", req.Email, fromName),
@@ -1429,6 +1460,7 @@ func SendReconciliationActEmail(c *gin.Context) {
         "to":        req.Email,
     })
 }
+
 func getEmailMessageHtml(message string) string {
     if message != "" {
         return fmt.Sprintf(`
@@ -1459,25 +1491,25 @@ func GeneratePDF(c *gin.Context) {
         ActID string `json:"act_id"`
         HTML  string `json:"html"`
     }
-    
+
     if err := c.BindJSON(&req); err != nil {
         c.JSON(http.StatusBadRequest, gin.H{"error": "Неверные данные"})
         return
     }
-    
+
     tmpFile, err := os.CreateTemp("", "act_*.html")
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка создания файла"})
         return
     }
     defer os.Remove(tmpFile.Name())
-    
+
     if _, err := tmpFile.WriteString(req.HTML); err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка записи файла"})
         return
     }
     tmpFile.Close()
-    
+
     pdfFile, err := os.CreateTemp("", "act_*.pdf")
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка создания PDF"})
@@ -1486,13 +1518,13 @@ func GeneratePDF(c *gin.Context) {
     pdfPath := pdfFile.Name()
     pdfFile.Close()
     defer os.Remove(pdfPath)
-    
+
     wkhtmlPaths := []string{
         "C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe",
         "C:\\Program Files (x86)\\wkhtmltopdf\\bin\\wkhtmltopdf.exe",
         "wkhtmltopdf",
     }
-    
+
     wkhtmlPath := ""
     for _, path := range wkhtmlPaths {
         if _, err := os.Stat(path); err == nil {
@@ -1503,9 +1535,9 @@ func GeneratePDF(c *gin.Context) {
             wkhtmlPath = path
         }
     }
-    
+
     log.Printf("📄 Генерация PDF через: %s", wkhtmlPath)
-    
+
     cmd := exec.Command(wkhtmlPath, "--enable-local-file-access", tmpFile.Name(), pdfPath)
     if err := cmd.Run(); err != nil {
         log.Printf("⚠️ Ошибка wkhtmltopdf: %v, возвращаем HTML", err)
@@ -1514,30 +1546,30 @@ func GeneratePDF(c *gin.Context) {
         c.String(http.StatusOK, req.HTML)
         return
     }
-    
+
     pdfData, err := os.ReadFile(pdfPath)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка чтения PDF"})
         return
     }
-    
+
     c.Header("Content-Type", "application/pdf")
     c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=act_%s.pdf", req.ActID[:8]))
     c.Data(http.StatusOK, "application/pdf", pdfData)
 }
 
 func PermanentDeleteSelectedActs(c *gin.Context) {
-    tenantID := middleware.GetTenantIDFromContext(c)
-    
+    tenantID := getTenantIDString(c)
+
     var req struct {
         ActIDs []string `json:"act_ids"`
     }
-    
+
     if err := c.ShouldBindJSON(&req); err != nil || len(req.ActIDs) == 0 {
         c.JSON(http.StatusBadRequest, gin.H{"error": "Не выбраны акты для удаления"})
         return
     }
-    
+
     placeholders := make([]string, len(req.ActIDs))
     args := make([]interface{}, len(req.ActIDs)+1)
     args[0] = tenantID
@@ -1545,18 +1577,18 @@ func PermanentDeleteSelectedActs(c *gin.Context) {
         placeholders[i] = fmt.Sprintf("$%d", i+2)
         args[i+1] = id
     }
-    
+
     query := fmt.Sprintf(`
         DELETE FROM reconciliation_acts 
-        WHERE tenant_id = $1 AND id IN (%s) AND is_deleted = true
+        WHERE tenant_id = $1::uuid AND id IN (%s) AND is_deleted = true
     `, strings.Join(placeholders, ","))
-    
+
     result, err := database.Pool.Exec(c.Request.Context(), query, args...)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка удаления"})
         return
     }
-    
+
     c.JSON(http.StatusOK, gin.H{
         "success":       true,
         "message":       fmt.Sprintf("Удалено актов: %d", result.RowsAffected()),
@@ -1566,92 +1598,109 @@ func PermanentDeleteSelectedActs(c *gin.Context) {
 
 func CompareWithPrevious(c *gin.Context) {
     actID := c.Param("id")
-    tenantID := middleware.GetTenantIDFromContext(c)
-    
+    tenantID := getTenantIDString(c)
+
     var currentDebit, currentCredit float64
     var currentPeriodStart, currentPeriodEnd time.Time
-    
+    var currentID string
+
+    // Получаем текущий акт
     err := database.Pool.QueryRow(c.Request.Context(), `
-        SELECT total_debit, total_credit, period_start, period_end FROM reconciliation_acts 
-        WHERE id = $1 AND tenant_id = $2
-    `, actID, tenantID).Scan(&currentDebit, &currentCredit, &currentPeriodStart, &currentPeriodEnd)
-    
+        SELECT id, total_debit, total_credit, period_start, period_end 
+        FROM reconciliation_acts 
+        WHERE id = $1::uuid AND tenant_id = $2::uuid
+    `, actID, tenantID).Scan(&currentID, &currentDebit, &currentCredit, &currentPeriodStart, &currentPeriodEnd)
+
     if err != nil {
         c.JSON(http.StatusNotFound, gin.H{"error": "Акт не найден"})
         return
     }
-    
+
+    // Ищем предыдущий акт (с периодом раньше текущего)
     var prevDebit, prevCredit float64
+    var prevID string
     err = database.Pool.QueryRow(c.Request.Context(), `
-        SELECT total_debit, total_credit FROM reconciliation_acts 
-        WHERE tenant_id = $1 AND period_end < $2 
+        SELECT id, total_debit, total_credit FROM reconciliation_acts 
+        WHERE tenant_id = $1::uuid AND period_end < $2 
         ORDER BY period_end DESC LIMIT 1
-    `, tenantID, currentPeriodStart).Scan(&prevDebit, &prevCredit)
-    
+    `, tenantID, currentPeriodStart).Scan(&prevID, &prevDebit, &prevCredit)
+
     var diffDebit, diffCredit float64
     var trendDirection string
-    
-    if err == nil && prevDebit > 0 {
+    var hasPrevious bool = (err == nil)
+
+    if hasPrevious && prevDebit > 0 {
         diffDebit = ((currentDebit - prevDebit) / prevDebit) * 100
         diffCredit = ((currentCredit - prevCredit) / prevCredit) * 100
-        
+
         if diffDebit > 0 {
-            trendDirection = "📈 рост дебета"
+            trendDirection = fmt.Sprintf("📈 рост дебета на %.1f%% (с %.2f до %.2f ₽)", diffDebit, prevDebit, currentDebit)
         } else if diffDebit < 0 {
-            trendDirection = "📉 снижение дебета"
+            trendDirection = fmt.Sprintf("📉 снижение дебета на %.1f%% (с %.2f до %.2f ₽)", -diffDebit, prevDebit, currentDebit)
         } else {
-            trendDirection = "➡️ без изменений"
+            trendDirection = fmt.Sprintf("➡️ дебет без изменений (%.2f ₽)", currentDebit)
+        }
+        
+        if diffCredit > 0 {
+            trendDirection += fmt.Sprintf("\n📈 рост кредита на %.1f%% (с %.2f до %.2f ₽)", diffCredit, prevCredit, currentCredit)
+        } else if diffCredit < 0 {
+            trendDirection += fmt.Sprintf("\n📉 снижение кредита на %.1f%% (с %.2f до %.2f ₽)", -diffCredit, prevCredit, currentCredit)
+        } else {
+            trendDirection += fmt.Sprintf("\n➡️ кредит без изменений (%.2f ₽)", currentCredit)
         }
     } else {
         diffDebit = 0
         diffCredit = 0
-        trendDirection = "📋 первый акт, данных для сравнения нет"
+        trendDirection = fmt.Sprintf("📋 первый акт в системе (дебет: %.2f ₽, кредит: %.2f ₽)\nНет данных для сравнения", currentDebit, currentCredit)
     }
-    
+
     c.JSON(http.StatusOK, gin.H{
+        "current_id":    currentID,
         "current":       gin.H{"debit": currentDebit, "credit": currentCredit},
+        "previous_id":   prevID,
         "previous":      gin.H{"debit": prevDebit, "credit": prevCredit},
+        "has_previous":  hasPrevious,
         "diff_percent":  gin.H{"debit": diffDebit, "credit": diffCredit},
         "trend":         trendDirection,
         "recommendation": getComparisonRecommendation(diffDebit, diffCredit),
     })
 }
-
 func getComparisonRecommendation(debitDiff, creditDiff float64) string {
     if debitDiff > 20 {
-        return "⚠️ Значительный рост дебета. Рекомендуется запросить пояснения у контрагента."
+        return "⚠️ Значительный рост дебета на " + fmt.Sprintf("%.1f", debitDiff) + "%. Рекомендуется запросить пояснения у контрагента."
     } else if debitDiff > 10 {
-        return "📈 Умеренный рост дебета. Стоит проверить новые операции."
+        return "📈 Умеренный рост дебета на " + fmt.Sprintf("%.1f", debitDiff) + "%. Стоит проверить новые операции."
     } else if debitDiff < -20 {
-        return "✅ Дебет значительно снизился. Положительная динамика."
+        return "✅ Дебет значительно снизился на " + fmt.Sprintf("%.1f", -debitDiff) + "%. Положительная динамика."
     } else if debitDiff < -10 {
-        return "📉 Дебет снизился. Хорошая тенденция."
+        return "📉 Дебет снизился на " + fmt.Sprintf("%.1f", -debitDiff) + "%. Хорошая тенденция."
     } else if creditDiff > 20 {
-        return "⚠️ Значительный рост кредита. Рекомендуется проверить поступления."
+        return "⚠️ Значительный рост кредита на " + fmt.Sprintf("%.1f", creditDiff) + "%. Рекомендуется проверить поступления."
     } else if creditDiff < -20 {
-        return "📉 Кредит снизился. Обратите внимание на уменьшение доходов."
+        return "📉 Кредит снизился на " + fmt.Sprintf("%.1f", -creditDiff) + "%. Обратите внимание на уменьшение доходов."
+    } else if debitDiff != 0 || creditDiff != 0 {
+        return "📊 Динамика в пределах нормы. Отклонения незначительны (дебет: " + fmt.Sprintf("%.1f", debitDiff) + "%, кредит: " + fmt.Sprintf("%.1f", creditDiff) + "%)."
     }
-    return "📊 Динамика в пределах нормы. Отклонения незначительны."
+    return "📊 Первый акт. Нет данных для сравнения. В будущем здесь будет аналитика."
 }
-
 func GenerateQRCodeForAct(c *gin.Context) {
     actID := c.Param("id")
-    tenantID := middleware.GetTenantIDFromContext(c)
-    
+    tenantID := getTenantIDString(c)
+
     var actIDStr string
     var signatureHash string
     err := database.Pool.QueryRow(c.Request.Context(), `
         SELECT id::text, COALESCE(our_signature_hash, '') FROM reconciliation_acts 
-        WHERE id = $1 AND tenant_id = $2
+        WHERE id = $1::uuid AND tenant_id = $2::uuid
     `, actID, tenantID).Scan(&actIDStr, &signatureHash)
-    
+
     if err != nil {
         c.JSON(http.StatusNotFound, gin.H{"error": "Акт не найден"})
         return
     }
-    
+
     qrData := fmt.Sprintf("https://businessstack.ru/verify/%s?hash=%s", actIDStr, getShortHash(signatureHash))
-    
+
     c.JSON(http.StatusOK, gin.H{
         "qr_data": qrData,
         "act_id":  actIDStr,
@@ -1661,27 +1710,27 @@ func GenerateQRCodeForAct(c *gin.Context) {
 
 func AIVerifySignature(c *gin.Context) {
     actID := c.Param("id")
-    tenantID := middleware.GetTenantIDFromContext(c)
-    
+    tenantID := getTenantIDString(c)
+
     var signatureName string
     err := database.Pool.QueryRow(c.Request.Context(), `
         SELECT COALESCE(signed_by_our_name, '') FROM reconciliation_acts 
-        WHERE id = $1 AND tenant_id = $2
+        WHERE id = $1::uuid AND tenant_id = $2::uuid
     `, actID, tenantID).Scan(&signatureName)
-    
+
     if err != nil {
         c.JSON(http.StatusNotFound, gin.H{"error": "Акт не найден"})
         return
     }
-    
+
     confidence := 99.97
     analysis := "Подпись визуально совпадает, дата корректна, сумма соответствует банковской выписке"
-    
+
     if signatureName == "" {
         confidence = 0
         analysis = "Акт не подписан. После подписания будет выполнена AI проверка."
     }
-    
+
     c.JSON(http.StatusOK, gin.H{
         "verified":      signatureName != "",
         "confidence":    confidence,
@@ -1698,32 +1747,32 @@ func AIVerifySignature(c *gin.Context) {
 
 func SendToTelegram(c *gin.Context) {
     actID := c.Param("id")
-    tenantID := middleware.GetTenantIDFromContext(c)
-    
+    tenantID := getTenantIDString(c)
+
     var req struct {
         ChatID string `json:"chat_id"`
     }
     if err := c.ShouldBindJSON(&req); err != nil {
         req.ChatID = ""
     }
-    
+
     var counterpartyName string
     var totalDebit, totalCredit, closingBalance float64
-    
+
     err := database.Pool.QueryRow(c.Request.Context(), `
         SELECT counterparty_name, total_debit, total_credit, closing_balance
         FROM reconciliation_acts 
-        WHERE id = $1 AND tenant_id = $2
+        WHERE id = $1::uuid AND tenant_id = $2::uuid
     `, actID, tenantID).Scan(&counterpartyName, &totalDebit, &totalCredit, &closingBalance)
-    
+
     if err != nil {
         c.JSON(http.StatusNotFound, gin.H{"error": "Акт не найден"})
         return
     }
-    
+
     message := fmt.Sprintf("📄 *Акт сверки*\n\n🏢 Контрагент: %s\n📊 Дебет: %.2f ₽\n📊 Кредит: %.2f ₽\n⚖️ Сальдо: %.2f ₽\n\n🔗 Детали: https://businessstack.ru/acts/%s",
         counterpartyName, totalDebit, totalCredit, closingBalance, actID[:8])
-    
+
     c.JSON(http.StatusOK, gin.H{
         "success": true,
         "message": "Сообщение для Telegram готово",
@@ -1734,34 +1783,34 @@ func SendToTelegram(c *gin.Context) {
 
 func SendToWhatsApp(c *gin.Context) {
     actID := c.Param("id")
-    tenantID := middleware.GetTenantIDFromContext(c)
-    
+    tenantID := getTenantIDString(c)
+
     var req struct {
         Phone string `json:"phone"`
     }
     if err := c.ShouldBindJSON(&req); err != nil {
         req.Phone = ""
     }
-    
+
     var counterpartyName string
     var closingBalance float64
-    
+
     err := database.Pool.QueryRow(c.Request.Context(), `
         SELECT counterparty_name, closing_balance
         FROM reconciliation_acts 
-        WHERE id = $1 AND tenant_id = $2
+        WHERE id = $1::uuid AND tenant_id = $2::uuid
     `, actID, tenantID).Scan(&counterpartyName, &closingBalance)
-    
+
     if err != nil {
         c.JSON(http.StatusNotFound, gin.H{"error": "Акт не найден"})
         return
     }
-    
-    waLink := fmt.Sprintf("https://wa.me/%s?text=%s", 
-        req.Phone, 
-        fmt.Sprintf("Акт сверки с %s на сумму %.2f ₽ https://businessstack.ru/acts/%s", 
+
+    waLink := fmt.Sprintf("https://wa.me/%s?text=%s",
+        req.Phone,
+        fmt.Sprintf("Акт сверки с %s на сумму %.2f ₽ https://businessstack.ru/acts/%s",
             counterpartyName, closingBalance, actID[:8]))
-    
+
     c.JSON(http.StatusOK, gin.H{
         "success":       true,
         "message":       "Ссылка для WhatsApp создана",
@@ -1796,64 +1845,61 @@ func getBaseURL(c *gin.Context) string {
 // SendSignLinkToCounterparty - отправка ссылки для подписания
 func SendSignLinkToCounterparty(c *gin.Context) {
     actID := c.Param("id")
-    tenantID := middleware.GetTenantIDFromContext(c)
+    tenantID := getTenantIDString(c)
     userEmail := c.GetString("user_email")
     userName := c.GetString("user_name")
-    
+
     var req struct {
         Email   string `json:"email"`
         Message string `json:"message"`
     }
-    
+
     if err := c.ShouldBindJSON(&req); err != nil {
         c.JSON(http.StatusBadRequest, gin.H{"error": "Неверные данные"})
         return
     }
-    
+
     if req.Email == "" {
         c.JSON(http.StatusBadRequest, gin.H{"error": "Email контрагента обязателен"})
         return
     }
-    
-    // Получаем данные акта
+
     var counterpartyName string
     err := database.Pool.QueryRow(c.Request.Context(), `
         SELECT counterparty_name FROM reconciliation_acts 
-        WHERE id = $1 AND tenant_id = $2
+        WHERE id = $1::uuid AND tenant_id = $2::uuid
     `, actID, tenantID).Scan(&counterpartyName)
-    
+
     if err != nil {
         c.JSON(http.StatusNotFound, gin.H{"error": "Акт не найден"})
         return
     }
-    
-    // Генерируем токен
+
     token := generateSignToken(actID)
-    
-    // Сохраняем токен в БД (нужно добавить колонки в таблицу)
+
     _, err = database.Pool.Exec(c.Request.Context(), `
         UPDATE reconciliation_acts 
         SET their_sign_token = $1, 
             their_sign_expires = NOW() + INTERVAL '7 days'
-        WHERE id = $2
+        WHERE id = $2::uuid
     `, token, actID)
-    
+
     if err != nil {
         log.Printf("❌ Ошибка сохранения токена: %v", err)
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка генерации ссылки"})
         return
     }
-    
+
     baseURL := getBaseURL(c)
     signLink := fmt.Sprintf("%s/sign-act/%s?token=%s", baseURL, actID, token)
-    
+
     fromName := userName
     if fromName == "" {
         fromName = strings.Split(userEmail, "@")[0]
     }
-    
+
     log.Printf("📧 Ссылка для подписания акта %s: %s", actID[:8], signLink)
-    
+
     c.JSON(http.StatusOK, gin.H{
         "success":   true,
         "message":   fmt.Sprintf("Ссылка для подписания отправлена контрагенту %s", req.Email),
@@ -1865,25 +1911,24 @@ func SendSignLinkToCounterparty(c *gin.Context) {
 func TheirSignPage(c *gin.Context) {
     actID := c.Param("id")
     token := c.Query("token")
-    
-    // Проверяем токен
+
     var isValid bool
     var counterpartyName string
     var periodStart, periodEnd time.Time
     var totalDebit, totalCredit, closingBalance float64
-    
+
     err := database.Pool.QueryRow(c.Request.Context(), `
         SELECT counterparty_name, period_start, period_end,
                total_debit, total_credit, closing_balance,
                their_sign_expires > NOW() AND signed_by_their = false
         FROM reconciliation_acts 
-        WHERE id = $1 AND their_sign_token = $2
+        WHERE id = $1::uuid AND their_sign_token = $2
     `, actID, token).Scan(
         &counterpartyName, &periodStart, &periodEnd,
         &totalDebit, &totalCredit, &closingBalance,
         &isValid,
     )
-    
+
     if err != nil || !isValid {
         c.Header("Content-Type", "text/html; charset=utf-8")
         c.String(http.StatusOK, `<!DOCTYPE html>
@@ -1897,7 +1942,7 @@ func TheirSignPage(c *gin.Context) {
 </html>`)
         return
     }
-    
+
     c.Header("Content-Type", "text/html; charset=utf-8")
     c.String(http.StatusOK, fmt.Sprintf(`<!DOCTYPE html>
 <html>
@@ -1998,27 +2043,26 @@ func TheirSignAct(c *gin.Context) {
     token := c.PostForm("token")
     signerName := c.PostForm("signer_name")
     signerPosition := c.PostForm("signer_position")
-    
+
     if signerName == "" {
         c.JSON(http.StatusBadRequest, gin.H{"error": "Введите ваше ФИО"})
         return
     }
-    
+
     if signerPosition == "" {
         signerPosition = "Представитель"
     }
-    
-    // Проверяем токен и получаем данные
+
     var counterpartyName string
     var currentSignedOur, currentSignedTheir bool
     var currentOurSigner string
-    
+
     err := database.Pool.QueryRow(c.Request.Context(), `
         SELECT counterparty_name,
                COALESCE(signed_by_our, false), COALESCE(signed_by_their, false),
                COALESCE(signed_by_our_name, '')
         FROM reconciliation_acts 
-        WHERE id = $1 AND their_sign_token = $2 
+        WHERE id = $1::uuid AND their_sign_token = $2 
         AND their_sign_expires > NOW()
         AND signed_by_their = false
     `, actID, token).Scan(
@@ -2026,31 +2070,29 @@ func TheirSignAct(c *gin.Context) {
         &currentSignedOur, &currentSignedTheir,
         &currentOurSigner,
     )
-    
+
     if err != nil {
         log.Printf("❌ Ошибка проверки токена: %v", err)
         c.JSON(http.StatusForbidden, gin.H{"error": "Ссылка недействительна или истекла"})
         return
     }
-    
+
     documentHash := generateDocumentHash(actID)
-    
-    // Формируем строку подписи контрагента
+
     newTheirSigner := fmt.Sprintf("%s | %s | %s | %s | %s",
         counterpartyName,
         signerName,
         signerPosition,
         time.Now().Format("02.01.2006 15:04:05"),
         documentHash[:16])
-    
+
     theirSignatureHash := generateSignatureHash(documentHash, token, "their_"+actID)
-    
-    // Обновляем статус акта
+
     newStatus := "partially_signed"
     if currentSignedOur {
         newStatus = "signed"
     }
-    
+
     _, err = database.Pool.Exec(c.Request.Context(), `
         UPDATE reconciliation_acts 
         SET signed_by_their = true,
@@ -2061,17 +2103,17 @@ func TheirSignAct(c *gin.Context) {
             their_sign_token = NULL,
             their_sign_expires = NULL,
             updated_at = NOW()
-        WHERE id = $4
+        WHERE id = $4::uuid
     `, newTheirSigner, theirSignatureHash, newStatus, actID)
-    
+
     if err != nil {
         log.Printf("❌ Ошибка подписания контрагентом: %v", err)
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка подписания"})
         return
     }
-    
+
     log.Printf("✅ Акт %s подписан контрагентом %s, статус: %s", actID[:8], counterpartyName, newStatus)
-    
+
     c.JSON(http.StatusOK, gin.H{
         "success": true,
         "message": "Акт успешно подписан!",
@@ -2079,3 +2121,128 @@ func TheirSignAct(c *gin.Context) {
     })
 }
 
+func BatchCreateReconciliationActs(c *gin.Context) {
+    var req struct {
+        CounterpartyIDs []string `json:"counterparty_ids"`
+        PeriodStart     string   `json:"period_start"`
+        PeriodEnd       string   `json:"period_end"`
+    }
+
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    tenantID := getTenantIDString(c)
+
+    var createdCount int
+    var errors []string
+
+    for _, cpID := range req.CounterpartyIDs {
+        var cpName, cpINN string
+        err := database.Pool.QueryRow(c.Request.Context(), `
+            SELECT name, COALESCE(inn, '') FROM crm_partners
+            WHERE id = $1
+        `, cpID).Scan(&cpName, &cpINN)
+
+        if err != nil {
+            errors = append(errors, "Партнёр не найден: "+cpID)
+            continue
+        }
+
+        actID := uuid.New().String()
+
+        _, err = database.Pool.Exec(c.Request.Context(), `
+            INSERT INTO reconciliation_acts
+            (id, tenant_id, counterparty_name, counterparty_inn,
+             period_start, period_end, status, created_at)
+            VALUES ($1, $2::uuid, $3, $4, $5, $6, 'draft', NOW())
+        `, actID, tenantID, cpName, cpINN, req.PeriodStart, req.PeriodEnd)
+
+        if err != nil {
+            errors = append(errors, fmt.Sprintf("%s: %v", cpName, err))
+        } else {
+            createdCount++
+        }
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "success":       true,
+        "created_count": createdCount,
+        "errors":        errors,
+    })
+}
+
+func GetReconciliationDashboard(c *gin.Context) {
+    tenantID := getTenantIDString(c)
+    log.Printf("📊 Получение дашборда для tenantID: %s", tenantID)
+
+    var total, signed, pending, draft int
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT 
+            COUNT(*),
+            COUNT(CASE WHEN status = 'signed' THEN 1 END),
+            COUNT(CASE WHEN status IN ('generated', 'partially_signed') THEN 1 END),
+            COUNT(CASE WHEN status = 'draft' THEN 1 END)
+        FROM reconciliation_acts 
+        WHERE tenant_id = $1::uuid AND (is_deleted IS NULL OR is_deleted = false)
+    `, tenantID).Scan(&total, &signed, &pending, &draft)
+
+    if err != nil {
+        log.Printf("❌ Ошибка статистики: %v", err)
+        c.JSON(http.StatusOK, gin.H{
+            "stats": gin.H{
+                "total":   0,
+                "signed":  0,
+                "pending": 0,
+                "draft":   0,
+            },
+            "trend": []gin.H{},
+        })
+        return
+    }
+
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT 
+            TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM') as month,
+            COUNT(*) as created,
+            COUNT(CASE WHEN status = 'signed' THEN 1 END) as signed
+        FROM reconciliation_acts
+        WHERE tenant_id = $1::uuid AND (is_deleted IS NULL OR is_deleted = false)
+        GROUP BY DATE_TRUNC('month', created_at)
+        ORDER BY month DESC
+        LIMIT 12
+    `, tenantID)
+
+    if err != nil {
+        c.JSON(http.StatusOK, gin.H{
+            "stats": gin.H{
+                "total":   total,
+                "signed":  signed,
+                "pending": pending,
+                "draft":   draft,
+            },
+            "trend": []gin.H{},
+        })
+        return
+    }
+    defer rows.Close()
+
+    var trend []gin.H
+    for rows.Next() {
+        var month string
+        var created, signed int
+        rows.Scan(&month, &created, &signed)
+        trend = append([]gin.H{{"month": month, "created": created, "signed": signed}}, trend...)
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "stats": gin.H{
+            "total":   total,
+            "signed":  signed,
+            "pending": pending,
+            "draft":   draft,
+        },
+        "trend": trend,
+    })
+}

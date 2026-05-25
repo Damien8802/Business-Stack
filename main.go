@@ -527,6 +527,8 @@ reconciliationAPI.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAc
 
     reconciliationAPI.POST("/send-to-counterparty/:id", handlers.SendSignLinkToCounterparty)
     reconciliationAPI.POST("/their-sign/:id", handlers.TheirSignAct)
+    reconciliationAPI.GET("/dashboard", handlers.GetReconciliationDashboard)
+    reconciliationAPI.POST("/batch-create", handlers.BatchCreateReconciliationActs)
 }
 
 // Настройки компании (для FinCore)
@@ -1860,6 +1862,9 @@ api.GET("/user/role", func(c *gin.Context) {
         api.POST("/crm/customers", handlers.CreateCustomer)
         api.PUT("/crm/customers/:id", handlers.UpdateCustomer)
         api.DELETE("/crm/customers/:id", handlers.DeleteCustomer)
+       // Партнёры для актов сверки
+        api.GET("/crm/partners", handlers.GetPartners)
+        api.POST("/crm/partners", handlers.CreatePartner)
         api.GET("/crm/deals", handlers.GetDeals)
         api.POST("/crm/deals", handlers.CreateDeal)
         api.PUT("/crm/deals/:id", handlers.UpdateDeal)

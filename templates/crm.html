@@ -821,6 +821,12 @@
                     <i class="fas fa-calendar-alt me-2"></i>Календарь
                 </button>
             </li>
+            <!-- ДОБАВЛЕНО: вкладка Партнёры -->
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="partners-tab" data-bs-toggle="tab" data-bs-target="#partners" type="button" role="tab">
+                    <i class="fas fa-handshake me-2"></i>Партнёры
+                </button>
+            </li>
         </ul>
 
         <!-- Содержимое вкладок -->
@@ -1176,6 +1182,33 @@
                     <h3>Календарь сделок</h3>
                 </div>
                 <div id="calendar"></div>
+            </div>
+
+            <!-- ДОБАВЛЕНО: вкладка Партнёры -->
+            <div class="tab-pane fade" id="partners" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3>Список партнёров</h3>
+                    <button class="btn btn-primary" onclick="showCreatePartnerModal()">
+                        <i class="fas fa-plus me-2"></i>Добавить партнёра
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ID</th>
+                                <th>Название</th>
+                                <th>ИНН</th>
+                                <th>Телефон</th>
+                                <th>Email</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="partnersTable">
+                            <tr><td colspan="6" class="text-center">Загрузка...<\/td><\/tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -1569,6 +1602,40 @@
         </div>
     </div>
 
+    <!-- ДОБАВЛЕНО: модальное окно для создания партнёра -->
+    <div class="modal fade" id="createPartnerModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-handshake"></i> Добавить партнёра</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Название *</label>
+                        <input type="text" class="form-control" id="partnerName">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">ИНН</label>
+                        <input type="text" class="form-control" id="partnerINN">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Телефон</label>
+                        <input type="text" class="form-control" id="partnerPhone">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" id="partnerEmail">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button class="btn btn-primary" onclick="createPartner()">Создать</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Модальное окно AI-чата (с голосовым вводом) -->
     <div class="modal fade ai-chat-modal" id="aiChatModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -1753,6 +1820,11 @@
             loadDeals();
             loadCustomerSelect();
             loadTags(); // ДОБАВЛЕНО: загружаем теги
+
+            // ДОБАВЛЕНО: загрузка партнёров при открытии вкладки
+            document.getElementById('partners-tab').addEventListener('shown.bs.tab', function() {
+                loadPartners();
+            });
 
             document.getElementById('customerSearchBtn').addEventListener('click', function() {
                 currentCustomerSearch = document.getElementById('customerSearch').value;
@@ -3072,7 +3144,7 @@ actionsCell.innerHTML = `
                 .then(response => response.json())
                 .then(data => {
                     const container = document.getElementById('stageConversionTable');
-                    let html = '<table class="table table-sm"><thead><tr><th>Этап</th><th>Кол-во</th><th>Конверсия</th></tr></thead><tbody>';
+                    let html = '<table class="table table-sm"><thead><tr><th>Этап</th><th>Кол-во</th><th>Конверсия</th><tr></thead><tbody>';
                     data.forEach(item => {
                         html += `<tr><td>${escapeHtml(item.stage)}</td><td>${item.count}</td><td>${item.percent.toFixed(1)}%</td></tr>`;
                     });
@@ -3936,6 +4008,100 @@ actionsCell.innerHTML = `
                 selectable: false
             });
             calendarInstance.render();
+        }
+
+        // ==================== ДОБАВЛЕНО: ПАРТНЁРЫ ====================
+        async function loadPartners() {
+            try {
+                const res = await fetch('/api/crm/partners', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+                const data = await res.json();
+                
+                const tbody = document.getElementById('partnersTable');
+                if (data.partners && data.partners.length) {
+                    tbody.innerHTML = data.partners.map(p => `
+                        <tr>
+                            <td>${p.id.slice(0,8)}...</td>
+                            <td><strong>${escapeHtml(p.name)}</strong></td>
+                            <td>${p.inn || '-'}</td>
+                            <td>${p.phone || '-'}</td>
+                            <td>${p.email || '-'}</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger" onclick="deletePartner('${p.id}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                         </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Нет партнёров. Создайте первого!</td></tr>';
+                }
+            } catch(e) {
+                console.error('Ошибка загрузки партнёров:', e);
+                document.getElementById('partnersTable').innerHTML = '<tr><td colspan="6" class="text-center text-danger">Ошибка загрузки</td></tr>';
+            }
+        }
+
+        function showCreatePartnerModal() {
+            document.getElementById('partnerName').value = '';
+            document.getElementById('partnerINN').value = '';
+            document.getElementById('partnerPhone').value = '';
+            document.getElementById('partnerEmail').value = '';
+            new bootstrap.Modal(document.getElementById('createPartnerModal')).show();
+        }
+
+        async function createPartner() {
+            const name = document.getElementById('partnerName').value.trim();
+            if (!name) {
+                alert('Введите название партнёра');
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/crm/partners', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        inn: document.getElementById('partnerINN').value,
+                        phone: document.getElementById('partnerPhone').value,
+                        email: document.getElementById('partnerEmail').value
+                    })
+                });
+                
+                if (res.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('createPartnerModal')).hide();
+                    loadPartners();
+                    showToast('Партнёр добавлен', 'success');
+                } else {
+                    const error = await res.text();
+                    alert('Ошибка: ' + error);
+                }
+            } catch(e) {
+                alert('Ошибка сети: ' + e.message);
+            }
+        }
+
+        async function deletePartner(id) {
+            if (!confirm('Удалить партнёра?')) return;
+            try {
+                const res = await fetch(`/api/crm/partners/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+                if (res.ok) {
+                    loadPartners();
+                    showToast('Партнёр удалён', 'danger');
+                } else {
+                    alert('Ошибка удаления');
+                }
+            } catch(e) {
+                alert('Ошибка: ' + e.message);
+            }
         }
     </script>
 

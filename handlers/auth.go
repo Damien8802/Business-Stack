@@ -8,6 +8,7 @@ import (
     "log"
     "net/http"
     "os"  
+    "strings"
     "time"
 
     "github.com/gin-gonic/gin"
@@ -99,11 +100,12 @@ func VerifyPhoneCode(c *gin.Context) {
 
     if err != nil {
         email := fmt.Sprintf("%s@phone.Business Stack.ru", generateRandomStringAuth(8))
-        err = database.Pool.QueryRow(c.Request.Context(), `
-            INSERT INTO users (phone, name, email, role, tenant_id, password_changed_at, email_verified) 
-            VALUES ($1, $2, $3, 'user', '11111111-1111-1111-1111-111111111111', NOW(), true) 
-            RETURNING id
-        `, req.Phone, userName, email).Scan(&userID)
+       tenantID := uuid.New().String()
+err = database.Pool.QueryRow(c.Request.Context(), `
+    INSERT INTO users (phone, name, email, role, tenant_id, password_changed_at, email_verified) 
+    VALUES ($1, $2, $3, 'user', $4, NOW(), true) 
+    RETURNING id
+`, req.Phone, userName, email, tenantID).Scan(&userID)
         if err != nil {
             c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
             return
@@ -444,6 +446,7 @@ func RegisterHandler(c *gin.Context) {
         Email    string `json:"email" binding:"required,email"`
         Password string `json:"password" binding:"required,min=6"`
         Name     string `json:"name"`
+        Company  string `json:"company"`
     }
 
     if err := c.ShouldBindJSON(&req); err != nil {
@@ -467,12 +470,14 @@ func RegisterHandler(c *gin.Context) {
 
     log.Printf("📝 Сохранение в pending_users: email=%s, token=%s", req.Email, token)
 
+    metadata := fmt.Sprintf(`{"company":"%s"}`, req.Company)
+    
     _, err := database.Pool.Exec(c.Request.Context(),
-        `INSERT INTO pending_users (email, password_hash, name, token, expires_at)
-         VALUES ($1, $2, $3, $4, NOW() + INTERVAL '24 hours')
+        `INSERT INTO pending_users (email, password_hash, name, token, expires_at, metadata)
+         VALUES ($1, $2, $3, $4, NOW() + INTERVAL '24 hours', $5)
          ON CONFLICT (email) DO UPDATE SET 
-            password_hash = $2, name = $3, token = $4, expires_at = NOW() + INTERVAL '24 hours'`,
-        req.Email, string(hashedPassword), req.Name, token)
+            password_hash = $2, name = $3, token = $4, expires_at = NOW() + INTERVAL '24 hours', metadata = $5`,
+        req.Email, string(hashedPassword), req.Name, token, metadata)
 
     if err != nil {
         log.Printf("❌ Ошибка сохранения в pending_users: %v", err)
@@ -532,10 +537,11 @@ func VerifyEmailHandler(c *gin.Context) {
 
     var email, passwordHash, name string
     var expiresAt time.Time
+    var metadata []byte
 
     err := database.Pool.QueryRow(c.Request.Context(),
-        `SELECT email, password_hash, name, expires_at FROM pending_users WHERE token = $1`,
-        token).Scan(&email, &passwordHash, &name, &expiresAt)
+        `SELECT email, password_hash, name, expires_at, COALESCE(metadata, '{}') FROM pending_users WHERE token = $1`,
+        token).Scan(&email, &passwordHash, &name, &expiresAt, &metadata)
 
     if err != nil {
         log.Printf("❌ Неверный токен: %v", err)
@@ -552,19 +558,51 @@ func VerifyEmailHandler(c *gin.Context) {
 
     log.Printf("✅ Токен валиден, создаём пользователя: email=%s, name=%s", email, name)
 
+    // Извлекаем название компании из metadata (если есть)
+    companyName := name + "'s Company"
+
+    // СОЗДАЕМ TENANT ДЛЯ ПОЛЬЗОВАТЕЛЯ
+    tenantID := uuid.New()
+    subdomain := strings.ToLower(strings.Split(email, "@")[0])
+
+    // Проверяем уникальность subdomain
+    var existingTenantID uuid.UUID
+    err = database.Pool.QueryRow(c.Request.Context(), `
+        SELECT id FROM tenants WHERE subdomain = $1
+    `, subdomain).Scan(&existingTenantID)
+
+    if err == nil {
+        subdomain = subdomain + "_" + uuid.New().String()[:4]
+        log.Printf("⚠️ Subdomain занят, используем: %s", subdomain)
+    }
+
+    _, err = database.Pool.Exec(c.Request.Context(), `
+        INSERT INTO tenants (id, name, subdomain, status, settings, created_at, updated_at)
+        VALUES ($1, $2, $3, 'active', '{}', NOW(), NOW())
+    `, tenantID, companyName, subdomain)
+
+    if err != nil {
+        log.Printf("❌ Ошибка создания tenant: %v", err)
+        c.String(http.StatusInternalServerError, "Ошибка при создании организации")
+        return
+    }
+
+    // ✅ ПРАВИЛЬНАЯ РОЛЬ - "client" (обычный клиент)
+    userID := uuid.New()
     _, err = database.Pool.Exec(c.Request.Context(),
-        `INSERT INTO users (email, password_hash, name, role, email_verified)
-         VALUES ($1, $2, $3, 'client', true)`,
-        email, passwordHash, name)
+        `INSERT INTO users (id, tenant_id, email, password_hash, name, role, email_verified, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, 'client', true, NOW(), NOW())`,
+        userID, tenantID, email, passwordHash, name)
 
     if err != nil {
         log.Printf("❌ Ошибка при создании пользователя: %v", err)
+        database.Pool.Exec(c.Request.Context(), "DELETE FROM tenants WHERE id = $1", tenantID)
         c.String(http.StatusInternalServerError, "Ошибка при создании пользователя")
         return
     }
 
     database.Pool.Exec(c.Request.Context(), "DELETE FROM pending_users WHERE token = $1", token)
-    log.Printf("✅ Пользователь %s успешно подтверждён и зарегистрирован!", email)
+    log.Printf("✅ Пользователь %s успешно подтверждён и зарегистрирован! Tenant: %s, Роль: client", email, tenantID)
 
     c.Header("Content-Type", "text/html")
     c.String(http.StatusOK, `
@@ -572,6 +610,7 @@ func VerifyEmailHandler(c *gin.Context) {
         <body style="font-family: sans-serif; text-align: center; margin-top: 100px;">
             <h1 style="color: #4f46e5;">✅ Email подтверждён!</h1>
             <p>Вы успешно зарегистрировались в Business Stack.</p>
+            <p>ID вашей организации: <strong>`+tenantID.String()+`</strong></p>
             <a href="/login" style="background: #4f46e5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px;">Войти</a>
         </body>
         </html>
@@ -915,5 +954,123 @@ func ConfirmResetQRHandler(c *gin.Context) {
     c.JSON(http.StatusOK, gin.H{
         "success": true,
         "message": "Сброс пароля подтвержден",
+    })
+}
+
+// RegisterEmailHandler - обычная регистрация по email с созданием tenant
+func RegisterEmailHandler(c *gin.Context) {
+    var req struct {
+        Email    string `json:"email" binding:"required,email"`
+        Password string `json:"password" binding:"required,min=6"`
+        Name     string `json:"name" binding:"required"`
+        Company  string `json:"company" binding:"required"`
+    }
+
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{
+            "error":   "Неверные данные",
+            "details": err.Error(),
+        })
+        return
+    }
+
+    log.Printf("📝 Регистрация нового пользователя: email=%s, company=%s", req.Email, req.Company)
+
+    // Проверяем, не существует ли уже такой email
+    var existingUserID uuid.UUID
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT id FROM users WHERE email = $1
+    `, req.Email).Scan(&existingUserID)
+
+    if err == nil {
+        log.Printf("❌ Регистрация отклонена: email %s уже существует", req.Email)
+        c.JSON(http.StatusConflict, gin.H{
+            "error": "Пользователь с таким email уже зарегистрирован",
+        })
+        return
+    }
+
+    // Создаем tenant
+    tenantID := uuid.New()
+    subdomain := strings.ToLower(strings.Split(req.Email, "@")[0])
+    
+    // Проверяем уникальность subdomain
+    var existingTenantID uuid.UUID
+    err = database.Pool.QueryRow(c.Request.Context(), `
+        SELECT id FROM tenants WHERE subdomain = $1
+    `, subdomain).Scan(&existingTenantID)
+    
+    if err == nil {
+        // Если subdomain занят, добавляем случайные цифры
+        subdomain = subdomain + "_" + uuid.New().String()[:4]
+        log.Printf("⚠️ Subdomain занят, используем: %s", subdomain)
+    }
+
+    _, err = database.Pool.Exec(c.Request.Context(), `
+        INSERT INTO tenants (id, name, subdomain, status, settings, created_at, updated_at)
+        VALUES ($1, $2, $3, 'active', '{}', NOW(), NOW())
+    `, tenantID, req.Company, subdomain)
+
+    if err != nil {
+        log.Printf("❌ Ошибка создания tenant: %v", err)
+        c.JSON(http.StatusInternalServerError, gin.H{
+            "error": "Ошибка регистрации. Попробуйте позже.",
+        })
+        return
+    }
+
+    // Хешируем пароль
+    hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+    if err != nil {
+        log.Printf("❌ Ошибка хеширования пароля: %v", err)
+        c.JSON(http.StatusInternalServerError, gin.H{
+            "error": "Ошибка регистрации",
+        })
+        return
+    }
+
+    // Создаем пользователя с привязкой к tenant
+    userID := uuid.New()
+    
+    _, err = database.Pool.Exec(c.Request.Context(), `
+        INSERT INTO users (id, tenant_id, email, password_hash, name, role, email_verified, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, 'owner', true, NOW(), NOW())
+    `, userID, tenantID, req.Email, string(hashedPassword), req.Name)
+
+    if err != nil {
+        log.Printf("❌ Ошибка создания пользователя: %v", err)
+        // Откатываем создание tenant
+        database.Pool.Exec(c.Request.Context(), `DELETE FROM tenants WHERE id = $1`, tenantID)
+        c.JSON(http.StatusInternalServerError, gin.H{
+            "error": "Ошибка регистрации",
+        })
+        return
+    }
+
+    // Генерируем токены
+    accessToken, refreshToken, err := utils.GenerateTokens(userID.String(), req.Name, req.Email, "owner")
+    if err != nil {
+        log.Printf("❌ Ошибка генерации токенов: %v", err)
+        c.JSON(http.StatusInternalServerError, gin.H{
+            "error": "Ошибка регистрации",
+        })
+        return
+    }
+
+    log.Printf("✅ Зарегистрирован новый пользователь: %s (tenant: %s, company: %s)", 
+        req.Email, tenantID, req.Company)
+
+    c.JSON(http.StatusOK, gin.H{
+        "success":       true,
+        "message":       "Регистрация успешна",
+        "access_token":  accessToken,
+        "refresh_token": refreshToken,
+        "tenant_id":     tenantID.String(),
+        "user": gin.H{
+            "id":    userID.String(),
+            "email": req.Email,
+            "name":  req.Name,
+            "role":  "owner",
+        },
     })
 }

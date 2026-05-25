@@ -541,6 +541,14 @@ reconciliationAPI.POST("/mass-create-acts", handlers.MassAutoCreateActs)
 reconciliationAPI.GET("/acts/:id/details", handlers.GetActDetails)
 reconciliationAPI.POST("/acts/:id/details", handlers.AddActDetail)
 reconciliationAPI.DELETE("/acts/:id/details/:detail_id", handlers.DeleteActDetail)
+
+// Экспорт в XML FinCore
+reconciliationAPI.GET("/acts/:id/export/xml", handlers.ExportToFinCoreXML)
+
+// Комментарии к актам
+reconciliationAPI.GET("/acts/:id/comments", handlers.GetActComments)
+reconciliationAPI.POST("/acts/:id/comments", handlers.AddActComment)
+reconciliationAPI.DELETE("/acts/:id/comments/:comment_id", handlers.DeleteActComment)
 }
 
 // Настройки компании (для FinCore)

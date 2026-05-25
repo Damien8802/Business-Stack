@@ -994,6 +994,8 @@
     <button class="action-btn" onclick="openEditModal('${a.id}')" title="Редактировать">✏️</button>
     <button class="action-btn" onclick="downloadAct('${a.id}')" title="Скачать HTML">📥</button>
     <button class="action-btn" onclick="downloadPDF('${a.id}')" title="Скачать PDF">📄</button>
+    <button class="action-btn" onclick="exportToFinCoreXML('${a.id}')" title="Выгрузить XML">📀</button>
+<button class="action-btn" onclick="showActComments('${a.id}')" title="Комментарии">💬</button>
     <button class="action-btn" onclick="openEmailModal('${a.id}')" title="Отправить на email">📧</button>
     <button class="action-btn" onclick="reconcileWithBank('${a.id}')" title="Сверить с банком">🏦</button>
     <button class="action-btn" onclick="showActDetails('${a.id}')" title="Детализация">📋</button>
@@ -2944,6 +2946,145 @@ async function showActDetails(actId) {
         showToast('❌ Ошибка загрузки детализации', 'error');
     }
 }
+
+// Экспорт в XML FinCore
+    function exportToFinCoreXML(actId) {
+        window.open(`/api/reconciliation/acts/${actId}/export/xml`, '_blank');
+        showToast('📀 Выгрузка XML...', 'info');
+    }
+// ========== КОММЕНТАРИИ К АКТАМ ==========
+let currentCommentActId = null;
+
+// Показать комментарии
+// Показать комментарии
+async function showActComments(actId) {
+    currentCommentActId = actId;
+    
+    try {
+        const res = await fetch(`/api/reconciliation/acts/${actId}/comments`, {
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'X-Tenant-ID': tenantId
+            }
+        });
+        
+        const data = await res.json();
+        
+        let message = `💬 КОММЕНТАРИИ К АКТУ\n\n`;
+        message += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+        
+        if (data.success && data.data && data.data.length > 0) {
+            data.data.forEach((comment, idx) => {
+                message += `${idx+1}. ${comment.user_name}\n`;
+                message += `   📝 ${comment.comment}\n`;
+                message += `   🕐 ${comment.created_at}\n`;
+                message += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+            });
+        } else {
+            message += `📭 Нет комментариев\n`;
+            message += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+        }
+        
+        // Показываем комментарии в модальном окне с кнопками
+        showCommentModal(message, actId);
+        
+    } catch(e) {
+        console.error('Ошибка:', e);
+        showToast('❌ Ошибка загрузки комментариев', 'error');
+    }
+}
+
+// Показать модальное окно с комментариями
+function showCommentModal(comments, actId) {
+    // Создаем или получаем модальное окно
+    let modal = document.getElementById('commentsModal');
+    if (!modal) {
+        const modalHtml = `
+            <div class="modal fade" id="commentsModal" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title"><i class="fas fa-comments"></i> 💬 Комментарии к акту</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body" id="commentsModalBody" style="max-height: 400px; overflow-y: auto;">
+                            <pre style="white-space: pre-wrap; font-family: monospace; background: #1a1a2e; color: #fff; padding: 15px; border-radius: 8px;">${comments}</pre>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn-outline" data-bs-dismiss="modal">Закрыть</button>
+                            <button class="btn-primary" onclick="openAddCommentModalFromView()">📝 Добавить комментарий</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        modal = document.getElementById('commentsModal');
+    } else {
+        document.getElementById('commentsModalBody').innerHTML = `<pre style="white-space: pre-wrap; font-family: monospace; background: #1a1a2e; color: #fff; padding: 15px; border-radius: 8px;">${comments}</pre>`;
+    }
+    
+    // Сохраняем ID акта для добавления комментария
+    window.currentCommentActId = actId;
+    
+    new bootstrap.Modal(modal).show();
+}
+
+// Открыть окно добавления комментария из просмотра
+function openAddCommentModalFromView() {
+    bootstrap.Modal.getInstance(document.getElementById('commentsModal')).hide();
+    openAddCommentModal(window.currentCommentActId);
+}
+
+// Открыть модальное окно для добавления комментария
+function openAddCommentModal(actId) {
+    currentCommentActId = actId;
+    document.getElementById('commentText').value = '';
+    new bootstrap.Modal(document.getElementById('addCommentModal')).show();
+}
+
+// Сохранить комментарий
+async function saveComment() {
+    const comment = document.getElementById('commentText').value.trim();
+    
+    if (!comment) {
+        showToast('Введите текст комментария', 'error');
+        return;
+    }
+    
+    const btn = document.querySelector('#addCommentModal .btn-primary');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Отправка...';
+    
+    try {
+        const res = await fetch(`/api/reconciliation/acts/${currentCommentActId}/comments`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token,
+                'X-Tenant-ID': tenantId
+            },
+            body: JSON.stringify({ comment: comment })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+            showToast('✅ Комментарий добавлен', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('addCommentModal')).hide();
+            // Показываем обновленные комментарии
+            showActComments(currentCommentActId);
+        } else {
+            showToast('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'), 'error');
+        }
+    } catch(e) {
+        showToast('❌ Ошибка сети', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
     document.addEventListener('DOMContentLoaded', () => {
         loadActs();
         loadReconciliationDashboard();
@@ -2952,54 +3093,6 @@ async function showActDetails(actId) {
     });
 </script>
 
-<!-- МОДАЛЬНОЕ ОКНО ДЛЯ ДОБАВЛЕНИЯ ДОКУМЕНТА -->
-<div class="modal fade" id="addDocumentModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-file-invoice"></i> Добавить документ</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">Тип документа</label>
-                    <select class="form-select" id="docType">
-                        <option value="Счет-фактура">Счет-фактура</option>
-                        <option value="Платежное поручение">Платежное поручение</option>
-                        <option value="Акт">Акт</option>
-                        <option value="Накладная">Накладная</option>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Номер документа</label>
-                    <input type="text" class="form-control" id="docNumber">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Дата документа</label>
-                    <input type="date" class="form-control" id="docDate">
-                </div>
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Дебет</label>
-                        <input type="number" class="form-control" id="docDebit" step="0.01" value="0">
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Кредит</label>
-                        <input type="number" class="form-control" id="docCredit" step="0.01" value="0">
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Описание</label>
-                    <textarea class="form-control" id="docDescription" rows="2"></textarea>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-outline" data-bs-dismiss="modal">Отмена</button>
-                <button class="btn-primary" onclick="saveDocument()">Сохранить</button>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- МОДАЛЬНОЕ ОКНО ДЛЯ ДОБАВЛЕНИЯ ДОКУМЕНТА -->
 <div class="modal fade" id="addDocumentModal" tabindex="-1">
@@ -3058,6 +3151,28 @@ async function showActDetails(actId) {
             <div class="modal-footer">
                 <button class="btn-outline" data-bs-dismiss="modal">Отмена</button>
                 <button class="btn-primary" onclick="saveDocument()">💾 Сохранить документ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО ДЛЯ КОММЕНТАРИЕВ -->
+<div class="modal fade" id="addCommentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-comment"></i> Добавить комментарий</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Ваш комментарий</label>
+                    <textarea class="form-control" id="commentText" rows="4" placeholder="Введите текст комментария..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-outline" data-bs-dismiss="modal">Отмена</button>
+                <button class="btn-primary" onclick="saveComment()">Отправить</button>
             </div>
         </div>
     </div>

@@ -2897,3 +2897,330 @@ func DeleteActDetail(c *gin.Context) {
         "message": "Документ удален",
     })
 }
+
+// ExportToFinCoreXML - экспорт акта в XML формате FinCore
+func ExportToFinCoreXML(c *gin.Context) {
+    actID := c.Param("id")
+    tenantID := getTenantIDString(c)
+    
+    log.Printf("📀 Экспорт XML: actID=%s, tenantID=%s", actID, tenantID)
+    
+    // Получаем данные акта с обработкой NULL значений
+    var act struct {
+        ID               string
+        Number           string
+        Date             time.Time
+        CounterpartyName string
+        CounterpartyINN  string
+        CounterpartyKPP  string
+        PeriodStart      time.Time
+        PeriodEnd        time.Time
+        TotalDebit       float64
+        TotalCredit      float64
+        ClosingBalance   float64
+        Status           string
+        SignedByOur      bool
+        SignedByTheir    bool
+        SignedByOurName  string
+        SignedByTheirName string
+        SignedAt         sql.NullTime
+    }
+    
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT id::text, created_at, counterparty_name, counterparty_inn, '',
+               period_start, period_end, total_debit, total_credit, closing_balance,
+               status, 
+               COALESCE(signed_by_our, false), 
+               COALESCE(signed_by_their, false),
+               COALESCE(signed_by_our_name, ''), 
+               COALESCE(signed_by_their_name, ''),
+               signed_at
+        FROM reconciliation_acts
+        WHERE id = $1::uuid AND tenant_id = $2::uuid
+    `, actID, tenantID).Scan(
+        &act.ID, &act.Date, &act.CounterpartyName, &act.CounterpartyINN, &act.CounterpartyKPP,
+        &act.PeriodStart, &act.PeriodEnd, &act.TotalDebit, &act.TotalCredit, &act.ClosingBalance,
+        &act.Status, &act.SignedByOur, &act.SignedByTheir,
+        &act.SignedByOurName, &act.SignedByTheirName, &act.SignedAt,
+    )
+    
+    if err != nil {
+        log.Printf("❌ Ошибка получения акта: %v", err)
+        c.JSON(http.StatusNotFound, gin.H{"error": "Акт не найден"})
+        return
+    }
+    
+    // Получаем детализацию
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT document_type, document_number, document_date,
+               debit_amount, credit_amount, description
+        FROM reconciliation_act_details
+        WHERE act_id = $1::uuid
+        ORDER BY document_date
+    `, actID)
+    
+    detailsXML := ""
+    if err == nil {
+        defer rows.Close()
+        for rows.Next() {
+            var docType, docNumber, description string
+            var docDate time.Time
+            var debit, credit float64
+            
+            rows.Scan(&docType, &docNumber, &docDate, &debit, &credit, &description)
+            
+            detailsXML += fmt.Sprintf(`
+        <Document>
+            <Type>%s</Type>
+            <Number>%s</Number>
+            <Date>%s</Date>
+            <Debit>%.2f</Debit>
+            <Credit>%.2f</Credit>
+            <Description>%s</Description>
+        </Document>`, docType, docNumber, docDate.Format("2006-01-02"), debit, credit, description)
+        }
+    }
+    
+    // Получаем настройки компании
+    var companyName, companyINN, companyKPP string
+    database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COALESCE(company_name, 'FinCore'), 
+               COALESCE(inn, ''), 
+               COALESCE(kpp, '')
+        FROM company_settings 
+        WHERE tenant_id = $1::uuid
+    `, tenantID).Scan(&companyName, &companyINN, &companyKPP)
+    
+    if companyName == "" {
+        companyName = "FinCore"
+    }
+    
+    // Формируем дату подписи (только если есть)
+    signedAtStr := ""
+    if act.SignedAt.Valid {
+        signedAtStr = act.SignedAt.Time.Format("2006-01-02 15:04:05")
+    }
+    
+    // Формируем XML
+  // Вместо <Counterparty>
+// Сделайте <Partner>
+
+xml := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<ReconciliationAct xmlns="http://www.fincore.ru/acts" version="1.0">
+    <Header>
+        <Number>%s</Number>
+        <Date>%s</Date>
+        <Organization>
+            <Name>%s</Name>
+            <INN>%s</INN>
+            <KPP>%s</KPP>
+        </Organization>
+        <System>FinCore</System>
+        <Status>%s</Status>
+    </Header>
+    <Partner>
+        <Name>%s</Name>
+        <INN>%s</INN>
+        <KPP>%s</KPP>
+    </Partner>
+    <Period>
+        <Start>%s</Start>
+        <End>%s</End>
+    </Period>
+    <Totals>
+        <Debit>%.2f</Debit>
+        <Credit>%.2f</Credit>
+        <Balance>%.2f</Balance>
+    </Totals>
+    <Details>%s
+    </Details>
+    <Signatures>
+        <Our>
+            <Signed>%t</Signed>
+            <Signer>%s</Signer>
+            <Date>%s</Date>
+        </Our>
+        <Their>
+            <Signed>%t</Signed>
+            <Signer>%s</Signer>
+            <Date>%s</Date>
+        </Their>
+    </Signatures>
+    <FinCore>
+        <Product>Reconciliation Acts</Product>
+        <Version>1.3.0</Version>
+        <ExportDate>%s</ExportDate>
+        <ExportTime>%s</ExportTime>
+    </FinCore>
+</ReconciliationAct>`,
+        act.ID[:8],
+        act.Date.Format("2006-01-02"),
+        companyName, companyINN, companyKPP,
+        act.Status,
+        act.CounterpartyName,  // Это теперь Partner
+        act.CounterpartyINN,
+        act.CounterpartyKPP,
+        act.PeriodStart.Format("2006-01-02"),
+        act.PeriodEnd.Format("2006-01-02"),
+        act.TotalDebit,
+        act.TotalCredit,
+        act.ClosingBalance,
+        detailsXML,
+        act.SignedByOur,
+        act.SignedByOurName,
+        signedAtStr,
+        act.SignedByTheir,
+        act.SignedByTheirName,
+        signedAtStr,
+        time.Now().Format("2006-01-02"),
+        time.Now().Format("15:04:05"),
+    )
+    
+    c.Header("Content-Type", "application/xml")
+    c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=act_%s_fincore.xml", act.ID[:8]))
+    c.String(http.StatusOK, xml)
+}
+
+// AddActComment - добавить комментарий к акту
+// AddActComment - добавить комментарий к акту
+func AddActComment(c *gin.Context) {
+    actID := c.Param("id")
+    tenantID := getTenantIDString(c)
+    userID := c.GetString("user_id")
+    userName := c.GetString("user_name")
+    
+    var req struct {
+        Comment string `json:"comment" binding:"required"`
+    }
+    
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    
+    // Проверяем существование акта
+    var actExists bool
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT EXISTS(SELECT 1 FROM reconciliation_acts 
+        WHERE id = $1::uuid AND tenant_id = $2::uuid)
+    `, actID, tenantID).Scan(&actExists)
+    
+    if err != nil || !actExists {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Акт не найден"})
+        return
+    }
+    
+    // Добавляем комментарий
+    _, err = database.Pool.Exec(c.Request.Context(), `
+        INSERT INTO reconciliation_act_comments (act_id, user_id, user_name, comment, created_at)
+        VALUES ($1::uuid, $2::uuid, $3, $4, NOW())
+    `, actID, userID, userName, req.Comment)
+    
+    if err != nil {
+        log.Printf("❌ Ошибка добавления комментария: %v", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка добавления комментария"})
+        return
+    }
+    
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "message": "Комментарий добавлен",
+    })
+}
+// GetActComments - получить комментарии к акту
+func GetActComments(c *gin.Context) {
+    actID := c.Param("id")
+    tenantID := getTenantIDString(c)
+    
+    // Проверяем существование акта
+    var actExists bool
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT EXISTS(SELECT 1 FROM reconciliation_acts 
+        WHERE id = $1::uuid AND tenant_id = $2::uuid)
+    `, actID, tenantID).Scan(&actExists)
+    
+    if err != nil || !actExists {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Акт не найден"})
+        return
+    }
+    
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT id, user_name, comment, created_at
+        FROM reconciliation_act_comments
+        WHERE act_id = $1::uuid
+        ORDER BY created_at DESC
+    `, actID)
+    
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    defer rows.Close()
+    
+    var comments []gin.H
+    for rows.Next() {
+        var id uuid.UUID
+        var userName, comment string
+        var createdAt time.Time
+        
+        err := rows.Scan(&id, &userName, &comment, &createdAt)
+        if err != nil {
+            continue
+        }
+        
+        comments = append(comments, gin.H{
+            "id":         id.String(),
+            "user_name":  userName,
+            "comment":    comment,
+            "created_at": createdAt.Format("2006-01-02 15:04:05"),
+        })
+    }
+    
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "data":    comments,
+    })
+}
+
+// DeleteActComment - удалить комментарий
+func DeleteActComment(c *gin.Context) {
+    actID := c.Param("id")
+    commentID := c.Param("comment_id")
+    tenantID := getTenantIDString(c)
+    userID := c.GetString("user_id")
+    userRole := c.GetString("role")
+    
+    // Проверяем, что комментарий принадлежит акту этого tenant
+    var commentUserID string
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT c.user_id::text
+        FROM reconciliation_act_comments c
+        JOIN reconciliation_acts a ON c.act_id = a.id
+        WHERE c.id = $1::uuid AND a.id = $2::uuid AND a.tenant_id = $3::uuid
+    `, commentID, actID, tenantID).Scan(&commentUserID)
+    
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Комментарий не найден"})
+        return
+    }
+    
+    // Удалить может автор или админ/владелец
+    if commentUserID != userID && userRole != "admin" && userRole != "owner" {
+        c.JSON(http.StatusForbidden, gin.H{"error": "Нет прав на удаление"})
+        return
+    }
+    
+    _, err = database.Pool.Exec(c.Request.Context(), `
+        DELETE FROM reconciliation_act_comments WHERE id = $1::uuid
+    `, commentID)
+    
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка удаления"})
+        return
+    }
+    
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "message": "Комментарий удален",
+    })
+}

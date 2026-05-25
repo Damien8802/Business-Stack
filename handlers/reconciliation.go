@@ -1,6 +1,8 @@
 package handlers
 
 import (
+    "encoding/csv"
+    "strconv"
     "os"
     "os/exec"
     "crypto/sha256"
@@ -2244,5 +2246,337 @@ func GetReconciliationDashboard(c *gin.Context) {
             "draft":   draft,
         },
         "trend": trend,
+    })
+}
+
+
+// BankStatementImport - импорт банковской выписки (с поддержкой шаблонов и автоопределением)
+func BankStatementImport(c *gin.Context) {
+    tenantID := getTenantIDString(c)
+    bankID := c.PostForm("bank_id")
+    
+    log.Printf("🔵 BankStatementImport: tenant=%s, bankID=%s", tenantID, bankID)
+    
+    file, err := c.FormFile("file")
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Файл не загружен"})
+        return
+    }
+    
+    src, err := file.Open()
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка открытия файла"})
+        return
+    }
+    defer src.Close()
+    
+    reader := csv.NewReader(src)
+    reader.Comma = ';'
+    rows, err := reader.ReadAll()
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Ошибка парсинга CSV: " + err.Error()})
+        return
+    }
+    
+    // Автоопределение банка если выбрано "auto"
+    if bankID == "auto" {
+        bankID = DetectBankByCSV(rows)
+        log.Printf("🔵 Автоопределение банка: %s", bankID)
+    }
+    
+    // Получаем шаблон для банка
+    var template struct {
+        ColumnDateOp   int
+        ColumnDocNum   int
+        ColumnInn      int
+        ColumnDebit    int
+        ColumnCredit   int
+        ColumnPurpose  int
+        Delimiter      string
+        SkipFirstRow   bool
+    }
+    
+    // По умолчанию - универсальный шаблон
+    template.ColumnDateOp = 2
+    template.ColumnDocNum = 1
+    template.ColumnInn = 5
+    template.ColumnDebit = 6
+    template.ColumnCredit = 7
+    template.ColumnPurpose = 8
+    template.SkipFirstRow = true
+    
+    // Если есть шаблон в БД - используем его
+    err = database.Pool.QueryRow(c.Request.Context(), `
+       SELECT COALESCE(column_date_operation, 2), COALESCE(column_document_number, 1),
+       COALESCE(column_counterparty_inn, 5), COALESCE(column_debit, 6),
+               COALESCE(column_credit, 7), COALESCE(column_purpose, 8),
+               COALESCE(skip_first_row, true)
+        FROM csv_templates WHERE bank_id = $1
+    `, bankID).Scan(
+        &template.ColumnDateOp, &template.ColumnDocNum, &template.ColumnInn,
+        &template.ColumnDebit, &template.ColumnCredit, &template.ColumnPurpose,
+        &template.SkipFirstRow,
+    )
+    if err != nil {
+        log.Printf("⚠️ Шаблон для банка %s не найден, используем универсальный", bankID)
+    }
+    
+    var imported int
+    var warnings []string
+    
+    startRow := 0
+    if template.SkipFirstRow {
+        startRow = 1
+    }
+    
+    for i := startRow; i < len(rows); i++ {
+        row := rows[i]
+        if len(row) < 8 {
+            warnings = append(warnings, fmt.Sprintf("Строка %d: пропущено (мало колонок)", i+1))
+            continue
+        }
+        
+        // Безопасное получение значений
+        operationDate, _ := time.Parse("02.01.2006", getSafeRow(row, template.ColumnDateOp))
+        statementDate := operationDate
+        
+        docNumber := getSafeRow(row, template.ColumnDocNum)
+        counterpartyName := getSafeRow(row, 4) // обычно в 4 колонке
+        inn := getSafeRow(row, template.ColumnInn)
+        
+        debitStr := strings.Replace(getSafeRow(row, template.ColumnDebit), ",", ".", -1)
+        creditStr := strings.Replace(getSafeRow(row, template.ColumnCredit), ",", ".", -1)
+        
+        debit, _ := strconv.ParseFloat(debitStr, 64)
+        credit, _ := strconv.ParseFloat(creditStr, 64)
+        
+        purpose := getSafeRow(row, template.ColumnPurpose)
+        
+        _, err = database.Pool.Exec(c.Request.Context(), `
+            INSERT INTO bank_statements (
+                tenant_id, account_number, operation_date, statement_date,
+                document_number, counterparty_name, counterparty_inn,
+                debit_amount, credit_amount, payment_purpose, status,
+                imported_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending', NOW())
+        `, tenantID, getSafeRow(row, 0), operationDate, statementDate,
+            docNumber, counterpartyName, inn, debit, credit, purpose)
+        
+        if err != nil {
+            warnings = append(warnings, fmt.Sprintf("Строка %d: %v", i+1, err))
+        } else {
+            imported++
+        }
+    }
+    
+    log.Printf("✅ Импорт завершен: успешно=%d, предупреждений=%d", imported, len(warnings))
+    
+    c.JSON(http.StatusOK, gin.H{
+        "success":  true,
+        "imported": imported,
+        "warnings": warnings,
+        "bank_id":  bankID,
+        "message":  fmt.Sprintf("Импортировано %d операций из банка %s", imported, bankID),
+    })
+}
+
+// getSafeRow - безопасное получение значения из строки
+func getSafeRow(row []string, index int) string {
+    if index >= 0 && index < len(row) {
+        return strings.TrimSpace(row[index])
+    }
+    return ""
+}
+// AutoReconcileWithBank - автоматическая сверка акта с банком
+func AutoReconcileWithBank(c *gin.Context) {
+    tenantID := getTenantIDString(c)
+    actID := c.Param("id")
+    
+    // Получаем акт
+    var act struct {
+        ID               string
+        CounterpartyName string
+        CounterpartyINN  string
+        TotalDebit       float64
+        TotalCredit      float64
+        PeriodStart      time.Time
+        PeriodEnd        time.Time
+    }
+    
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT id::text, counterparty_name, counterparty_inn, 
+               total_debit, total_credit, period_start, period_end
+        FROM reconciliation_acts
+        WHERE id = $1::uuid AND tenant_id = $2::uuid
+    `, actID, tenantID).Scan(
+        &act.ID, &act.CounterpartyName, &act.CounterpartyINN,
+        &act.TotalDebit, &act.TotalCredit, &act.PeriodStart, &act.PeriodEnd)
+    
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Акт не найден"})
+        return
+    }
+    
+    // Ищем операции в банке за этот период
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT id::text, operation_date, document_number, debit_amount, credit_amount, description
+        FROM bank_statements
+        WHERE tenant_id = $1::uuid 
+          AND counterparty_inn = $2
+          AND operation_date BETWEEN $3 AND $4
+          AND status = 'pending'
+        ORDER BY operation_date
+    `, tenantID, act.CounterpartyINN, act.PeriodStart, act.PeriodEnd)
+    
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    defer rows.Close()
+    
+    var bankDebit, bankCredit float64
+    var matchedOps []gin.H
+    
+    for rows.Next() {
+        var id, docNum, desc string
+        var opDate time.Time
+        var debit, credit float64
+        
+        rows.Scan(&id, &opDate, &docNum, &debit, &credit, &desc)
+        
+        bankDebit += debit
+        bankCredit += credit
+        
+        matchedOps = append(matchedOps, gin.H{
+            "id":              id,
+            "date":            opDate.Format("2006-01-02"),
+            "document_number": docNum,
+            "debit":           debit,
+            "credit":          credit,
+            "description":     desc,
+        })
+        
+        // Отмечаем как сверенную
+        database.Pool.Exec(c.Request.Context(), `
+            UPDATE bank_statements SET status = 'reconciled', reconciliation_act_id = $1 WHERE id = $2::uuid
+        `, actID, id)
+    }
+    
+    // Сравниваем суммы
+    debitMatch := fmt.Sprintf("%.2f", act.TotalDebit) == fmt.Sprintf("%.2f", bankDebit)
+    creditMatch := fmt.Sprintf("%.2f", act.TotalCredit) == fmt.Sprintf("%.2f", bankCredit)
+    
+    message := ""
+    if debitMatch && creditMatch {
+        message = "✅ Акт полностью совпадает с банковскими операциями!"
+    } else {
+        diffDebit := act.TotalDebit - bankDebit
+        diffCredit := act.TotalCredit - bankCredit
+        message = fmt.Sprintf("⚠️ Расхождения: Дебет: %.2f (разница: %.2f), Кредит: %.2f (разница: %.2f)",
+            bankDebit, diffDebit, bankCredit, diffCredit)
+    }
+    
+    c.JSON(http.StatusOK, gin.H{
+        "success":         true,
+        "message":         message,
+        "debit_match":     debitMatch,
+        "credit_match":    creditMatch,
+        "act_debit":       act.TotalDebit,
+        "act_credit":      act.TotalCredit,
+        "bank_debit":      bankDebit,
+        "bank_credit":     bankCredit,
+        "operations":      matchedOps,
+        "operations_count": len(matchedOps),
+    })
+}
+
+// GetBankReconciliationStatus - статус сверки акта с банком
+func GetBankReconciliationStatus(c *gin.Context) {
+    tenantID := getTenantIDString(c)
+    actID := c.Param("id")
+    
+    var reconciledCount int
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COUNT(*)
+        FROM bank_statements
+        WHERE tenant_id = $1::uuid 
+          AND reconciliation_act_id = $2::uuid
+          AND status = 'reconciled'
+    `, tenantID, actID).Scan(&reconciledCount)
+    
+    if err != nil {
+        c.JSON(http.StatusOK, gin.H{"reconciled": 0})
+        return
+    }
+    
+    c.JSON(http.StatusOK, gin.H{
+        "reconciled_operations": reconciledCount,
+        "status": func() string {
+            if reconciledCount > 0 {
+                return "partially_reconciled"
+            }
+            return "not_reconciled"
+        }(),
+    })
+}
+
+// DetectBankByCSV - определяет банк по содержимому CSV
+func DetectBankByCSV(rows [][]string) string {
+    if len(rows) < 2 {
+        return "custom"
+    }
+    
+    header := strings.Join(rows[0], " ")
+    firstRow := rows[1]
+    
+    // Признаки Т-Банка (Тинькофф)
+    if strings.Contains(header, "Номер документа") && 
+       strings.Contains(header, "Дата операции") &&
+       len(firstRow) >= 8 {
+        return "tinkoff"
+    }
+    
+    // Признаки СберБанка
+    if strings.Contains(header, "Счет списания") || 
+       strings.Contains(header, "Счет зачисления") {
+        return "sber"
+    }
+    
+    // Признаки Альфа-Банка
+    if strings.Contains(header, "Karta") && 
+       strings.Contains(header, "Summa") {
+        return "alfa"
+    }
+    
+    // Признаки ВТБ
+    if strings.Contains(header, "Дата проводки") && 
+       strings.Contains(header, "Сумма в валюте счета") {
+        return "vtb"
+    }
+    
+    return "custom"
+}
+
+// GetAvailableBanks - список поддерживаемых банков
+func GetAvailableBanks(c *gin.Context) {
+    banks := []gin.H{
+        {"id": "sber", "name": "СберБанк", "has_api": false, "icon": "🏦"},
+        {"id": "tinkoff", "name": "Т-Банк (Тинькофф)", "has_api": false, "icon": "💳"},
+        {"id": "alfa", "name": "Альфа-Банк", "has_api": false, "icon": "🔵"},
+        {"id": "vtb", "name": "ВТБ", "has_api": false, "icon": "🟢"},
+        {"id": "tochka", "name": "Точка Банк", "has_api": false, "icon": "🔴"},
+        {"id": "modul", "name": "Модульбанк", "has_api": false, "icon": "🟣"},
+        {"id": "gazprombank", "name": "Газпромбанк", "has_api": false, "icon": "🟤"},
+        {"id": "psb", "name": "ПСБ", "has_api": false, "icon": "🔷"},
+        {"id": "sovcombank", "name": "Совкомбанк", "has_api": false, "icon": "🟠"},
+        {"id": "raiffeisen", "name": "Райффайзенбанк", "has_api": false, "icon": "🟡"},
+        {"id": "spbbank", "name": "Банк Санкт-Петербург", "has_api": false, "icon": "⚪"},
+        {"id": "uralsib", "name": "Уралсиб", "has_api": false, "icon": "🔶"},
+        {"id": "custom", "name": "Другой банк (CSV)", "has_api": false, "icon": "📄"},
+    }
+    
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "data":    banks,
     })
 }

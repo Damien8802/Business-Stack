@@ -529,6 +529,12 @@ reconciliationAPI.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAc
     reconciliationAPI.POST("/their-sign/:id", handlers.TheirSignAct)
     reconciliationAPI.GET("/dashboard", handlers.GetReconciliationDashboard)
     reconciliationAPI.POST("/batch-create", handlers.BatchCreateReconciliationActs)
+
+    // Банковские выписки
+reconciliationAPI.POST("/import-bank-statement", handlers.BankStatementImport)
+reconciliationAPI.POST("/acts/:id/reconcile-bank", handlers.AutoReconcileWithBank)
+reconciliationAPI.GET("/acts/:id/bank-status", handlers.GetBankReconciliationStatus)
+reconciliationAPI.GET("/banks", handlers.GetAvailableBanks)
 }
 
 // Настройки компании (для FinCore)

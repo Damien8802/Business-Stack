@@ -2580,3 +2580,132 @@ func GetAvailableBanks(c *gin.Context) {
         "data":    banks,
     })
 }
+
+// MassAutoCreateActs - массовое создание актов из всех неподтвержденных операций (для любого банка)
+func MassAutoCreateActs(c *gin.Context) {
+    tenantID := getTenantIDString(c)
+    userID := c.GetString("user_id")
+    
+    var req struct {
+        PeriodStart string `json:"period_start"`
+        PeriodEnd   string `json:"period_end"`
+    }
+    
+    c.ShouldBindJSON(&req)
+    
+    periodStart := req.PeriodStart
+    periodEnd := req.PeriodEnd
+    if periodStart == "" {
+        periodStart = time.Now().AddDate(0, -1, 0).Format("2006-01-02")
+    }
+    if periodEnd == "" {
+        periodEnd = time.Now().Format("2006-01-02")
+    }
+    
+    periodStartTime, _ := time.Parse("2006-01-02", periodStart)
+    periodEndTime, _ := time.Parse("2006-01-02", periodEnd)
+    
+    // Группируем операции по контрагенту (из любого банка)
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT counterparty_inn, counterparty_name,
+               SUM(debit_amount) as total_debit,
+               SUM(credit_amount) as total_credit,
+               COUNT(*) as operations_count
+        FROM bank_statements
+        WHERE tenant_id = $1::uuid 
+          AND status = 'pending'
+          AND operation_date BETWEEN $2 AND $3
+        GROUP BY counterparty_inn, counterparty_name
+        HAVING SUM(debit_amount) > 0 OR SUM(credit_amount) > 0
+    `, tenantID, periodStartTime, periodEndTime)
+    
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    defer rows.Close()
+    
+    var created int
+    var acts []gin.H
+    
+    for rows.Next() {
+        var inn, name string
+        var debit, credit float64
+        var opsCount int
+        
+        rows.Scan(&inn, &name, &debit, &credit, &opsCount)
+        
+        // Проверяем, нет ли уже акта за этот период
+        var existingActID string
+        err = database.Pool.QueryRow(c.Request.Context(), `
+            SELECT id::text FROM reconciliation_acts 
+            WHERE tenant_id = $1::uuid 
+              AND counterparty_inn = $2
+              AND period_start <= $3 AND period_end >= $4
+              AND (is_deleted IS NULL OR is_deleted = false)
+            LIMIT 1
+        `, tenantID, inn, periodEndTime, periodStartTime).Scan(&existingActID)
+        
+        if err == nil {
+            // Акт уже существует, обновляем его
+            _, err = database.Pool.Exec(c.Request.Context(), `
+                UPDATE reconciliation_acts 
+                SET total_debit = total_debit + $1,
+                    total_credit = total_credit + $2,
+                    closing_balance = (total_debit + $1) - (total_credit + $2),
+                    updated_at = NOW()
+                WHERE id = $3::uuid
+            `, debit, credit, existingActID)
+            
+            if err == nil {
+                created++
+                acts = append(acts, gin.H{
+                    "id":                existingActID,
+                    "counterparty_name": name,
+                    "action":            "updated",
+                })
+            }
+        } else {
+            // Создаем новый акт
+            actID := uuid.New()
+            closingBalance := debit - credit
+            
+            _, err = database.Pool.Exec(c.Request.Context(), `
+                INSERT INTO reconciliation_acts (
+                    id, tenant_id, counterparty_name, counterparty_inn,
+                    period_start, period_end, total_debit, total_credit, closing_balance,
+                    status, created_by, created_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'generated', $10, NOW())
+            `, actID, tenantID, name, inn,
+                periodStartTime, periodEndTime, debit, credit, closingBalance, userID)
+            
+            if err == nil {
+                created++
+                acts = append(acts, gin.H{
+                    "id":                actID.String(),
+                    "counterparty_name": name,
+                    "total_debit":       debit,
+                    "total_credit":      credit,
+                    "action":            "created",
+                })
+            }
+        }
+        
+        if err == nil {
+            // Отмечаем операции как обработанные
+            database.Pool.Exec(c.Request.Context(), `
+                UPDATE bank_statements SET status = 'act_created' 
+                WHERE tenant_id = $1::uuid AND counterparty_inn = $2 AND status = 'pending'
+            `, tenantID, inn)
+        }
+    }
+    
+    c.JSON(http.StatusOK, gin.H{
+        "success":      true,
+        "created":      created,
+        "acts":         acts,
+        "message":      fmt.Sprintf("Создано/обновлено %d актов", created),
+        "period_start": periodStart,
+        "period_end":   periodEnd,
+    })
+}

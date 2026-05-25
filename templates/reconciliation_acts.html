@@ -515,11 +515,12 @@
     <div class="card-header">
         <h4><i class="fas fa-filter"></i> Фильтры</h4>
         <div>
-            <button class="btn-primary" onclick="openCreateModal()"><i class="fas fa-plus"></i> Создать акт</button>
-            <button class="btn-primary" onclick="openBatchCreateModal()"><i class="fas fa-layer-group"></i> Массовое создание</button>
-            <button class="btn-primary" onclick="openImportBankModal()"><i class="fas fa-file-import"></i> Импорт выписки</button>
-            <button class="btn-outline" onclick="openTrash()"><i class="fas fa-trash-alt"></i> Корзина</button>
-        </div>
+    <button class="btn-primary" onclick="openCreateModal()"><i class="fas fa-plus"></i> Создать акт</button>
+    <button class="btn-primary" onclick="openBatchCreateModal()"><i class="fas fa-layer-group"></i> Массовое создание</button>
+    <button class="btn-primary" onclick="openImportBankModal()"><i class="fas fa-file-import"></i> Импорт выписки</button>
+    <button class="btn-success" onclick="massCreateActsFromBank()"><i class="fas fa-magic"></i> Создать акты из выписки</button>
+    <button class="btn-outline" onclick="openTrash()"><i class="fas fa-trash-alt"></i> Корзина</button>
+</div>
     </div>
     <div class="filter-bar">
         <input type="text" class="form-control" id="searchCounterparty" placeholder="🔍 Поиск по партнёру" onkeyup="applyFilters()">
@@ -796,6 +797,20 @@
                         <option value="custom">📄 Другой банк (CSV)</option>
                     </select>
                 </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Период с (необязательно)</label>
+                        <input type="date" class="form-control" id="importPeriodStart">
+                        <small class="text-muted">Оставьте пустым за последний месяц</small>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Период по (необязательно)</label>
+                        <input type="date" class="form-control" id="importPeriodEnd">
+                        <small class="text-muted">Оставьте пустым до сегодня</small>
+                    </div>
+                </div>
+
                 <div class="alert alert-info small" id="bankInfo">
                     <i class="fas fa-info-circle"></i> Выберите банк или оставьте автоопределение
                 </div>
@@ -812,12 +827,16 @@
             </div>
             <div class="modal-footer">
                 <button class="btn-outline" data-bs-dismiss="modal">Отмена</button>
-                <button class="btn-primary" onclick="importBankStatement()">Импортировать</button>
+                <button class="btn-success" onclick="importAndCreateActs()">
+                    <i class="fas fa-magic"></i> Импорт и создать акты
+                </button>
+                <button class="btn-primary" onclick="importBankStatement()">
+                    <i class="fas fa-file-import"></i> Только импорт
+                </button>
             </div>
         </div>
     </div>
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const token = localStorage.getItem('token');
@@ -2532,10 +2551,12 @@
         }
     }
 
-   async function importBankStatement() {
+ async function importBankStatement() {
     const fileInput = document.getElementById('bankStatementFile');
     const file = fileInput.files[0];
     const bankId = document.getElementById('bankSelect').value;
+    const periodStart = document.getElementById('importPeriodStart').value;
+    const periodEnd = document.getElementById('importPeriodEnd').value;
     
     if (!file) {
         showToast('Выберите файл для импорта', 'error');
@@ -2545,6 +2566,8 @@
     const formData = new FormData();
     formData.append('file', file);
     formData.append('bank_id', bankId);
+    if (periodStart) formData.append('period_start', periodStart);
+    if (periodEnd) formData.append('period_end', periodEnd);
     
     const modal = bootstrap.Modal.getInstance(document.getElementById('importBankModal'));
     const progressDiv = document.getElementById('importProgress');
@@ -2569,7 +2592,6 @@
             statusText.innerHTML = `✅ Импортировано операций: ${data.imported}`;
             showToast(`✅ Импортировано ${data.imported} операций`, 'success');
             
-            // Показываем предупреждения если есть
             if (data.warnings && data.warnings.length > 0) {
                 setTimeout(() => {
                     showToast(`⚠️ ${data.warnings.length} предупреждений`, 'warning');
@@ -2591,6 +2613,135 @@
 }
 
 
+// Массовое создание актов из банковской выписки
+async function massCreateActsFromBank() {
+    // Получаем даты из полей ввода в модальном окне
+    const periodStart = document.getElementById('importPeriodStart')?.value || '';
+    const periodEnd = document.getElementById('importPeriodEnd')?.value || '';
+    
+    // Если даты не выбраны, показываем сообщение
+    if (!periodStart || !periodEnd) {
+        showToast('⚠️ Выберите период в модальном окне импорта выписки', 'warning');
+        // Открываем модальное окно, чтобы пользователь выбрал даты
+        openImportBankModal();
+        return;
+    }
+    
+    showToast('🔄 Создание актов из банковских операций...', 'info');
+    
+    try {
+        const res = await fetch('/api/reconciliation/mass-create-acts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token,
+                'X-Tenant-ID': tenantId
+            },
+            body: JSON.stringify({
+                period_start: periodStart,
+                period_end: periodEnd
+            })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+            let message = `✅ Создано/обновлено актов: ${data.created}\n\n`;
+            if (data.acts && data.acts.length > 0) {
+                message += `📋 Список:\n`;
+                data.acts.forEach(act => {
+                    message += `- ${act.counterparty_name} (${act.action === 'created' ? 'создан' : 'обновлен'})\n`;
+                });
+            }
+            message += `\n📅 Период: ${data.period_start} — ${data.period_end}`;
+            showModalMessage('📊 Создание актов из выписки', message, 'success');
+            loadActs();
+        } else {
+            showToast('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'), 'error');
+        }
+    } catch(e) {
+        console.error('Ошибка:', e);
+        showToast('❌ Ошибка сети: ' + e.message, 'error');
+    }
+}
+
+// Импорт и автоматическое создание актов
+async function importAndCreateActs() {
+    const fileInput = document.getElementById('bankStatementFile');
+    const file = fileInput.files[0];
+    const bankId = document.getElementById('bankSelect').value;
+    const periodStart = document.getElementById('importPeriodStart').value;
+    const periodEnd = document.getElementById('importPeriodEnd').value;
+    
+    if (!file) {
+        showToast('Выберите файл для импорта', 'error');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('bank_id', bankId);
+    if (periodStart) formData.append('period_start', periodStart);
+    if (periodEnd) formData.append('period_end', periodEnd);
+    
+    const modal = bootstrap.Modal.getInstance(document.getElementById('importBankModal'));
+    const progressDiv = document.getElementById('importProgress');
+    const statusText = document.getElementById('importStatus');
+    
+    progressDiv.style.display = 'block';
+    statusText.innerHTML = 'Импорт и создание актов...';
+    
+    try {
+        const importRes = await fetch('/api/reconciliation/import-bank-statement', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'X-Tenant-ID': tenantId
+            },
+            body: formData
+        });
+        
+        const importData = await importRes.json();
+        
+        if (importRes.ok && importData.success && importData.imported > 0) {
+            statusText.innerHTML = `✅ Импортировано ${importData.imported} операций. Создаем акты...`;
+            
+            const createRes = await fetch('/api/reconciliation/mass-create-acts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token,
+                    'X-Tenant-ID': tenantId
+                },
+                body: JSON.stringify({
+                    period_start: periodStart,
+                    period_end: periodEnd
+                })
+            });
+            
+            const createData = await createRes.json();
+            
+            if (createData.success) {
+                statusText.innerHTML = `✅ Создано актов: ${createData.created}`;
+                showToast(`✅ Импортировано ${importData.imported} операций, создано/обновлено ${createData.created} актов`, 'success');
+                setTimeout(() => {
+                    modal.hide();
+                    loadActs();
+                }, 2000);
+            } else {
+                statusText.innerHTML = '⚠️ Акты созданы не были';
+                showToast('⚠️ Операции импортированы, но акты не созданы', 'warning');
+            }
+        } else {
+            statusText.innerHTML = '❌ Ошибка импорта: ' + (importData.error || 'Неизвестная ошибка');
+            showToast('❌ Ошибка импорта', 'error');
+        }
+    } catch(e) {
+        console.error('Ошибка:', e);
+        statusText.innerHTML = '❌ Ошибка сети: ' + e.message;
+        showToast('❌ Ошибка', 'error');
+    }
+}
     document.addEventListener('DOMContentLoaded', () => {
         loadActs();
         loadReconciliationDashboard();

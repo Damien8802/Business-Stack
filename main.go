@@ -535,6 +535,7 @@ reconciliationAPI.POST("/import-bank-statement", handlers.BankStatementImport)
 reconciliationAPI.POST("/acts/:id/reconcile-bank", handlers.AutoReconcileWithBank)
 reconciliationAPI.GET("/acts/:id/bank-status", handlers.GetBankReconciliationStatus)
 reconciliationAPI.GET("/banks", handlers.GetAvailableBanks)
+reconciliationAPI.POST("/mass-create-acts", handlers.MassAutoCreateActs)
 }
 
 // Настройки компании (для FinCore)

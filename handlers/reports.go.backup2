@@ -47,123 +47,143 @@ type BalanceItem struct {
 
 // GetTurnoverBalanceSheet - Оборотно-сальдовая ведомость (ОСВ)
 func GetTurnoverBalanceSheet(c *gin.Context) {
-    userID := getCurrentUserID(c)
-    
-    // Получаем период
-    dateFrom := c.Query("date_from")
-    dateTo := c.Query("date_to")
-    
-    var fromDate, toDate time.Time
-    now := time.Now()
-    
-    if dateFrom != "" && dateTo != "" {
-        fromDate, _ = time.Parse("2006-01-02", dateFrom)
-        toDate, _ = time.Parse("2006-01-02", dateTo)
-    } else {
-        // По умолчанию за последние 30 дней
-        fromDate = now.AddDate(0, 0, -30)
-        toDate = now
-    }
-    
-    query := `
-        SELECT 
-            COALESCE(c.code, '') as account_code,
-            COALESCE(c.name, '') as account_name,
-            COALESCE(SUM(CASE 
-                WHEN j.debit_account = c.code AND j.operation_date < $1 THEN j.debit_amount 
-                WHEN j.credit_account = c.code AND j.operation_date < $1 THEN -j.credit_amount 
-                ELSE 0 
-            END), 0) as opening_balance,
-            COALESCE(SUM(CASE 
-                WHEN j.debit_account = c.code AND j.operation_date BETWEEN $1 AND $2 THEN j.debit_amount 
-                ELSE 0 
-            END), 0) as debit_turnover,
-            COALESCE(SUM(CASE 
-                WHEN j.credit_account = c.code AND j.operation_date BETWEEN $1 AND $2 THEN j.credit_amount 
-                ELSE 0 
-            END), 0) as credit_turnover
-        FROM chart_of_accounts c
-        LEFT JOIN journal_entries j ON j.user_id = $3
-        WHERE c.user_id = $3 AND c.is_active = true
-        GROUP BY c.code, c.name
-        ORDER BY c.code
-    `
-    
-    rows, err := database.Pool.Query(c.Request.Context(), query, fromDate, toDate, userID)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
-    defer rows.Close()
-    
-    var result []gin.H
-    for rows.Next() {
-        var accountCode, accountName string
-        var openingBalance, debitTurnover, creditTurnover float64
-        
-        rows.Scan(&accountCode, &accountName, &openingBalance, &debitTurnover, &creditTurnover)
-        
-        result = append(result, gin.H{
-            "account_code":    accountCode,
-            "account_name":    accountName,
-            "opening_balance": openingBalance,
-            "debit_turnover":  debitTurnover,
-            "credit_turnover": creditTurnover,
-            "closing_balance": openingBalance + debitTurnover - creditTurnover,
-        })
-    }
-    
-    c.JSON(http.StatusOK, gin.H{
-        "success":    true,
-        "data":       result,
-        "start_date": fromDate.Format("2006-01-02"),
-        "end_date":   toDate.Format("2006-01-02"),
-    })
-}
-// GetProfitAndLoss - Отчет о прибылях и убытках
-func GetProfitAndLoss(c *gin.Context) {
-    userID := getCurrentUserID(c)
-    
-    // Получаем период из запроса
+    userID := getUserID(c)
+
     startDate := c.Query("start_date")
     endDate := c.Query("end_date")
-    
+
     if startDate == "" {
-        startDate = time.Now().AddDate(0, -1, 0).Format("2006-01-02")
+        startDate = time.Now().AddDate(0, -1, 0).Format("2006-01-01")
     }
     if endDate == "" {
         endDate = time.Now().Format("2006-01-02")
     }
-    
-    // Доходы (поступления на 51, 50 счёт)
-    var revenue float64
-    revenueQuery := `
-        SELECT COALESCE(SUM(debit_amount), 0)
-        FROM journal_entries
-        WHERE user_id = $1 
-            AND operation_date BETWEEN $2 AND $3
-            AND debit_account IN ('51', '50')
-    `
-    database.Pool.QueryRow(c.Request.Context(), revenueQuery, userID, startDate, endDate).Scan(&revenue)
-    
-    // Расходы (списания с 51 счёта)
-    var expenses float64
-    expensesQuery := `
-        SELECT COALESCE(SUM(credit_amount), 0)
-        FROM journal_entries
-        WHERE user_id = $1 
-            AND operation_date BETWEEN $2 AND $3
-            AND credit_account = '51'
-    `
-    database.Pool.QueryRow(c.Request.Context(), expensesQuery, userID, startDate, endDate).Scan(&expenses)
-    
+
+    accounts, err := getAccounts(userID)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    postings, err := getPostingsByPeriod(userID, startDate, endDate)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    var osv []BalanceItem
+    for _, acc := range accounts {
+        item := BalanceItem{
+            AccountID:   acc.ID,
+            AccountCode: acc.Code,
+            AccountName: acc.Name,
+            AccountType: acc.AccountType,
+        }
+
+        for _, p := range postings {
+            if p.AccountID == acc.ID {
+                item.PeriodDebit += p.DebitAmount
+                item.PeriodCredit += p.CreditAmount
+            }
+        }
+
+        if acc.AccountType == "active" || acc.AccountType == "active_passive" {
+            item.ClosingDebit = item.OpeningDebit + item.PeriodDebit - item.PeriodCredit
+        } else {
+            item.ClosingCredit = item.OpeningCredit + item.PeriodCredit - item.PeriodDebit
+        }
+
+        if item.ClosingDebit > 0 || item.ClosingCredit > 0 || item.PeriodDebit > 0 || item.PeriodCredit > 0 {
+            osv = append(osv, item)
+        }
+    }
+
+    totals := struct {
+        OpeningDebit  float64 `json:"opening_debit"`
+        OpeningCredit float64 `json:"opening_credit"`
+        PeriodDebit   float64 `json:"period_debit"`
+        PeriodCredit  float64 `json:"period_credit"`
+        ClosingDebit  float64 `json:"closing_debit"`
+        ClosingCredit float64 `json:"closing_credit"`
+    }{}
+
+    for _, item := range osv {
+        totals.OpeningDebit += item.OpeningDebit
+        totals.OpeningCredit += item.OpeningCredit
+        totals.PeriodDebit += item.PeriodDebit
+        totals.PeriodCredit += item.PeriodCredit
+        totals.ClosingDebit += item.ClosingDebit
+        totals.ClosingCredit += item.ClosingCredit
+    }
+
     c.JSON(http.StatusOK, gin.H{
-        "success":        true,
-        "total_revenue":  revenue,
-        "total_expenses": expenses,
-        "net_profit":     revenue - expenses,
-        "start_date":     startDate,
-        "end_date":       endDate,
+        "success":    true,
+        "start_date": startDate,
+        "end_date":   endDate,
+        "data":       osv,
+        "totals":     totals,
+    })
+}
+
+// GetProfitAndLoss - Отчет о прибылях и убытках
+func GetProfitAndLoss(c *gin.Context) {
+    userID := getUserID(c)
+
+    startDate := c.Query("start_date")
+    endDate := c.Query("end_date")
+
+    if startDate == "" {
+        startDate = time.Now().AddDate(0, -1, 0).Format("2006-01-01")
+    }
+    if endDate == "" {
+        endDate = time.Now().Format("2006-01-02")
+    }
+
+    var revenue float64
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COALESCE(SUM(credit_amount), 0)
+        FROM journal_postings p
+        JOIN journal_entries e ON p.entry_id = e.id
+        WHERE e.user_id = $1
+        AND e.status = 'posted'
+        AND e.operation_date BETWEEN $2 AND $3
+        AND p.account_id IN (
+            SELECT id FROM chart_of_accounts
+            WHERE user_id = $1 AND code IN ('90', '91')
+        )
+    `, userID, startDate, endDate).Scan(&revenue)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    var expenses float64
+    err = database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COALESCE(SUM(debit_amount), 0)
+        FROM journal_postings p
+        JOIN journal_entries e ON p.entry_id = e.id
+        WHERE e.user_id = $1
+        AND e.status = 'posted'
+        AND e.operation_date BETWEEN $2 AND $3
+        AND p.account_id IN (
+            SELECT id FROM chart_of_accounts
+            WHERE user_id = $1 AND code IN ('20', '26', '44', '91')
+        )
+    `, userID, startDate, endDate).Scan(&expenses)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    profit := revenue - expenses
+
+    c.JSON(http.StatusOK, gin.H{
+        "success":    true,
+        "start_date": startDate,
+        "end_date":   endDate,
+        "revenue":    revenue,
+        "expenses":   expenses,
+        "profit":     profit,
     })
 }
 
@@ -1330,42 +1350,70 @@ func CreateTaxTables(c *gin.Context) {
 
 // ========== РАСШИРЕННЫЕ ОТЧЁТЫ ДЛЯ "УБИЙЦЫ 1С" ==========
 
-
-// GetAdvancedTurnoverBalance - расширенная ОСВ
+// GetAdvancedTurnoverBalance - Расширенная ОСВ с группировкой
 func GetAdvancedTurnoverBalance(c *gin.Context) {
     userID := getCurrentUserID(c)
     period := c.DefaultQuery("period", "month")
+    dateFrom := c.Query("date_from")
+    dateTo := c.Query("date_to")
     
     var fromDate, toDate time.Time
-    now := time.Now()
-    switch period {
-    case "quarter":
-        fromDate = time.Date(now.Year(), now.Month()-2, 1, 0, 0, 0, 0, time.UTC)
-    case "year":
-        fromDate = time.Date(now.Year(), 1, 1, 0, 0, 0, 0, time.UTC)
-    default:
-        fromDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+    if dateFrom != "" && dateTo != "" {
+        fromDate, _ = time.Parse("2006-01-02", dateFrom)
+        toDate, _ = time.Parse("2006-01-02", dateTo)
+    } else {
+        now := time.Now()
+        switch period {
+        case "quarter":
+            fromDate = time.Date(now.Year(), now.Month()-2, 1, 0, 0, 0, 0, time.UTC)
+        case "year":
+            fromDate = time.Date(now.Year(), 1, 1, 0, 0, 0, 0, time.UTC)
+        case "all":
+            fromDate = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+        default:
+            fromDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+        }
+        toDate = now
     }
-    toDate = now
     
-    // ПРАВИЛЬНЫЙ ЗАПРОС для вашей структуры таблицы
     query := `
+        WITH account_balances AS (
+            SELECT 
+                coa.code,
+                coa.name,
+                coa.account_type,
+                COALESCE(SUM(CASE 
+                    WHEN je.debit_account = coa.code THEN je.amount 
+                    WHEN je.credit_account = coa.code THEN -je.amount 
+                    ELSE 0 
+                END) FILTER (WHERE je.date < $1), 0) as opening_balance,
+                COALESCE(SUM(CASE 
+                    WHEN je.debit_account = coa.code THEN je.amount 
+                    ELSE 0 
+                END) FILTER (WHERE je.date BETWEEN $1 AND $2), 0) as debit_turnover,
+                COALESCE(SUM(CASE 
+                    WHEN je.credit_account = coa.code THEN je.amount 
+                    ELSE 0 
+                END) FILTER (WHERE je.date BETWEEN $1 AND $2), 0) as credit_turnover
+            FROM chart_of_accounts coa
+            LEFT JOIN journal_entries je ON je.user_id = $3
+            WHERE coa.user_id = $3 AND coa.is_active = true
+            GROUP BY coa.code, coa.name, coa.account_type
+        )
         SELECT 
-            c.code,
-            c.name,
-            COALESCE(SUM(j.debit_amount), 0) as debit,
-            COALESCE(SUM(j.credit_amount), 0) as credit
-        FROM chart_of_accounts c
-        LEFT JOIN journal_entries j ON j.user_id = $3 
-            AND j.operation_date BETWEEN $1 AND $2
-        WHERE c.user_id = $3 AND c.is_active = true
-        GROUP BY c.code, c.name
-        ORDER BY c.code
+            code,
+            name,
+            account_type,
+            opening_balance,
+            debit_turnover,
+            credit_turnover,
+            opening_balance + debit_turnover - credit_turnover as closing_balance
+        FROM account_balances
+        ORDER BY code
     `
     
     rows, err := database.Pool.Query(c.Request.Context(), query, fromDate, toDate, userID)
     if err != nil {
-        log.Printf("❌ Ошибка запроса: %v", err)
         c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
         return
     }
@@ -1373,25 +1421,28 @@ func GetAdvancedTurnoverBalance(c *gin.Context) {
     
     var result []gin.H
     for rows.Next() {
-        var code, name string
-        var debit, credit float64
-        if err := rows.Scan(&code, &name, &debit, &credit); err != nil {
-            continue
-        }
+        var code, name, accountType string
+        var openingBalance, debitTurnover, creditTurnover, closingBalance float64
+        rows.Scan(&code, &name, &accountType, &openingBalance, &debitTurnover, &creditTurnover, &closingBalance)
+        
         result = append(result, gin.H{
-            "code":    code,
-            "name":    name,
-            "debit":   debit,
-            "credit":  credit,
-            "closing": debit - credit,
+            "code": code,
+            "name": name,
+            "type": accountType,
+            "opening": openingBalance,
+            "debit": debitTurnover,
+            "credit": creditTurnover,
+            "closing": closingBalance,
         })
     }
     
     c.JSON(http.StatusOK, gin.H{
         "success": true,
-        "data":    result,
+        "period": gin.H{"from": fromDate, "to": toDate},
+        "data": result,
     })
 }
+
 // GetProfitLossDetailed - Детальный отчёт о прибылях и убытках
 func GetProfitLossDetailed(c *gin.Context) {
     userID := getCurrentUserID(c)
@@ -1457,39 +1508,249 @@ func GetCashFlowReport(c *gin.Context) {
     case "year":
         fromDate = time.Date(now.Year(), 1, 1, 0, 0, 0, 0, time.UTC)
     default:
+        fromDate = now.AddDate(0, -1, 0)
+    }
+    toDate = now
+    
+    // Денежные потоки от операционной деятельности
+    query := `
+        SELECT 
+            'operating' as type,
+            COALESCE(SUM(CASE 
+                WHEN debit_account = '51' AND credit_account LIKE '62%' THEN amount 
+                ELSE 0 
+            END), 0) as inflow,
+            COALESCE(SUM(CASE 
+                WHEN credit_account = '51' AND debit_account LIKE '60%' THEN amount 
+                ELSE 0 
+            END), 0) as outflow
+        FROM journal_entries
+        WHERE user_id = $1 AND date BETWEEN $2 AND $3
+    `
+    
+    var operatingInflow, operatingOutflow float64
+    database.Pool.QueryRow(c.Request.Context(), query, userID, fromDate, toDate).Scan(&operatingInflow, &operatingOutflow)
+    
+    // Инвестиционная деятельность
+    var investingInflow, investingOutflow float64
+    invQuery := `
+        SELECT 
+            COALESCE(SUM(CASE WHEN debit_account = '51' AND credit_account LIKE '01%' THEN amount ELSE 0 END), 0),
+            COALESCE(SUM(CASE WHEN credit_account = '51' AND debit_account LIKE '08%' THEN amount ELSE 0 END), 0)
+        FROM journal_entries
+        WHERE user_id = $1 AND date BETWEEN $2 AND $3
+    `
+    database.Pool.QueryRow(c.Request.Context(), invQuery, userID, fromDate, toDate).Scan(&investingInflow, &investingOutflow)
+    
+    // Финансовая деятельность
+    var financingInflow, financingOutflow float64
+    finQuery := `
+        SELECT 
+            COALESCE(SUM(CASE WHEN debit_account = '51' AND credit_account LIKE '66%' THEN amount ELSE 0 END), 0),
+            COALESCE(SUM(CASE WHEN credit_account = '51' AND debit_account LIKE '66%' THEN amount ELSE 0 END), 0)
+        FROM journal_entries
+        WHERE user_id = $1 AND date BETWEEN $2 AND $3
+    `
+    database.Pool.QueryRow(c.Request.Context(), finQuery, userID, fromDate, toDate).Scan(&financingInflow, &financingOutflow)
+    
+    c.JSON(http.StatusOK, gin.H{
+        "period": gin.H{"from": fromDate, "to": toDate},
+        "operating": gin.H{
+            "inflow": operatingInflow,
+            "outflow": operatingOutflow,
+            "net": operatingInflow - operatingOutflow,
+        },
+        "investing": gin.H{
+            "inflow": investingInflow,
+            "outflow": investingOutflow,
+            "net": investingInflow - investingOutflow,
+        },
+        "financing": gin.H{
+            "inflow": financingInflow,
+            "outflow": financingOutflow,
+            "net": financingInflow - financingOutflow,
+        },
+        "total_net": (operatingInflow - operatingOutflow) + 
+                     (investingInflow - investingOutflow) + 
+                     (financingInflow - financingOutflow),
+    })
+}
+
+// ========== УБИЙЦА 1С - НОВЫЕ ФУНКЦИИ ==========
+
+// GetAdvancedTurnoverBalance - расширенная ОСВ с группировкой
+// func GetAdvancedTurnoverBalance(c *gin.Context) {
+    userID := getCurrentUserID(c)
+    period := c.DefaultQuery("period", "month")
+    
+    var fromDate, toDate time.Time
+    now := time.Now()
+    switch period {
+    case "month":
+        fromDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+    case "quarter":
+        fromDate = time.Date(now.Year(), now.Month()-2, 1, 0, 0, 0, 0, time.UTC)
+    case "year":
+        fromDate = time.Date(now.Year(), 1, 1, 0, 0, 0, 0, time.UTC)
+    default:
         fromDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
     }
     toDate = now
     
-    // Приток (поступления на 51 счёт)
-    var inflow float64
-    inflowQuery := `
-        SELECT COALESCE(SUM(debit_amount), 0)
-        FROM journal_entries
-        WHERE user_id = $1 AND operation_date BETWEEN $2 AND $3
-        AND debit_account = '51'
+    query := `
+        SELECT 
+            COALESCE(c.code, '') as code,
+            COALESCE(c.name, '') as name,
+            COALESCE(c.account_type, '') as account_type,
+            COALESCE(SUM(CASE WHEN j.debit_account = c.code THEN j.amount ELSE 0 END), 0) as debit,
+            COALESCE(SUM(CASE WHEN j.credit_account = c.code THEN j.amount ELSE 0 END), 0) as credit
+        FROM chart_of_accounts c
+        LEFT JOIN journal_entries j ON j.user_id = $1 AND j.date BETWEEN $2 AND $3
+        WHERE c.user_id = $1 AND c.is_active = true
+        GROUP BY c.code, c.name, c.account_type
+        ORDER BY c.code
     `
-    database.Pool.QueryRow(c.Request.Context(), inflowQuery, userID, fromDate, toDate).Scan(&inflow)
     
-    // Отток (списания с 51 счёта)
-    var outflow float64
-    outflowQuery := `
-        SELECT COALESCE(SUM(credit_amount), 0)
+    rows, err := database.Pool.Query(c.Request.Context(), query, userID, fromDate, toDate)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    defer rows.Close()
+    
+    var result []gin.H
+    for rows.Next() {
+        var code, name, accountType string
+        var debit, credit float64
+        rows.Scan(&code, &name, &accountType, &debit, &credit)
+        
+        result = append(result, gin.H{
+            "code":    code,
+            "name":    name,
+            "type":    accountType,
+            "opening": 0,
+            "debit":   debit,
+            "credit":  credit,
+            "closing": debit - credit,
+        })
+    }
+    
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "data":    result,
+    })
+}
+
+// GetProfitLossDetailed - детальный отчёт о прибылях и убытках
+// func GetProfitLossDetailed(c *gin.Context) {
+    userID := getCurrentUserID(c)
+    period := c.DefaultQuery("period", "month")
+    
+    var fromDate, toDate time.Time
+    now := time.Now()
+    switch period {
+    case "month":
+        fromDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+    case "quarter":
+        fromDate = time.Date(now.Year(), now.Month()-2, 1, 0, 0, 0, 0, time.UTC)
+    case "year":
+        fromDate = time.Date(now.Year(), 1, 1, 0, 0, 0, 0, time.UTC)
+    default:
+        fromDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+    }
+    toDate = now
+    
+    query := `
+        SELECT 
+            EXTRACT(YEAR FROM date) as year,
+            EXTRACT(MONTH FROM date) as month,
+            COALESCE(SUM(CASE WHEN debit_account LIKE '90%%' THEN amount ELSE 0 END), 0) as revenue,
+            COALESCE(SUM(CASE WHEN credit_account LIKE '90%%' AND debit_account LIKE '20%%' THEN amount ELSE 0 END), 0) as cost,
+            COALESCE(SUM(CASE WHEN credit_account LIKE '91%%' OR credit_account LIKE '92%%' THEN amount ELSE 0 END), 0) as expenses
         FROM journal_entries
-        WHERE user_id = $1 AND operation_date BETWEEN $2 AND $3
-        AND credit_account = '51'
+        WHERE user_id = $1 AND date BETWEEN $2 AND $3
+        GROUP BY EXTRACT(YEAR FROM date), EXTRACT(MONTH FROM date)
+        ORDER BY year, month
     `
-    database.Pool.QueryRow(c.Request.Context(), outflowQuery, userID, fromDate, toDate).Scan(&outflow)
+    
+    rows, err := database.Pool.Query(c.Request.Context(), query, userID, fromDate, toDate)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    defer rows.Close()
+    
+    var months []int
+    var revenues, costs, expenses, profits []float64
+    
+    for rows.Next() {
+        var year, month int
+        var revenue, cost, expense float64
+        rows.Scan(&year, &month, &revenue, &cost, &expense)
+        
+        months = append(months, month)
+        revenues = append(revenues, revenue)
+        costs = append(costs, cost)
+        expenses = append(expenses, expense)
+        profits = append(profits, revenue-cost-expense)
+    }
+    
+    c.JSON(http.StatusOK, gin.H{
+        "months":   months,
+        "revenue":  revenues,
+        "cost":     costs,
+        "expenses": expenses,
+        "profit":   profits,
+    })
+}
+
+// GetCashFlowReport - отчёт о движении денежных средств
+// func GetCashFlowReport(c *gin.Context) {
+    userID := getCurrentUserID(c)
+    period := c.DefaultQuery("period", "month")
+    
+    var fromDate, toDate time.Time
+    now := time.Now()
+    switch period {
+    case "month":
+        fromDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+    case "quarter":
+        fromDate = time.Date(now.Year(), now.Month()-2, 1, 0, 0, 0, 0, time.UTC)
+    case "year":
+        fromDate = time.Date(now.Year(), 1, 1, 0, 0, 0, 0, time.UTC)
+    default:
+        fromDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+    }
+    toDate = now
+    
+    // Операционная деятельность
+    var operatingInflow, operatingOutflow float64
+    opQuery := `
+        SELECT 
+            COALESCE(SUM(CASE WHEN debit_account = '51' AND credit_account LIKE '62%%' THEN amount ELSE 0 END), 0) as inflow,
+            COALESCE(SUM(CASE WHEN credit_account = '51' AND debit_account LIKE '60%%' THEN amount ELSE 0 END), 0) as outflow
+        FROM journal_entries
+        WHERE user_id = $1 AND date BETWEEN $2 AND $3
+    `
+    database.Pool.QueryRow(c.Request.Context(), opQuery, userID, fromDate, toDate).Scan(&operatingInflow, &operatingOutflow)
     
     c.JSON(http.StatusOK, gin.H{
         "operating": gin.H{
-            "inflow":  inflow,
-            "outflow": outflow,
-            "net":     inflow - outflow,
+            "inflow":  operatingInflow,
+            "outflow": operatingOutflow,
+            "net":     operatingInflow - operatingOutflow,
         },
-        "investing": gin.H{"inflow": 0, "outflow": 0, "net": 0},
-        "financing": gin.H{"inflow": 0, "outflow": 0, "net": 0},
-        "total_net": inflow - outflow,
+        "investing": gin.H{
+            "inflow":  0,
+            "outflow": 0,
+            "net":     0,
+        },
+        "financing": gin.H{
+            "inflow":  0,
+            "outflow": 0,
+            "net":     0,
+        },
+        "total_net": operatingInflow - operatingOutflow,
     })
 }
 
@@ -1500,29 +1761,32 @@ func GetBalanceSheet(c *gin.Context) {
     
     date, _ := time.Parse("2006-01-02", asOfDate)
     
-    // Активы - всё что поступило на 51 счёт (дебет)
-    var assets float64
+    var assets, liabilities float64
+    
+    // Активы (счета 01, 04, 08, 10, 50, 51, 58)
     assetQuery := `
-        SELECT COALESCE(SUM(debit_amount), 0)
-        FROM journal_entries
-        WHERE user_id = $1 AND operation_date <= $2
-        AND debit_account = '51'
+        SELECT COALESCE(SUM(CASE 
+            WHEN j.debit_account = '51' OR j.debit_account = '50' OR j.debit_account = '01' OR j.debit_account = '10' OR j.debit_account = '04'
+            THEN j.amount ELSE 0 END), 0) as assets
+        FROM journal_entries j
+        WHERE j.user_id = $1 AND j.date <= $2
     `
     database.Pool.QueryRow(c.Request.Context(), assetQuery, userID, date).Scan(&assets)
     
-    // Пассивы - всё что ушло с 51 счёта (кредит)
-    var liabilities float64
+    // Пассивы (счета 60, 62, 66, 67, 68, 69, 70, 80)
     liabilityQuery := `
-        SELECT COALESCE(SUM(credit_amount), 0)
-        FROM journal_entries
-        WHERE user_id = $1 AND operation_date <= $2
-        AND credit_account = '51'
+        SELECT COALESCE(SUM(CASE 
+            WHEN j.credit_account = '60' OR j.credit_account = '62' OR j.credit_account = '66' OR j.credit_account = '68' 
+            OR j.credit_account = '70' OR j.credit_account = '80'
+            THEN j.amount ELSE 0 END), 0) as liabilities
+        FROM journal_entries j
+        WHERE j.user_id = $1 AND j.date <= $2
     `
     database.Pool.QueryRow(c.Request.Context(), liabilityQuery, userID, date).Scan(&liabilities)
     
     c.JSON(http.StatusOK, gin.H{
         "assets":                 assets,
         "liabilities_and_equity": liabilities,
-        "as_of_date":             date.Format("2006-01-02"),
+        "as_of_date":            date.Format("2006-01-02"),
     })
 }

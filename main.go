@@ -223,6 +223,23 @@ if err != nil {
 } else {
     log.Println("✅ Таблица pending_users готова")
 }
+
+// Добавьте в main.go после создания других таблиц:
+_, err = database.Pool.Exec(ctx, `
+    CREATE TABLE IF NOT EXISTS month_closing (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL,
+        year INT NOT NULL,
+        month INT NOT NULL,
+        closed_at TIMESTAMP NOT NULL,
+        status VARCHAR(20) DEFAULT 'closed'
+    );
+`)
+if err != nil {
+    log.Printf("⚠️ Ошибка создания month_closing: %v", err)
+} else {
+    log.Println("✅ Таблица month_closing готова")
+}
     
     handlers.InitVPNWithDB(database.Pool)
     // Инициализация Stealth VPN сервиса
@@ -567,6 +584,11 @@ journalAPI.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("j
     journalAPI.GET("/entries", handlers.GetJournalEntries)
     journalAPI.PUT("/entry/:id", handlers.UpdateJournalEntry)
     journalAPI.DELETE("/entry/:id", handlers.DeleteJournalEntry)
+
+// ДОБАВИТЬ ВНУТРЬ journalAPI группы:
+journalAPI.POST("/entries/bulk", handlers.BulkCreateJournalEntries)
+journalAPI.POST("/entries/import", handlers.ImportJournalEntries)
+journalAPI.GET("/entries/export", handlers.ExportJournalEntries)
 }
 
     r.GET("/marketplace", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("marketplace"), handlers.MarketplacePageHandler)
@@ -874,6 +896,31 @@ r.GET("/api/qr/reset-status", handlers.QRResetStatusWebSocket)
     r.PUT("/api/journal-entries/:id", handlers.UpdateJournalEntrySimple)
     r.DELETE("/api/journal-entries/:id", handlers.DeleteJournalEntry)
 
+// Расширенные отчёты
+r.GET("/api/reports/advanced-osv", handlers.GetAdvancedTurnoverBalance)
+r.GET("/api/reports/profit-loss-detailed", handlers.GetProfitLossDetailed)
+r.GET("/api/reports/cash-flow", handlers.GetCashFlowReport)
+
+// Управленческий учёт (дополнительные)
+fincoreBudgets := r.Group("/api/fincore/budgets")
+fincoreBudgets.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("fincore"))
+{
+    fincoreBudgets.GET("", handlers.GetBudgets)
+    fincoreBudgets.POST("", handlers.UpdateBudget)
+    fincoreBudgets.GET("/plan-fact", handlers.GetPlanFactAnalysis) // НОВЫЙ
+}
+
+// План-факт анализ
+r.GET("/api/fincore/plan-fact", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("fincore"), handlers.GetPlanFactAnalysis)
+
+// Быстрые шаблоны проводок
+r.POST("/api/fincore/template-posting", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("fincore"), handlers.CreateTemplatePosting)
+r.GET("/api/fincore/templates", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("fincore"), handlers.GetPostingTemplates)
+
+// Закрытие месяца (улучшенное)
+r.POST("/api/fincore/close-month", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("fincore"), handlers.CloseMonth)
+r.GET("/api/fincore/month-closing-status", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("fincore"), handlers.GetMonthClosingStatus)
+
     r.GET("/api/admin/create-inventory-tables", handlers.CreateInventoryTables)
     r.GET("/api/current-user", middleware.AuthMiddleware(cfg), handlers.GetCurrentUserID)
 
@@ -966,6 +1013,10 @@ r.GET("/developer-portal", middleware.AuthMiddleware(cfg), handlers.DeveloperPor
     r.GET("/api/reports/profit-loss", handlers.GetProfitAndLoss)
     r.GET("/api/reports/dashboard-stats", handlers.GetDashboardStats)
     r.GET("/api/reports/sales-chart", handlers.GetSalesChart)
+
+// ========== ДОПОЛНИТЕЛЬНЫЕ ОТЧЁТЫ ==========
+r.GET("/api/reports/balance-sheet", handlers.GetBalanceSheet)
+r.GET("/api/reports/cash-flow-detailed", handlers.GetCashFlowReport)
 
     r.GET("/reports", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("reports-analytics"), func(c *gin.Context) {
         c.HTML(http.StatusOK, "reports.html", gin.H{
@@ -3042,14 +3093,7 @@ r.PUT("/api/orders/:id/remaining", middleware.AuthMiddleware(cfg), middleware.Ad
         fincoreAssign.DELETE("/entry/:entry_id/tag/:tag_id", handlers.RemoveTagFromEntry)
     }
 
-    // Бюджеты (план-факт)
-    fincoreBudgets := r.Group("/api/fincore/budgets")
-    fincoreBudgets.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("fincore"))
-    {
-        fincoreBudgets.GET("", handlers.GetBudgets)
-        fincoreBudgets.POST("", handlers.UpdateBudget)
-    }
-
+  
     // Экспорт и топ тегов
     fincoreExtra := r.Group("/api/fincore/extra")
     fincoreExtra.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("fincore"))

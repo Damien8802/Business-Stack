@@ -5,7 +5,7 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FinCore — Журнал проводок</title>
+    <title>FinCore — Журнал проводок | Убийца 1С</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -13,30 +13,73 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+            background: linear-gradient(135deg, #0a0a2a 0%, #0f0f35 50%, #1a1a4a 100%);
             min-height: 100vh;
         }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at 20% 30%, rgba(102,126,234,0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 70%, rgba(118,75,162,0.15) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .navbar {
+            background: rgba(15, 25, 35, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff, #a5b4fc, #c4b5fd);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-decoration: none;
+        }
+        .nav-link {
+            color: rgba(255,255,255,0.7);
+            transition: all 0.3s;
+            margin: 0 5px;
+            border-radius: 12px;
+            padding: 8px 16px;
+            text-decoration: none;
+            font-size: 13px;
+            display: inline-block;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #fff;
+            background: rgba(102,126,234,0.2);
+        }
+        .nav-link i { margin-right: 6px; }
+
         .hero-section {
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            background: linear-gradient(135deg, rgba(26, 26, 46, 0.9), rgba(22, 33, 62, 0.9));
+            border-bottom: 1px solid rgba(102,126,234,0.3);
             padding: 40px 0 60px 0;
-            border-bottom: 1px solid rgba(99,102,241,0.2);
         }
         .premium-card {
-            background: rgba(30, 30, 46, 0.95);
+            background: linear-gradient(135deg, rgba(26, 26, 46, 0.95), rgba(22, 33, 62, 0.95));
             border-radius: 24px;
-            border: 1px solid rgba(99,102,241,0.2);
+            border: 1px solid rgba(102,126,234,0.4);
             overflow: hidden;
         }
         .stat-value {
             font-size: 32px;
             font-weight: 800;
-            background: linear-gradient(135deg, #fff, #a78bfa);
+            background: linear-gradient(135deg, #fff, #a5b4fc);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
         }
         .btn-gradient {
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            background: linear-gradient(135deg, #667eea, #764ba2);
             border: none;
             color: white;
             padding: 10px 24px;
@@ -46,41 +89,56 @@
         }
         .btn-gradient:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(99,102,241,0.5);
+            box-shadow: 0 10px 25px -5px rgba(102,126,234,0.5);
             color: white;
         }
         .btn-outline {
             background: transparent;
-            border: 1px solid rgba(99,102,241,0.5);
-            color: #a78bfa;
+            border: 1px solid rgba(102,126,234,0.5);
+            color: #a5b4fc;
             padding: 10px 24px;
             border-radius: 40px;
             font-weight: 600;
             transition: all 0.3s;
         }
         .btn-outline:hover {
-            background: rgba(99,102,241,0.1);
+            background: rgba(102,126,234,0.2);
             color: white;
+        }
+        .btn-excel {
+            background: #10b981;
+            border: none;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+        }
+        .btn-pdf {
+            background: #ef4444;
+            border: none;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 40px;
+            font-weight: 600;
         }
         .journal-table {
             width: 100%;
             border-collapse: collapse;
         }
         .journal-table thead th {
-            background: rgba(30, 30, 46, 0.8);
+            background: linear-gradient(135deg, #667eea, #764ba2);
             padding: 14px 16px;
             font-weight: 600;
             font-size: 0.75rem;
             text-transform: uppercase;
-            color: #a78bfa;
-            border-bottom: 1px solid rgba(99,102,241,0.3);
+            color: white;
         }
         .journal-table tbody tr {
             border-bottom: 1px solid rgba(255,255,255,0.05);
             transition: all 0.2s;
         }
         .journal-table tbody tr:hover {
-            background: rgba(99,102,241,0.08);
+            background: rgba(102,126,234,0.15);
         }
         .journal-table tbody td {
             padding: 14px 16px;
@@ -88,7 +146,7 @@
             font-size: 0.85rem;
         }
         .badge-debit {
-            background: linear-gradient(135deg, #10b981, #059669);
+            background: #10b981;
             color: white;
             padding: 4px 12px;
             border-radius: 20px;
@@ -96,7 +154,7 @@
             font-size: 0.75rem;
         }
         .badge-credit {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
+            background: #ef4444;
             color: white;
             padding: 4px 12px;
             border-radius: 20px;
@@ -104,31 +162,60 @@
             font-size: 0.75rem;
         }
         .form-control, .form-select {
-            background: rgba(30,30,46,0.9);
-            border: 1px solid rgba(99,102,241,0.3);
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(102,126,234,0.3);
             color: white;
             border-radius: 12px;
             padding: 10px 14px;
         }
         .form-control:focus, .form-select:focus {
-            background: rgba(30,30,46,1);
-            border-color: #6366f1;
-            box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+            background: rgba(0,0,0,0.8);
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
             color: white;
         }
-        .form-control::placeholder {
-            color: #64748b;
+        .filter-bar {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            align-items: center;
         }
         .modal-content {
-            background: #1e1e2e;
-            border: 1px solid rgba(99,102,241,0.3);
-            border-radius: 24px;
+            background: linear-gradient(135deg, #1a1a2e, #0f0f23) !important;
+            border: 1px solid rgba(102,126,234,0.4) !important;
+            border-radius: 24px !important;
+            color: #ffffff !important;
         }
         .modal-header {
-            border-bottom-color: rgba(99,102,241,0.2);
+            border-bottom-color: rgba(102,126,234,0.3) !important;
+        }
+        .modal-header .modal-title {
+            color: #ffffff !important;
+        }
+        .modal-body {
+            color: #ffffff !important;
+        }
+        .modal-body label {
+            color: rgba(255,255,255,0.9) !important;
+        }
+        .modal-body input, .modal-body select, .modal-body textarea {
+            background: rgba(0,0,0,0.5) !important;
+            border: 1px solid rgba(102,126,234,0.3) !important;
+            color: #ffffff !important;
+        }
+        .modal-body input:focus, .modal-body select:focus, .modal-body textarea:focus {
+            border-color: #667eea !important;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.2) !important;
+        }
+        .modal-body input::placeholder, .modal-body textarea::placeholder {
+            color: rgba(255,255,255,0.5) !important;
         }
         .modal-footer {
-            border-top-color: rgba(99,102,241,0.2);
+            border-top-color: rgba(102,126,234,0.3) !important;
+        }
+        .btn-close-white {
+            filter: brightness(0) invert(1);
         }
         .delete-btn {
             background: transparent;
@@ -153,6 +240,34 @@
             color: #ffbb33;
             transform: scale(1.1);
         }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            padding: 20px;
+        }
+        .pagination button {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            color: #fff;
+            cursor: pointer;
+        }
+        .pagination button.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+        .update-toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            z-index: 1000;
+        }
         @media (max-width: 768px) {
             .journal-table thead th, .journal-table tbody td {
                 padding: 8px 10px;
@@ -160,47 +275,33 @@
             }
             .stat-value { font-size: 24px; }
         }
-
-/* Стили для навигации */
-.navbar {
-    background: rgba(15, 25, 35, 0.95);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    padding: 1rem 2rem;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-}
-.navbar-brand {
-    font-size: 1.5rem;
-    font-weight: 800;
-    background: linear-gradient(135deg, #fff, #a5b4fc, #c4b5fd);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    text-decoration: none;
-}
-.nav-link {
-    color: rgba(255,255,255,0.7);
-    transition: all 0.3s;
-    margin: 0 5px;
-    border-radius: 12px;
-    padding: 8px 16px;
-    text-decoration: none;
-    font-size: 13px;
-    display: inline-block;
-}
-.nav-link:hover {
-    color: #fff;
-    background: rgba(102,126,234,0.2);
-}
-.nav-link.active {
-    color: #fff;
-    background: linear-gradient(135deg, rgba(102,126,234,0.3), rgba(118,75,162,0.3));
-}
-.nav-link i, .nav-link .bi {
-    margin-right: 8px;
-}
+        
+        .filter-bar .form-control,
+        .filter-bar .form-select,
+        #filterSearch,
+        #filterDateFrom,
+        #filterDateTo,
+        #filterAccount {
+            background: rgba(0, 0, 0, 0.6) !important;
+            border: 1px solid rgba(102, 126, 234, 0.4) !important;
+            color: #ffffff !important;
+        }
+        .filter-bar .form-control::placeholder,
+        #filterSearch::placeholder {
+            color: rgba(255, 255, 255, 0.5) !important;
+        }
+        .filter-bar .form-control:focus,
+        .filter-bar .form-select:focus,
+        #filterSearch:focus {
+            background: rgba(0, 0, 0, 0.8) !important;
+            border-color: #667eea !important;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2) !important;
+            color: #ffffff !important;
+        }
+        .filter-bar .form-select option {
+            background: #1a1a2e !important;
+            color: #ffffff !important;
+        }
     </style>
 </head>
 <body>
@@ -209,17 +310,17 @@
     <div class="container-fluid" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
         <a class="navbar-brand" href="/">🚀 Business Stack</a>
         <div class="d-flex flex-wrap gap-2">
-            <a href="/dashboard-improved" class="nav-link">📊 Главная</a>
-            <a href="/finance" class="nav-link">📊 Финансы</a>
-            <a href="/reports" class="nav-link">📈 Отчёты</a>
-            <a href="/reconciliation-acts" class="nav-link">📄 Акты сверки</a>
-            <a href="/journal" class="nav-link active">📓 Журнал</a>
-            <a href="/management" class="nav-link">🏷️ Управленка</a>
-            <a href="/bank" class="nav-link">🏦 Банк</a>
-            <a href="/payroll" class="nav-link">💰 Зарплата</a>
-            <a href="/tax-reports" class="nav-link">📑 Налоги</a>
-            <a href="/import-excel" class="nav-link">📎 Импорт</a>
-            <a href="/month-end" class="nav-link">📅 Закрытие</a>
+            <a href="/dashboard-improved" class="nav-link"><i class="fas fa-tachometer-alt"></i> Главная</a>
+            <a href="/finance" class="nav-link"><i class="fas fa-chart-line"></i> Финансы</a>
+            <a href="/reports" class="nav-link"><i class="fas fa-file-alt"></i> Отчёты</a>
+            <a href="/reconciliation-acts" class="nav-link"><i class="fas fa-handshake"></i> Акты сверки</a>
+            <a href="/journal" class="nav-link active"><i class="fas fa-book"></i> Журнал</a>
+            <a href="/management" class="nav-link"><i class="fas fa-tags"></i> Управленка</a>
+            <a href="/bank" class="nav-link"><i class="fas fa-university"></i> Банк</a>
+            <a href="/payroll" class="nav-link"><i class="fas fa-money-bill-wave"></i> Зарплата</a>
+            <a href="/tax-reports" class="nav-link"><i class="fas fa-calculator"></i> Налоги</a>
+            <a href="/import-excel" class="nav-link"><i class="fas fa-upload"></i> Импорт</a>
+            <a href="/month-end" class="nav-link"><i class="fas fa-calendar-check"></i> Закрытие</a>
         </div>
     </div>
 </nav>
@@ -229,32 +330,34 @@
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
                 <div class="d-flex align-items-center gap-3 mb-2">
-                    <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                    <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
                         <i class="fas fa-scroll" style="font-size: 24px; color: white;"></i>
                     </div>
                     <div>
                         <h1 style="font-size: 28px; font-weight: 800; color: white;">Журнал проводок</h1>
-                        <p style="color: #94a3b8; margin-top: 4px;">Бухгалтерские проводки и финансовые операции</p>
+                        <p style="color: #94a3b8; margin-top: 4px;">Все бухгалтерские проводки в одном месте</p>
                     </div>
                 </div>
             </div>
-            <div class="d-flex gap-3">
+            <div class="d-flex gap-3 flex-wrap">
                 <button class="btn-gradient" data-bs-toggle="modal" data-bs-target="#addEntryModal">
                     <i class="fas fa-plus"></i> Новая проводка
                 </button>
-                <button onclick="loadEntries()" class="btn-outline">
+                <button class="btn-excel" onclick="exportToExcel()">
+                    <i class="fas fa-file-excel"></i> Экспорт Excel
+                </button>
+                <button class="btn-pdf" onclick="exportToPDF()">
+                    <i class="fas fa-file-pdf"></i> Экспорт PDF
+                </button>
+                <button class="btn-outline" onclick="loadEntries()">
                     <i class="fas fa-sync-alt"></i> Обновить
                 </button>
-                <a href="/dashboard-improved" class="btn-outline text-decoration-none">
-                    <i class="fas fa-arrow-left"></i> Назад
-                </a>
             </div>
         </div>
     </div>
 </div>
 
 <div class="container" style="max-width: 1600px; margin: -30px auto 40px; padding: 0 20px;">
-    <!-- Статистика -->
     <div class="row g-4 mb-4">
         <div class="col-md-3">
             <div class="premium-card p-4">
@@ -263,7 +366,7 @@
                         <p style="color: #94a3b8; font-size: 0.8rem; margin-bottom: 5px;">ВСЕГО ПРОВОДОК</p>
                         <h2 class="stat-value" id="totalCount">0</h2>
                     </div>
-                    <i class="fas fa-chart-line" style="font-size: 32px; color: #6366f1; opacity: 0.7;"></i>
+                    <i class="fas fa-chart-line" style="font-size: 32px; color: #667eea; opacity: 0.7;"></i>
                 </div>
             </div>
         </div>
@@ -296,18 +399,35 @@
                         <p style="color: #94a3b8; font-size: 0.8rem; margin-bottom: 5px;">БАЛАНС</p>
                         <h2 class="stat-value" id="balance">0 ₽</h2>
                     </div>
-                    <i class="fas fa-scale-balanced" style="font-size: 32px; color: #a78bfa;"></i>
+                    <i class="fas fa-scale-balanced" style="font-size: 32px; color: #a5b4fc;"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Таблица -->
+    <div class="premium-card mb-4 p-3">
+        <div class="filter-bar">
+            <input type="date" id="filterDateFrom" class="form-control" style="width: 160px;">
+            <input type="date" id="filterDateTo" class="form-control" style="width: 160px;">
+            <input type="text" id="filterSearch" class="form-control" placeholder="🔍 Поиск по описанию..." style="width: 250px;">
+            <select id="filterAccount" class="form-select" style="width: 150px;">
+                <option value="">Все счета</option>
+                <option value="51">51 - Расчётный счёт</option>
+                <option value="60">60 - Поставщики</option>
+                <option value="62">62 - Покупатели</option>
+                <option value="68">68 - Налоги</option>
+                <option value="70">70 - Зарплата</option>
+            </select>
+            <button class="btn-gradient" onclick="applyFilters()"><i class="fas fa-search"></i> Найти</button>
+            <button class="btn-outline" onclick="resetFilters()"><i class="fas fa-undo"></i> Сбросить</button>
+        </div>
+    </div>
+
     <div class="premium-card">
-        <div class="p-3 border-bottom" style="border-color: rgba(99,102,241,0.15);">
+        <div class="p-3 border-bottom" style="border-color: rgba(102,126,234,0.15);">
             <div class="d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
-                    <i class="fas fa-list-ul" style="color: #6366f1;"></i>
+                    <i class="fas fa-list-ul" style="color: #667eea;"></i>
                     <h3 style="font-size: 16px; font-weight: 600; margin: 0; color: white;">Все проводки</h3>
                 </div>
                 <span style="font-size: 11px; color: #64748b;" id="lastUpdate">—</span>
@@ -319,20 +439,20 @@
                     <tr>
                         <th>Дата</th>
                         <th>№ документа</th>
-                        <th>Тип</th>
-                        <th>Контрагент</th>
-                        <th>ИНН</th>
-                        <th>Дебет</th>
-                        <th>Кредит</th>
+                        <th>Дебет счёт</th>
+                        <th>Кредит счёт</th>
+                        <th>Партнер</th>
+                        <th>Сумма</th>
                         <th>Описание</th>
                         <th style="width: 80px;">Действия</th>
                     </tr>
                 </thead>
                 <tbody id="entriesTable">
-                    <tr><td colspan="9" style="text-align: center; padding: 60px;"><i class="fas fa-spinner fa-spin"></i> Загрузка...</td></tr>
+                    <tr><td colspan="8" style="text-align: center; padding: 60px;"><i class="fas fa-spinner fa-spin"></i> Загрузка...<\/tr>
                 </tbody>
-            </table>
+            <table>
         </div>
+        <div class="pagination" id="pagination"></div>
     </div>
 </div>
 
@@ -346,38 +466,29 @@
             </div>
             <div class="modal-body">
                 <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label">Дата операции</label>
-                        <input type="date" class="form-control" id="new_operation_date" value="2026-05-11">
+                        <input type="date" class="form-control" id="new_operation_date" value="">
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label">№ документа</label>
                         <input type="text" class="form-control" id="new_document_number" placeholder="СЧ-001">
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Тип документа</label>
-                        <select class="form-select" id="new_document_type">
-                            <option value="Счет">Счет</option>
-                            <option value="Акт">Акт</option>
-                            <option value="Накладная">Накладная</option>
-                            <option value="Платеж">Платеж</option>
-                        </select>
+                    <div class="col-md-6">
+                        <label class="form-label">Дебет счёт</label>
+                        <input type="text" class="form-control" id="new_debit_account" placeholder="51">
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Контрагент</label>
+                        <label class="form-label">Кредит счёт</label>
+                        <input type="text" class="form-control" id="new_credit_account" placeholder="62">
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">Партнер</label>
                         <input type="text" class="form-control" id="new_counterparty_name" placeholder="ООО Ромашка">
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label">ИНН контрагента</label>
-                        <input type="text" class="form-control" id="new_counterparty_inn" placeholder="1234567890">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Сумма дебета (₽)</label>
-                        <input type="number" class="form-control" id="new_debit_amount" value="0" step="0.01">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Сумма кредита (₽)</label>
-                        <input type="number" class="form-control" id="new_credit_amount" value="0" step="0.01">
+                    <div class="col-md-4">
+                        <label class="form-label">Сумма (₽)</label>
+                        <input type="number" class="form-control" id="new_amount" value="0" step="0.01">
                     </div>
                     <div class="col-12">
                         <label class="form-label">Описание</label>
@@ -404,38 +515,29 @@
             <div class="modal-body">
                 <input type="hidden" id="edit_entry_id">
                 <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label">Дата операции</label>
                         <input type="date" class="form-control" id="edit_operation_date">
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label">№ документа</label>
                         <input type="text" class="form-control" id="edit_document_number">
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Тип документа</label>
-                        <select class="form-select" id="edit_document_type">
-                            <option value="Счет">Счет</option>
-                            <option value="Акт">Акт</option>
-                            <option value="Накладная">Накладная</option>
-                            <option value="Платеж">Платеж</option>
-                        </select>
+                    <div class="col-md-6">
+                        <label class="form-label">Дебет счёт</label>
+                        <input type="text" class="form-control" id="edit_debit_account">
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Контрагент</label>
+                        <label class="form-label">Кредит счёт</label>
+                        <input type="text" class="form-control" id="edit_credit_account">
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">Партнер</label>
                         <input type="text" class="form-control" id="edit_counterparty_name">
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label">ИНН контрагента</label>
-                        <input type="text" class="form-control" id="edit_counterparty_inn">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Сумма дебета (₽)</label>
-                        <input type="number" class="form-control" id="edit_debit_amount" step="0.01">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Сумма кредита (₽)</label>
-                        <input type="number" class="form-control" id="edit_credit_amount" step="0.01">
+                    <div class="col-md-4">
+                        <label class="form-label">Сумма (₽)</label>
+                        <input type="number" class="form-control" id="edit_amount" step="0.01">
                     </div>
                     <div class="col-12">
                         <label class="form-label">Описание</label>
@@ -453,194 +555,526 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    let currentEditId = null;
+    const token = localStorage.getItem('token');
+    let allEntries = [];
+    let currentPage = 1;
+    let itemsPerPage = 20;
+    let filteredEntries = [];
 
     async function loadEntries() {
         try {
-            const response = await fetch('/api/journal-entries');
+            const response = await fetch('/api/journal-entries', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
             const data = await response.json();
-            const entries = data.entries || [];
+            allEntries = data.entries || data;
+            filteredEntries = [...allEntries];
             
-            document.getElementById('totalCount').innerText = entries.length;
+            updateStats();
+            applyFilters();
+            
             document.getElementById('lastUpdate').innerHTML = `<i class="far fa-clock"></i> ${new Date().toLocaleString('ru-RU')}`;
-            
-            let totalDebit = 0, totalCredit = 0;
-            let tbody = document.getElementById('entriesTable');
-            
-            if (entries.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 60px;"><i class="fas fa-inbox" style="font-size: 48px; color: #475569;"></i><p style="color: #64748b; margin-top: 16px;">Нет проводок. Создайте первую!</p></td></tr>';
-                document.getElementById('totalDebit').innerHTML = '0 ₽';
-                document.getElementById('totalCredit').innerHTML = '0 ₽';
-                document.getElementById('balance').innerHTML = '0 ₽';
-                return;
-            }
-            
-            let html = '';
-            for (let e of entries) {
-                let debit = e.debit_amount || 0;
-                let credit = e.credit_amount || 0;
-                totalDebit += debit;
-                totalCredit += credit;
-                
-                html += `
-                    <tr>
-                        <td>${e.operation_date || '-'}</td>
-                        <td><code style="background: rgba(99,102,241,0.15); padding: 4px 8px; border-radius: 6px;">${e.document_number || '-'}</code></td>
-                        <td><span style="background: rgba(99,102,241,0.15); color: #a78bfa; padding: 4px 10px; border-radius: 20px; font-size: 11px;">${e.document_type || '-'}</span></td>
-                        <td>${e.counterparty_name || '-'}</td>
-                        <td style="font-family: monospace;">${e.counterparty_inn || '-'}</td>
-                        <td>${debit > 0 ? `<span class="badge-debit">${debit.toLocaleString()} ₽</span>` : '—'}</td>
-                        <td>${credit > 0 ? `<span class="badge-credit">${credit.toLocaleString()} ₽</span>` : '—'}</td>
-                        <td style="max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${e.description || '-'}</td>
-                        <td>
-                            <button class="edit-btn" onclick="openEditModal('${e.id}')"><i class="fas fa-edit"></i></button>
-                            <button class="delete-btn" onclick="deleteEntry('${e.id}')"><i class="fas fa-trash"></i></button>
-                        </td>
-                    </tr>
-                `;
-            }
-            
-            tbody.innerHTML = html;
-            document.getElementById('totalDebit').innerHTML = totalDebit.toLocaleString() + ' ₽';
-            document.getElementById('totalCredit').innerHTML = totalCredit.toLocaleString() + ' ₽';
-            document.getElementById('balance').innerHTML = (totalDebit - totalCredit).toLocaleString() + ' ₽';
-            
         } catch (error) {
             console.error('Ошибка:', error);
-            document.getElementById('entriesTable').innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 60px; color: #ef4444;">❌ Ошибка загрузки</td></tr>';
+            document.getElementById('entriesTable').innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 60px; color: #ef4444;">❌ Ошибка загрузки<\/tr>';
         }
     }
-    
+
+    function updateStats() {
+        let totalDebitSum = 0, totalCreditSum = 0;
+        for (let e of allEntries) {
+            totalDebitSum += e.debit_amount || 0;
+            totalCreditSum += e.credit_amount || 0;
+        }
+        document.getElementById('totalCount').innerText = allEntries.length;
+        document.getElementById('totalDebit').innerHTML = totalDebitSum.toLocaleString() + ' ₽';
+        document.getElementById('totalCredit').innerHTML = totalCreditSum.toLocaleString() + ' ₽';
+        document.getElementById('balance').innerHTML = (totalDebitSum - totalCreditSum).toLocaleString() + ' ₽';
+    }
+
+    function applyFilters() {
+        const dateFrom = document.getElementById('filterDateFrom').value;
+        const dateTo = document.getElementById('filterDateTo').value;
+        const search = document.getElementById('filterSearch').value.toLowerCase();
+        const account = document.getElementById('filterAccount').value;
+        
+        filteredEntries = allEntries.filter(entry => {
+            if (dateFrom && entry.operation_date < dateFrom) return false;
+            if (dateTo && entry.operation_date > dateTo) return false;
+            if (search && !(entry.description || '').toLowerCase().includes(search)) return false;
+            if (account) {
+                if (entry.debit_account !== account && entry.credit_account !== account) return false;
+            }
+            return true;
+        });
+        
+        currentPage = 1;
+        renderTable();
+    }
+
+    function resetFilters() {
+        document.getElementById('filterDateFrom').value = '';
+        document.getElementById('filterDateTo').value = '';
+        document.getElementById('filterSearch').value = '';
+        document.getElementById('filterAccount').value = '';
+        filteredEntries = [...allEntries];
+        currentPage = 1;
+        renderTable();
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('entriesTable');
+        const start = (currentPage - 1) * itemsPerPage;
+        const pageEntries = filteredEntries.slice(start, start + itemsPerPage);
+        
+        if (pageEntries.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 60px;"><i class="fas fa-inbox" style="font-size: 48px; color: #475569;"></i><p style="color: #64748b; margin-top: 16px;">Нет проводок</p><\/tr>';
+            document.getElementById('pagination').innerHTML = '';
+            return;
+        }
+        
+        let html = '';
+        for (let e of pageEntries) {
+            const amount = (e.debit_amount || 0) + (e.credit_amount || 0);
+            html += `
+                <tr>
+                    <td>${e.operation_date || '-'}</td>
+                    <td><code style="background: rgba(102,126,234,0.15); padding: 4px 8px; border-radius: 6px;">${e.document_number || '-'}</code></td>
+                    <td><span class="badge-debit">${e.debit_account || '—'}</span></td>
+                    <td><span class="badge-credit">${e.credit_account || '—'}</span></td>
+                    <td>${e.counterparty_name || '-'}</td>
+                    <td>${amount > 0 ? (e.debit_amount > 0 ? '<span style="color:#10b981;">' + amount.toLocaleString() + ' ₽</span>' : '<span style="color:#ef4444;">' + amount.toLocaleString() + ' ₽</span>') : '0 ₽'}</td>
+                    <td style="max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${e.description || '-'}</td>
+                    <td>
+                        <button class="edit-btn" onclick='editEntryDirect("${e.id}", "${e.debit_account || ''}", "${e.credit_account || ''}", ${amount}, "${(e.description || '').replace(/'/g, "\\'")}", "${e.counterparty_name || ''}", "${e.document_number || ''}", "${e.operation_date || ''}")'><i class="fas fa-edit"></i></button>
+                        <button class="delete-btn" onclick="deleteEntry('${e.id}')"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `;
+        }
+        tbody.innerHTML = html;
+        
+        const totalPages = Math.ceil(filteredEntries.length / itemsPerPage);
+        let paginationHtml = '';
+        for (let i = 1; i <= Math.min(totalPages, 10); i++) {
+            paginationHtml += `<button class="${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+        }
+        document.getElementById('pagination').innerHTML = paginationHtml;
+    }
+
+    function goToPage(page) {
+        currentPage = page;
+        renderTable();
+    }
+
     async function createEntry() {
         const entry = {
             operation_date: document.getElementById('new_operation_date').value,
             document_number: document.getElementById('new_document_number').value,
-            document_type: document.getElementById('new_document_type').value,
+            document_type: 'Проводка',
             counterparty_name: document.getElementById('new_counterparty_name').value,
-            counterparty_inn: document.getElementById('new_counterparty_inn').value,
-            debit_amount: parseFloat(document.getElementById('new_debit_amount').value) || 0,
-            credit_amount: parseFloat(document.getElementById('new_credit_amount').value) || 0,
+            debit_account: document.getElementById('new_debit_account').value,
+            credit_account: document.getElementById('new_credit_account').value,
+            debit_amount: parseFloat(document.getElementById('new_amount').value) || 0,
+            credit_amount: 0,
             description: document.getElementById('new_description').value
         };
         
-        if (!entry.document_number) {
-            alert('Введите номер документа');
+        if (!entry.operation_date) {
+            showNotification('❌ Заполните дату', 'error');
+            return;
+        }
+        if (!entry.debit_account || !entry.credit_account) {
+            showNotification('❌ Укажите дебет и кредит счета', 'error');
             return;
         }
         
         try {
             const response = await fetch('/api/journal-entries', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
                 body: JSON.stringify(entry)
             });
             
             if (response.ok) {
                 bootstrap.Modal.getInstance(document.getElementById('addEntryModal')).hide();
                 document.getElementById('new_document_number').value = '';
-                document.getElementById('new_counterparty_name').value = '';
-                document.getElementById('new_counterparty_inn').value = '';
-                document.getElementById('new_debit_amount').value = '0';
-                document.getElementById('new_credit_amount').value = '0';
+                document.getElementById('new_debit_account').value = '';
+                document.getElementById('new_credit_account').value = '';
+                document.getElementById('new_amount').value = '0';
                 document.getElementById('new_description').value = '';
+                document.getElementById('new_counterparty_name').value = '';
+                document.getElementById('new_operation_date').value = new Date().toISOString().split('T')[0];
                 loadEntries();
+                showNotification('✅ Проводка создана!', 'success');
             } else {
                 const error = await response.json();
-                alert('Ошибка: ' + (error.error || 'Не удалось создать проводку'));
+                showNotification('❌ Ошибка: ' + (error.error || 'Не удалось создать'), 'error');
             }
         } catch (error) {
-            alert('Ошибка: ' + error.message);
+            showNotification('❌ Ошибка: ' + error.message, 'error');
         }
     }
-    
-    async function openEditModal(id) {
-        try {
-            const response = await fetch(`/api/journal-entries/${id}`);
-            const data = await response.json();
-            const entry = data.entry;
-            
-            document.getElementById('edit_entry_id').value = id;
-            document.getElementById('edit_operation_date').value = entry.operation_date || '';
-            document.getElementById('edit_document_number').value = entry.document_number || '';
-            document.getElementById('edit_document_type').value = entry.document_type || 'Счет';
-            document.getElementById('edit_counterparty_name').value = entry.counterparty_name || '';
-            document.getElementById('edit_counterparty_inn').value = entry.counterparty_inn || '';
-            document.getElementById('edit_debit_amount').value = entry.debit_amount || 0;
-            document.getElementById('edit_credit_amount').value = entry.credit_amount || 0;
-            document.getElementById('edit_description').value = entry.description || '';
-            
-            new bootstrap.Modal(document.getElementById('editEntryModal')).show();
-        } catch (error) {
-            alert('Ошибка загрузки данных: ' + error.message);
-        }
+
+    function editEntryDirect(id, debitAccount, creditAccount, amount, description, counterpartyName, docNumber, operationDate) {
+        console.log('Редактирование проводки ID:', id);
+        
+        document.getElementById('edit_entry_id').value = id;
+        document.getElementById('edit_operation_date').value = operationDate || '';
+        document.getElementById('edit_document_number').value = docNumber || '';
+        document.getElementById('edit_debit_account').value = debitAccount || '';
+        document.getElementById('edit_credit_account').value = creditAccount || '';
+        document.getElementById('edit_counterparty_name').value = counterpartyName || '';
+        document.getElementById('edit_amount').value = amount || 0;
+        document.getElementById('edit_description').value = description || '';
+        
+        const modal = new bootstrap.Modal(document.getElementById('editEntryModal'));
+        modal.show();
     }
-    
+
     async function updateEntry() {
         const id = document.getElementById('edit_entry_id').value;
         const entry = {
             operation_date: document.getElementById('edit_operation_date').value,
             document_number: document.getElementById('edit_document_number').value,
-            document_type: document.getElementById('edit_document_type').value,
             counterparty_name: document.getElementById('edit_counterparty_name').value,
-            counterparty_inn: document.getElementById('edit_counterparty_inn').value,
-            debit_amount: parseFloat(document.getElementById('edit_debit_amount').value) || 0,
-            credit_amount: parseFloat(document.getElementById('edit_credit_amount').value) || 0,
+            debit_account: document.getElementById('edit_debit_account').value,
+            credit_account: document.getElementById('edit_credit_account').value,
+            debit_amount: parseFloat(document.getElementById('edit_amount').value) || 0,
+            credit_amount: 0,
             description: document.getElementById('edit_description').value
         };
         
         try {
             const response = await fetch(`/api/journal-entries/${id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
                 body: JSON.stringify(entry)
             });
             
             if (response.ok) {
                 bootstrap.Modal.getInstance(document.getElementById('editEntryModal')).hide();
                 loadEntries();
+                showNotification('✅ Проводка обновлена!', 'success');
             } else {
                 const error = await response.json();
-                alert('Ошибка: ' + (error.error || 'Не удалось обновить'));
+                showNotification('❌ Ошибка: ' + (error.error || 'Не удалось обновить'), 'error');
             }
         } catch (error) {
-            alert('Ошибка: ' + error.message);
+            showNotification('❌ Ошибка: ' + error.message, 'error');
         }
     }
-    
+
     async function deleteEntry(id) {
-        if (!confirm('Удалить эту проводку?')) return;
+        if (!confirm('⚠️ Удалить эту проводку? Действие нельзя отменить!')) return;
         
         try {
-            const response = await fetch(`/api/journal-entries/${id}`, { method: 'DELETE' });
+            const response = await fetch(`/api/journal-entries/${id}`, { 
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
             if (response.ok) {
                 loadEntries();
+                showNotification('✅ Проводка удалена!', 'success');
             } else {
-                alert('Ошибка при удалении');
+                showNotification('❌ Ошибка при удалении', 'error');
             }
         } catch (error) {
-            alert('Ошибка: ' + error.message);
+            showNotification('❌ Ошибка: ' + error.message, 'error');
         }
     }
-    
-    loadEntries();
-    setInterval(loadEntries, 60000);
-</script>
 
-<script>
-    // Принудительная привязка кнопки после загрузки страницы
-    document.addEventListener('DOMContentLoaded', function() {
-        // Находим все кнопки с текстом "Обновить"
-        const btns = document.querySelectorAll('.btn-outline');
-        for (let btn of btns) {
-            if (btn.innerText.includes('Обновить') || btn.innerHTML.includes('sync-alt')) {
-                btn.onclick = function(e) {
-                    e.preventDefault();
-                    console.log('🔄 Кнопка нажата, обновляем...');
-                    loadEntries();
-                    return false;
-                };
+    function exportToExcel() {
+        if (filteredEntries.length === 0) {
+            showNotification('❌ Нет данных для экспорта', 'error');
+            return;
+        }
+        
+        const rows = [['Дата', 'Документ', 'Дебет счёт', 'Кредит счёт', 'Партнер', 'Сумма', 'Описание']];
+        for (let e of filteredEntries) {
+            const amount = (e.debit_amount || 0) + (e.credit_amount || 0);
+            rows.push([
+                e.operation_date || '-',
+                e.document_number || '-',
+                e.debit_account || '-',
+                e.credit_account || '-',
+                e.counterparty_name || '-',
+                amount,
+                e.description || '-'
+            ]);
+        }
+        
+        const csv = rows.map(row => row.join(';')).join('\n');
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `journal_${new Date().toISOString().slice(0,10)}.csv`;
+        link.click();
+        showNotification('📊 Экспорт завершён', 'success');
+    }
+
+    function exportToPDF() {
+        showNotification('📄 Подготовка PDF отчёта...', 'info');
+        
+        const totalCount = document.getElementById('totalCount')?.innerText || '0';
+        const totalDebit = document.getElementById('totalDebit')?.innerText || '0 ₽';
+        const totalCredit = document.getElementById('totalCredit')?.innerText || '0 ₽';
+        const balance = document.getElementById('balance')?.innerText || '0 ₽';
+        const reportDate = new Date().toLocaleDateString('ru-RU', { year: 'numeric', month: 'long', day: 'numeric' });
+        const reportTime = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        
+        let tableHtml = '';
+        const tableRows = document.querySelectorAll('#entriesTable tr');
+        for (let i = 0; i < tableRows.length; i++) {
+            const cells = tableRows[i].querySelectorAll('td');
+            if (cells.length >= 7 && cells[0]?.innerText !== 'Нет проводок') {
+                tableHtml += `
+                    <tr style="border-bottom: 1px solid #e0e0e0;">
+                        <td style="padding: 8px;">${cells[0]?.innerText || '-'}</td>
+                        <td style="padding: 8px;">${cells[1]?.innerText || '-'}</td>
+                        <td style="padding: 8px;">${cells[2]?.innerText || '-'}</td>
+                        <td style="padding: 8px;">${cells[3]?.innerText || '-'}</td>
+                        <td style="padding: 8px;">${cells[4]?.innerText || '-'}</td>
+                        <td style="padding: 8px;">${cells[5]?.innerText || '-'}</td>
+                        <td style="padding: 8px;">${cells[6]?.innerText || '-'}</td>
+                    </tr>
+                `;
             }
         }
+        
+        const printHtml = `
+            <!DOCTYPE html>
+            <html>
+                   <head>
+            <meta charset="UTF-8">
+            <title>FinCore - Журнал проводок</title>
+            <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+            <link rel="icon" type="image/x-icon" href="/favicon.ico">
+            <style>
+                    * { margin: 0; padding: 0; box-sizing: border-box; }
+                    body {
+                        font-family: 'Segoe UI', 'Inter', Arial, sans-serif;
+                        padding: 40px;
+                        background: #f0f2f5;
+                        color: #1a1a2e;
+                    }
+                    .report-container {
+                        max-width: 1200px;
+                        margin: 0 auto;
+                        background: white;
+                        border-radius: 16px;
+                        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+                        overflow: hidden;
+                    }
+                    .report-header {
+                        background: linear-gradient(135deg, #667eea, #764ba2);
+                        color: white;
+                        padding: 40px;
+                        text-align: center;
+                    }
+                    .report-header h1 {
+                        font-size: 32px;
+                        margin-bottom: 10px;
+                    }
+                    .report-header .subtitle {
+                        opacity: 0.9;
+                        font-size: 14px;
+                    }
+                    .report-date {
+                        margin-top: 15px;
+                        font-size: 12px;
+                        opacity: 0.8;
+                    }
+                    .stats-grid {
+                        display: grid;
+                        grid-template-columns: repeat(4, 1fr);
+                        gap: 20px;
+                        padding: 30px;
+                        background: white;
+                    }
+                    .stat-card-pdf {
+                        background: linear-gradient(135deg, #667eea10, #764ba210);
+                        border: 1px solid #667eea30;
+                        border-radius: 16px;
+                        padding: 20px;
+                        text-align: center;
+                    }
+                    .stat-card-pdf .stat-icon {
+                        font-size: 32px;
+                        margin-bottom: 10px;
+                    }
+                    .stat-card-pdf .stat-value {
+                        font-size: 28px;
+                        font-weight: 800;
+                        color: #667eea;
+                    }
+                    .stat-card-pdf .stat-label {
+                        font-size: 13px;
+                        color: #666;
+                        margin-top: 5px;
+                    }
+                    .report-content {
+                        padding: 0 30px 30px 30px;
+                    }
+                    .report-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                        font-size: 12px;
+                    }
+                    .report-table th {
+                        background: linear-gradient(135deg, #667eea, #764ba2);
+                        color: white;
+                        padding: 10px;
+                        text-align: left;
+                    }
+                    .report-table td {
+                        padding: 8px;
+                        border-bottom: 1px solid #e0e0e0;
+                    }
+                    .report-table tbody tr:nth-child(even) {
+                        background: #f9f9f9;
+                    }
+                    .toolbar {
+                        position: sticky;
+                        top: 0;
+                        background: white;
+                        padding: 15px 30px;
+                        border-bottom: 1px solid #e0e0e0;
+                        display: flex;
+                        justify-content: flex-end;
+                        gap: 12px;
+                    }
+                    .toolbar button {
+                        padding: 10px 20px;
+                        border: none;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: 600;
+                    }
+                    .btn-print {
+                        background: linear-gradient(135deg, #667eea, #764ba2);
+                        color: white;
+                    }
+                    .btn-close {
+                        background: #ef4444;
+                        color: white;
+                    }
+                    .report-footer {
+                        background: #f8f9fa;
+                        padding: 20px;
+                        text-align: center;
+                        font-size: 11px;
+                        color: #999;
+                        margin-top: 20px;
+                    }
+                    .watermark {
+                        position: fixed;
+                        bottom: 30px;
+                        right: 30px;
+                        opacity: 0.03;
+                        font-size: 80px;
+                        color: #667eea;
+                        transform: rotate(-15deg);
+                    }
+                    @media print {
+                        .toolbar { display: none; }
+                        body { padding: 0; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="watermark">FinCore</div>
+                <div class="report-container">
+                    <div class="toolbar">
+                        <button class="btn-print" onclick="window.print();">🖨️ Печать</button>
+                        <button class="btn-close" onclick="window.close();">✖️ Закрыть</button>
+                    </div>
+                    <div class="report-header">
+                        <h1>📓 FinCore - Журнал проводок</h1>
+                        <div class="subtitle">Полный реестр бухгалтерских проводок</div>
+                        <div class="report-date">Дата формирования: ${reportDate} в ${reportTime}</div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card-pdf">
+                            <div class="stat-icon">📄</div>
+                            <div class="stat-value">${totalCount}</div>
+                            <div class="stat-label">Всего проводок</div>
+                        </div>
+                        <div class="stat-card-pdf">
+                            <div class="stat-icon">📈</div>
+                            <div class="stat-value">${totalDebit}</div>
+                            <div class="stat-label">Оборот по дебету</div>
+                        </div>
+                        <div class="stat-card-pdf">
+                            <div class="stat-icon">📉</div>
+                            <div class="stat-value">${totalCredit}</div>
+                            <div class="stat-label">Оборот по кредиту</div>
+                        </div>
+                        <div class="stat-card-pdf">
+                            <div class="stat-icon">⚖️</div>
+                            <div class="stat-value">${balance}</div>
+                            <div class="stat-label">Сальдо</div>
+                        </div>
+                    </div>
+                    <div class="report-content">
+                        <h3 style="margin-bottom: 15px;">📋 Список проводок</h3>
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th>Дата</th>
+                                    <th>Документ</th>
+                                    <th>Дебет</th>
+                                    <th>Кредит</th>
+                                    <th>Партнер</th>
+                                    <th>Сумма</th>
+                                    <th>Описание</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${tableHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="report-footer">
+                        <p>© ${new Date().getFullYear()} FinCore - Бухгалтерский учёт и аналитика</p>
+                        <p>Данные актуальны на момент формирования отчёта</p>
+                    </div>
+                </div>
+                <script>
+                    window.onload = function() {
+                        console.log('PDF готов к печати');
+                    };
+                <\/script>
+            </body>
+            </html>
+        `;
+        
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(printHtml);
+        printWindow.document.close();
+        showNotification('📄 Отчёт открыт. Нажмите "Печать"', 'success');
+    }
+
+    function showNotification(msg, type) {
+        const toast = document.createElement('div');
+        toast.className = 'update-toast';
+        toast.style.cssText = `position:fixed; bottom:20px; right:20px; background:${type === 'success' ? '#10b981' : '#ef4444'}; color:white; padding:12px 24px; border-radius:12px; z-index:10001; font-weight:500;`;
+        toast.innerHTML = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('new_operation_date').value = new Date().toISOString().split('T')[0];
+        loadEntries();
+        setInterval(loadEntries, 60000);
     });
 </script>
 </body>

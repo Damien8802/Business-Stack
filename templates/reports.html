@@ -5,7 +5,7 @@
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FinCore | Отчёты и аналитика - Убийца 1С</title>
+    <title>FinCore | Отчёты и аналитика </title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css">
@@ -443,6 +443,7 @@
                         <option value="all">Всё время</option>
                     </select>
                     <button class="btn-excel" onclick="exportOSVToExcel()"><i class="fas fa-file-excel"></i> Экспорт Excel</button>
+                    <button class="btn-pdf" onclick="exportToPDF()"><i class="fas fa-file-pdf"></i> Экспорт PDF</button>
                 </div>
             </div>
             <div class="table-responsive" id="osvTable">
@@ -494,6 +495,7 @@
                 </select>
                 <button class="btn-primary" onclick="loadProfitLoss()"><i class="fas fa-refresh"></i> Обновить</button>
                 <button class="btn-excel" onclick="exportProfitLossExcel()"><i class="fas fa-file-excel"></i> Экспорт</button>
+               <button class="btn-pdf" onclick="exportToPDF()"><i class="fas fa-file-pdf"></i> Экспорт PDF</button>
             </div>
             <div class="row" id="profitLoss">
                 <div class="col-md-4"><div class="ratio-card"><div class="value" id="plRevenue">0 ₽</div><div class="label">Выручка</div></div></div>
@@ -567,6 +569,7 @@
                 </select>
                 <button class="btn-primary" onclick="loadPartners()"><i class="fas fa-refresh"></i> Обновить</button>
                 <button class="btn-excel" onclick="exportPartners()"><i class="fas fa-file-excel"></i> Экспорт</button>
+                <button class="btn-pdf" onclick="exportToPDF()"><i class="fas fa-file-pdf"></i> Экспорт PDF</button>
             </div>
             <div class="table-responsive" id="partnersTable">
                 <div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Загрузка...</div>
@@ -1021,6 +1024,112 @@ function showNotification(msg, type) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+
+function exportToPDF() {
+    showNotification('📄 Подготовка PDF отчёта...', 'info');
+    
+    const totalRevenue = document.getElementById('totalRevenue')?.innerText || '0 ₽';
+    const totalProfit = document.getElementById('totalProfit')?.innerText || '0 ₽';
+    const profitMargin = document.getElementById('profitMargin')?.innerText || '0%';
+    const totalTax = document.getElementById('totalTax')?.innerText || '0 ₽';
+    const reportDate = new Date().toLocaleDateString('ru-RU', { year: 'numeric', month: 'long', day: 'numeric' });
+    const reportTime = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    
+    let activeTab = '';
+    let tableHtml = '';
+    
+    if (document.getElementById('tab-osv').style.display !== 'none') {
+        activeTab = 'Оборотно-сальдовая ведомость';
+        const osvTable = document.getElementById('osvTable');
+        const table = osvTable?.querySelector('table');
+        if (table) {
+            const rows = table.querySelectorAll('tbody tr');
+            for (let i = 0; i < rows.length && i < 20; i++) {
+                const cells = rows[i].querySelectorAll('td');
+                if (cells.length >= 4) {
+                    tableHtml += '<tr style="border-bottom:1px solid #e0e0e0;">';
+                    tableHtml += '<td style="padding:8px;">' + (cells[0]?.innerText || '-') + '</td>';
+                    tableHtml += '<td style="padding:8px;">' + (cells[1]?.innerText || '-') + '</td>';
+                    tableHtml += '<td style="padding:8px;">' + (cells[2]?.innerText || '-') + '</td>';
+                    tableHtml += '<td style="padding:8px;">' + (cells[3]?.innerText || '-') + '</td>';
+                    tableHtml += '<td style="padding:8px;">' + (cells[4]?.innerText || '-') + '</td>';
+                    tableHtml += '</tr>';
+                }
+            }
+        }
+    } else if (document.getElementById('tab-partners').style.display !== 'none') {
+        activeTab = 'Аналитика по партнерам';
+        const partnersTable = document.getElementById('partnersTable');
+        const table = partnersTable?.querySelector('table');
+        if (table) {
+            const rows = table.querySelectorAll('tbody tr');
+            for (let i = 0; i < rows.length && i < 20; i++) {
+                const cells = rows[i].querySelectorAll('td');
+                if (cells.length >= 3) {
+                    tableHtml += '<tr style="border-bottom:1px solid #e0e0e0;">';
+                    tableHtml += '<td style="padding:8px;">' + (cells[0]?.innerText || '-') + '</td>';
+                    tableHtml += '<td style="padding:8px;">' + (cells[1]?.innerText || '-') + '</td>';
+                    tableHtml += '<td style="padding:8px;">' + (cells[2]?.innerText || '-') + '</td>';
+                    tableHtml += '<td style="padding:8px;">' + (cells[3]?.innerText || '-') + '</td>';
+                    tableHtml += '</tr>';
+                }
+            }
+        }
+    }
+    
+    const printHtml = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>FinCore - ' + activeTab + '</title>' +
+        '<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">' +
+        '<link rel="icon" type="image/x-icon" href="/static/favicon.ico">' +
+        '<style>' +
+        '*{margin:0;padding:0;box-sizing:border-box;}' +
+        'body{font-family:"Segoe UI","Inter",Arial,sans-serif;padding:40px;background:#f0f2f5;color:#1a1a2e;}' +
+        '.report-container{max-width:1200px;margin:0 auto;background:white;border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,0.1);overflow:hidden;}' +
+        '.report-header{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:40px;text-align:center;}' +
+        '.report-header h1{font-size:32px;margin-bottom:10px;}' +
+        '.report-date{margin-top:15px;font-size:12px;opacity:0.8;}' +
+        '.stats-grid{display:flex;flex-direction:row;justify-content:space-between;gap:20px;padding:30px;background:white;}' +
+        '.stat-card-pdf{flex:1;background:linear-gradient(135deg,#667eea10,#764ba210);border:1px solid #667eea30;border-radius:16px;padding:20px;text-align:center;}' +
+        '.stat-card-pdf .stat-value{font-size:28px;font-weight:800;color:#667eea;}' +
+        '.stat-card-pdf .stat-label{font-size:13px;color:#666;margin-top:5px;}' +
+        '.report-content{padding:0 30px 30px 30px;}' +
+        '.report-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:12px;}' +
+        '.report-table th{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:10px;text-align:left;}' +
+        '.report-table td{padding:8px;border-bottom:1px solid #e0e0e0;}' +
+        '.report-table tbody tr:nth-child(even){background:#f9f9f9;}' +
+        '.toolbar{position:sticky;top:0;background:white;padding:15px 30px;border-bottom:1px solid #e0e0e0;display:flex;justify-content:flex-end;gap:12px;}' +
+        '.toolbar button{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-weight:600;}' +
+        '.btn-print{background:linear-gradient(135deg,#667eea,#764ba2);color:white;}' +
+        '.btn-close{background:#ef4444;color:white;}' +
+        '.report-footer{background:#f8f9fa;padding:20px;text-align:center;font-size:11px;color:#999;margin-top:20px;}' +
+        '.watermark{position:fixed;bottom:30px;right:30px;opacity:0.03;font-size:80px;color:#667eea;transform:rotate(-15deg);}' +
+        '@media print{.toolbar{display:none;}body{padding:0;}}' +
+        '</style></head><body>' +
+        '<div class="watermark">FinCore</div>' +
+        '<div class="report-container">' +
+        '<div class="toolbar"><button class="btn-print" onclick="window.print();">🖨️ Печать</button><button class="btn-close" onclick="window.close();">✖️ Закрыть</button></div>' +
+        '<div class="report-header"><h1>📊 FinCore - ' + activeTab + '</h1><div class="report-date">Дата формирования: ' + reportDate + ' в ' + reportTime + '</div></div>' +
+        '<div class="stats-grid">' +
+        '<div class="stat-card-pdf"><div class="stat-value">' + totalRevenue + '</div><div class="stat-label">Выручка</div></div>' +
+        '<div class="stat-card-pdf"><div class="stat-value">' + totalProfit + '</div><div class="stat-label">Прибыль</div></div>' +
+        '<div class="stat-card-pdf"><div class="stat-value">' + profitMargin + '</div><div class="stat-label">Рентабельность</div></div>' +
+        '<div class="stat-card-pdf"><div class="stat-value">' + totalTax + '</div><div class="stat-label">Налоги</div></div>' +
+        '</div><div class="report-content"><h3 style="margin-bottom:15px;">📋 Данные отчёта</h3>' +
+        '<table class="report-table"><thead><tr><th>Показатель</th><th>Значение</th><th>Ед. изм.</th></td></thead><tbody>' +
+        '<tr><td>Выручка</td><td class="text-success">' + totalRevenue + '</td><td>₽</td></tr>' +
+        '<tr><td>Прибыль</td><td class="text-success">' + totalProfit + '</td><td>₽</td></tr>' +
+        '<tr><td>Рентабельность</td><td>' + profitMargin + '</td><td>%</td></tr>' +
+        '<tr><td>Налоги</td><td>' + totalTax + '</td><td>₽</td></tr>' +
+        '</tbody></table>' +
+        (tableHtml ? '<h3 style="margin:20px 0 15px;">📋 Детализация</h3><table class="report-table"><thead><tr><th>Показатель</th><th>Значение</th><th>Сумма</th></tr></thead><tbody>' + tableHtml + '</tbody></table>' : '') +
+        '</div><div class="report-footer"><p>© ' + new Date().getFullYear() + ' FinCore - Бухгалтерский учёт и аналитика</p></div>' +
+        '</div><script>window.onload=function(){console.log("PDF готов");};<\/script>' +
+        '</body></html>';
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printHtml);
+    printWindow.document.close();
+    showNotification('📄 Отчёт открыт. Нажмите "Печать"', 'success');
+}
     loadKPIs();
     loadOSV();
     if (document.getElementById('balanceDate')) {

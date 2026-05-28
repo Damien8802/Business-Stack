@@ -139,6 +139,11 @@
             color: white;
         }
         
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+        
         .tabs {
             display: flex;
             gap: 10px;
@@ -211,6 +216,7 @@
         .badge-warning { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
         .badge-matched { background: rgba(16,185,129,0.2); color: #10b981; }
         .badge-pending { background: rgba(245,158,11,0.2); color: #f59e0b; }
+        .badge-danger { background: rgba(239,68,68,0.2); color: #ef4444; }
         
         .stats-grid {
             display: grid;
@@ -230,7 +236,7 @@
         .stat-value { font-size: 28px; font-weight: 700; color: #a78bfa; }
         .stat-label { font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 8px; }
         
-        .template-item, .payment-item {
+        .template-item, .payment-item, .forecast-item {
             background: rgba(0,0,0,0.3);
             border-radius: 16px;
             padding: 12px 20px;
@@ -238,6 +244,16 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+        
+        .forecast-warning {
+            background: rgba(239,68,68,0.2);
+            border-left: 3px solid #ef4444;
+        }
+        
+        .forecast-safe {
+            background: rgba(16,185,129,0.2);
+            border-left: 3px solid #10b981;
         }
         
         .empty-state {
@@ -273,46 +289,98 @@
             color: white;
         }
         
+        /* Календарь с прогнозом */
+        .forecast-header {
+            display: grid;
+            grid-template-columns: 100px 150px 150px 1fr;
+            gap: 15px;
+            padding: 12px;
+            background: rgba(102,126,234,0.15);
+            border-radius: 12px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .forecast-row {
+            display: grid;
+            grid-template-columns: 100px 150px 150px 1fr;
+            gap: 15px;
+            padding: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            align-items: center;
+        }
+        
+        .cash-warning {
+            background: rgba(239,68,68,0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
         @media (max-width: 768px) {
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
             .page-title { font-size: 28px; }
+            .forecast-header, .forecast-row { grid-template-columns: 80px 1fr 1fr; font-size: 12px; }
+            .forecast-header div:last-child, .forecast-row div:last-child { display: none; }
         }
 
-.navbar {
-    background: rgba(15, 25, 35, 0.95);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    padding: 1rem 2rem;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-}
-.navbar-brand {
-    font-size: 1.5rem;
-    font-weight: 800;
-    background: linear-gradient(135deg, #fff, #a5b4fc, #c4b5fd);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    text-decoration: none;
-}
-.nav-link {
-    color: rgba(255,255,255,0.7);
-    transition: all 0.3s;
-    margin: 0 5px;
-    border-radius: 12px;
-    padding: 8px 16px;
-    text-decoration: none;
-    font-size: 13px;
-    display: inline-block;
-}
-.nav-link:hover, .nav-link.active {
-    color: #fff;
-    background: rgba(102,126,234,0.2);
-}
-.nav-link i {
-    margin-right: 8px;
-}
+        .navbar {
+            background: rgba(15, 25, 35, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff, #a5b4fc, #c4b5fd);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-decoration: none;
+        }
+        .nav-link {
+            color: rgba(255,255,255,0.7);
+            transition: all 0.3s;
+            margin: 0 5px;
+            border-radius: 12px;
+            padding: 8px 16px;
+            text-decoration: none;
+            font-size: 13px;
+            display: inline-block;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #fff;
+            background: rgba(102,126,234,0.2);
+        }
+        .nav-link i {
+            margin-right: 8px;
+        }
+        
+        .toast-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 500;
+            z-index: 9999;
+            animation: fadeInOut 3s ease forwards;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(20px); }
+            15% { opacity: 1; transform: translateY(0); }
+            85% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); display: none; }
+        }
     </style>
 </head>
 <body>
@@ -322,366 +390,734 @@
         <a class="navbar-brand" href="/">🚀 Business Stack</a>
         <div class="d-flex flex-wrap gap-2">
             <a href="/dashboard-improved" class="nav-link">📊 Главная</a>
-            <a href="/finance" class="nav-link">📊 Финансы</a>
+            <a href="/finance" class="nav-link">💰 Финансы</a>
             <a href="/reports" class="nav-link">📈 Отчёты</a>
             <a href="/reconciliation-acts" class="nav-link">📄 Акты сверки</a>
             <a href="/journal" class="nav-link">📓 Журнал</a>
             <a href="/management" class="nav-link">🏷️ Управленка</a>
             <a href="/bank" class="nav-link active">🏦 Банк</a>
-            <a href="/payroll" class="nav-link">💰 Зарплата</a>
+            <a href="/payroll" class="nav-link">💸 Зарплата</a>
             <a href="/tax-reports" class="nav-link">📑 Налоги</a>
             <a href="/import-excel" class="nav-link">📎 Импорт</a>
             <a href="/month-end" class="nav-link">📅 Закрытие</a>
         </div>
     </div>
 </nav>
-    <div class="animated-bg"></div>
+
+<div class="animated-bg"></div>
+
+<div class="container">
+    <div class="page-header">
+        <h1 class="page-title"><i class="bi bi-bank2 me-3"></i>Банк-клиент</h1>
+        <p class="page-subtitle">Подключайте банковские счета, управляйте платежами и планируйте现金流</p>
+    </div>
     
-    <div class="container">
-        <div class="page-header">
-            <h1 class="page-title"><i class="bi bi-bank2 me-3"></i>Банк-клиент</h1>
-            <p class="page-subtitle">Подключайте банковские счета и автоматически загружайте выписки</p>
-        </div>
-        
-        <div class="stats-grid" id="statsGrid" style="display: none;">
-            <div class="stat-card"><div class="stat-value" id="totalAccounts">0</div><div class="stat-label">Счетов</div></div>
-            <div class="stat-card"><div class="stat-value" id="totalBalance">0 ₽</div><div class="stat-label">Остаток</div></div>
-            <div class="stat-card"><div class="stat-value" id="totalIncome">0 ₽</div><div class="stat-label">Поступления</div></div>
-            <div class="stat-card"><div class="stat-value" id="totalExpense">0 ₽</div><div class="stat-label">Списания</div></div>
-        </div>
-        
-        <div class="tabs">
-            <button class="tab-btn active" onclick="showTab('accounts')"><i class="bi bi-credit-card"></i> Счета</button>
-            <button class="tab-btn" onclick="showTab('transactions')"><i class="bi bi-list-ul"></i> Транзакции</button>
-            <button class="tab-btn" onclick="showTab('templates')"><i class="bi bi-files"></i> Шаблоны</button>
-            <button class="tab-btn" onclick="showTab('calendar')"><i class="bi bi-calendar"></i> Календарь</button>
-        </div>
-        
-        <!-- Вкладка: Счета -->
-        <div id="tab-accounts" class="tab-content active">
-            <div class="card">
-                <div class="card-title"><i class="bi bi-plus-circle"></i> Подключить банковский счёт</div>
-                <div class="row g-3">
-                    <div class="col-md-3"><select id="bankName" class="form-select"><option value="Тинькофф">🏦 Тинькофф</option><option value="Альфа-Банк">🏦 Альфа-Банк</option><option value="Сбербанк">🏦 Сбербанк</option><option value="ВТБ">🏦 ВТБ</option></select></div>
-                    <div class="col-md-3"><input type="text" id="accountNumber" class="form-control" placeholder="Номер счёта"></div>
-                    <div class="col-md-2"><input type="text" id="bic" class="form-control" placeholder="БИК"></div>
-                    <div class="col-md-2"><input type="text" id="apiKey" class="form-control" placeholder="API ключ"></div>
-                    <div class="col-md-2"><button class="btn btn-primary w-100" onclick="connectBank()"><i class="bi bi-link"></i> Подключить</button></div>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-title"><i class="bi bi-credit-card"></i> Мои счета</div>
-                <div id="accountsList"></div>
+    <div class="stats-grid" id="statsGrid" style="display: none;">
+        <div class="stat-card"><div class="stat-value" id="totalAccounts">0</div><div class="stat-label">Счетов</div></div>
+        <div class="stat-card"><div class="stat-value" id="totalBalance">0 ₽</div><div class="stat-label">Текущий остаток</div></div>
+        <div class="stat-card"><div class="stat-value" id="totalIncome">0 ₽</div><div class="stat-label">Поступления (мес)</div></div>
+        <div class="stat-card"><div class="stat-value" id="totalExpense">0 ₽</div><div class="stat-label">Списания (мес)</div></div>
+    </div>
+    
+    <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('accounts')"><i class="bi bi-credit-card"></i> Счета</button>
+        <button class="tab-btn" onclick="showTab('transactions')"><i class="bi bi-list-ul"></i> Транзакции</button>
+        <button class="tab-btn" onclick="showTab('templates')"><i class="bi bi-files"></i> Шаблоны</button>
+        <button class="tab-btn" onclick="showTab('calendar')"><i class="bi bi-calendar"></i> Платёжный календарь</button>
+        <button class="tab-btn" onclick="showTab('reconciliation')"><i class="bi bi-check2-circle"></i> Сверка с актами</button>
+    </div>
+    
+    <!-- Вкладка: Счета -->
+    <div id="tab-accounts" class="tab-content active">
+        <div class="card">
+            <div class="card-title"><i class="bi bi-plus-circle"></i> Подключить банковский счёт</div>
+            <div class="row g-3">
+                <div class="col-md-3"><select id="bankName" class="form-select"><option value="Тинькофф">🏦 Тинькофф</option><option value="Альфа-Банк">🏦 Альфа-Банк</option><option value="Сбербанк">🏦 Сбербанк</option><option value="ВТБ">🏦 ВТБ</option></select></div>
+                <div class="col-md-3"><input type="text" id="accountNumber" class="form-control" placeholder="Номер счёта"></div>
+                <div class="col-md-2"><input type="text" id="bic" class="form-control" placeholder="БИК"></div>
+                <div class="col-md-2"><input type="text" id="initialBalance" class="form-control" placeholder="Начальный остаток"></div>
+                <div class="col-md-2"><button class="btn btn-primary w-100" onclick="connectBank()"><i class="bi bi-link"></i> Подключить</button></div>
             </div>
         </div>
-        
-        <!-- Вкладка: Транзакции -->
-        <div id="tab-transactions" class="tab-content">
-            <div class="card">
-                <div class="card-title"><i class="bi bi-funnel"></i> Фильтры</div>
-                <div class="row g-3">
-                    <div class="col-md-3"><input type="date" id="startDate" class="form-control"></div>
-                    <div class="col-md-3"><input type="date" id="endDate" class="form-control"></div>
-                    <div class="col-md-3"><select id="accountSelect" class="form-select"></select></div>
-                    <div class="col-md-3"><button class="btn btn-outline w-100" onclick="loadTransactions()"><i class="bi bi-funnel"></i> Применить</button></div>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-title d-flex justify-content-between align-items-center">
-                    <span><i class="bi bi-list-ul"></i> Выписки по счёту</span>
-                    <div>
-                        <button class="btn btn-outline btn-sm me-2" onclick="importExcel()"><i class="bi bi-file-earmark-excel"></i> Импорт</button>
-                        <button class="btn btn-outline btn-sm me-2" onclick="exportTransactions()"><i class="bi bi-download"></i> Экспорт</button>
-                        <button class="btn btn-success btn-sm" onclick="syncTransactions()"><i class="bi bi-arrow-repeat"></i> Синхронизировать</button>
-                    </div>
-                </div>
-                <div class="table-container">
-                    <table class="table">
-                        <thead><tr><th>Дата</th><th>Сумма</th><th>Контрагент</th><th>Назначение</th><th>Статус</th><th></th></tr></thead>
-                        <tbody id="transactionsList"><tr><td colspan="6" class="empty-state"><i class="bi bi-inbox"></i><br>Выберите счёт</td></tr></tbody>
-                    </table>
-                </div>
-                <div class="mt-3 text-end">
-                    <button class="btn btn-warning" onclick="matchTransactions()"><i class="bi bi-magic"></i> Автосопоставление с проводками</button>
-                </div>
+        <div class="card">
+            <div class="card-title"><i class="bi bi-credit-card"></i> Мои счета</div>
+            <div id="accountsList"></div>
+        </div>
+    </div>
+    
+    <!-- Вкладка: Транзакции -->
+    <div id="tab-transactions" class="tab-content">
+        <div class="card">
+            <div class="card-title"><i class="bi bi-funnel"></i> Фильтры</div>
+            <div class="row g-3">
+                <div class="col-md-3"><input type="date" id="startDate" class="form-control"></div>
+                <div class="col-md-3"><input type="date" id="endDate" class="form-control"></div>
+                <div class="col-md-3"><select id="accountSelect" class="form-select"></select></div>
+                <div class="col-md-3"><button class="btn btn-outline w-100" onclick="loadTransactions()"><i class="bi bi-funnel"></i> Применить</button></div>
             </div>
         </div>
-        
-        <!-- Вкладка: Шаблоны платежей -->
-        <div id="tab-templates" class="tab-content">
-            <div class="card">
-                <div class="card-title"><i class="bi bi-plus-circle"></i> Создать шаблон</div>
-                <div class="row g-3">
-                    <div class="col-md-4"><input type="text" id="templateName" class="form-control" placeholder="Название шаблона"></div>
-                    <div class="col-md-4"><input type="text" id="templateCounterparty" class="form-control" placeholder="Контрагент"></div>
-                    <div class="col-md-2"><input type="number" id="templateAmount" class="form-control" placeholder="Сумма"></div>
-                    <div class="col-md-2"><button class="btn btn-primary w-100" onclick="saveTemplate()"><i class="bi bi-save"></i> Сохранить</button></div>
+        <div class="card">
+            <div class="card-title d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-list-ul"></i> Выписки по счёту</span>
+                <div>
+                    <button class="btn btn-outline btn-sm me-2" onclick="importExcel()"><i class="bi bi-file-earmark-excel"></i> Импорт</button>
+                    <button class="btn btn-outline btn-sm me-2" onclick="exportTransactions()"><i class="bi bi-download"></i> Экспорт</button>
+                    <button class="btn btn-success btn-sm me-2" onclick="syncTransactions()"><i class="bi bi-arrow-repeat"></i> Синхронизация</button>
+                    <button class="btn btn-warning btn-sm" onclick="massReconcile()"><i class="bi bi-magic"></i> Массовая сверка</button>
                 </div>
             </div>
-            <div class="card">
-                <div class="card-title"><i class="bi bi-files"></i> Мои шаблоны</div>
-                <div id="templatesList"></div>
+            <div class="table-container">
+                <table class="table">
+                    <thead><tr><th><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()"></th><th>Дата</th><th>Сумма</th><th>Контрагент</th><th>Назначение</th><th>Статус</th><th>Сверка с актом</th><th></th></tr></thead>
+                    <tbody id="transactionsList"><tr><td colspan="8" class="empty-state"><i class="bi bi-inbox"></i><br>Выберите счёт</td></tr></tbody>
+                </table>
             </div>
-        </div>
-        
-        <!-- Вкладка: Платёжный календарь -->
-        <div id="tab-calendar" class="tab-content">
-            <div class="card">
-                <div class="card-title"><i class="bi bi-plus-circle"></i> Добавить платёж</div>
-                <div class="row g-3">
-                    <div class="col-md-3"><input type="date" id="paymentDate" class="form-control"></div>
-                    <div class="col-md-4"><input type="text" id="paymentCounterparty" class="form-control" placeholder="Контрагент"></div>
-                    <div class="col-md-3"><input type="number" id="paymentAmount" class="form-control" placeholder="Сумма"></div>
-                    <div class="col-md-2"><button class="btn btn-primary w-100" onclick="addPayment()"><i class="bi bi-plus"></i> Добавить</button></div>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-title"><i class="bi bi-calendar"></i> Запланированные платежи</div>
-                <div id="calendarList"></div>
+            <div class="mt-3 text-end">
+                <button class="btn btn-danger me-2" onclick="massDeleteSelected()"><i class="bi bi-trash"></i> Удалить выбранные</button>
+                <button class="btn btn-success" onclick="massCreateActsFromSelected()"><i class="bi bi-file-earmark-text"></i> Создать акты сверки</button>
             </div>
         </div>
     </div>
     
-    <a href="javascript:history.back()" class="back-button"><i class="bi bi-arrow-left"></i> Назад</a>
+    <!-- Вкладка: Шаблоны платежей -->
+    <div id="tab-templates" class="tab-content">
+        <div class="card">
+            <div class="card-title"><i class="bi bi-plus-circle"></i> Создать шаблон</div>
+            <div class="row g-3">
+                <div class="col-md-4"><input type="text" id="templateName" class="form-control" placeholder="Название шаблона"></div>
+                <div class="col-md-4"><input type="text" id="templateCounterparty" class="form-control" placeholder="Контрагент"></div>
+                <div class="col-md-2"><input type="number" id="templateAmount" class="form-control" placeholder="Сумма"></div>
+                <div class="col-md-2"><button class="btn btn-primary w-100" onclick="saveTemplate()"><i class="bi bi-save"></i> Сохранить</button></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title"><i class="bi bi-files"></i> Мои шаблоны</div>
+            <div id="templatesList"></div>
+        </div>
+    </div>
     
-    <script>
-        let currentAccountId = null;
-        let templates = [];
-        let payments = [];
+    <!-- Вкладка: Платёжный календарь с прогнозом -->
+    <div id="tab-calendar" class="tab-content">
+        <div class="card">
+            <div class="card-title"><i class="bi bi-plus-circle"></i> Добавить платёж</div>
+            <div class="row g-3">
+                <div class="col-md-3"><input type="date" id="paymentDate" class="form-control"></div>
+                <div class="col-md-4"><input type="text" id="paymentCounterparty" class="form-control" placeholder="Контрагент"></div>
+                <div class="col-md-3"><input type="number" id="paymentAmount" class="form-control" placeholder="Сумма"></div>
+                <div class="col-md-2"><select id="paymentType" class="form-select"><option value="expense">💸 Расход</option><option value="income">💰 Доход</option></select></div>
+            </div>
+            <div class="row g-3 mt-2">
+                <div class="col-md-4"><input type="text" id="paymentPurpose" class="form-control" placeholder="Назначение платежа"></div>
+                <div class="col-md-2"><button class="btn btn-primary w-100" onclick="addPayment()"><i class="bi bi-plus"></i> Добавить</button></div>
+                <div class="col-md-3"><button class="btn btn-outline w-100" onclick="loadForecast()"><i class="bi bi-graph-up"></i> Рассчитать прогноз</button></div>
+                <div class="col-md-3"><button class="btn btn-success w-100" onclick="exportForecast()"><i class="bi bi-file-earmark-excel"></i> Экспорт прогноза</button></div>
+            </div>
+        </div>
         
-        document.addEventListener('DOMContentLoaded', () => {
-            const today = new Date();
-            const monthAgo = new Date();
-            monthAgo.setMonth(monthAgo.getMonth() - 1);
-            document.getElementById('startDate').value = monthAgo.toISOString().split('T')[0];
-            document.getElementById('endDate').value = today.toISOString().split('T')[0];
-            document.getElementById('paymentDate').value = today.toISOString().split('T')[0];
-            loadAccounts();
-            loadTemplates();
-            loadCalendar();
+        <div id="cashWarning" class="cash-warning" style="display: none;">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> 
+            <strong>⚠️ Внимание! Кассовый разрыв прогнозируется</strong> 
+            <span id="cashWarningText"></span>
+        </div>
+        
+        <div class="card">
+            <div class="card-title"><i class="bi bi-calendar"></i> Прогноз остатков (4 недели)</div>
+            <div class="forecast-header">
+                <div>📅 Дата</div>
+                <div>💰 Плановый приход</div>
+                <div>💸 Плановый расход</div>
+                <div>🏦 Прогноз остатка</div>
+            </div>
+            <div id="forecastList"></div>
+        </div>
+        
+        <div class="card">
+            <div class="card-title"><i class="bi bi-calendar-event"></i> Запланированные платежи</div>
+            <div id="calendarList"></div>
+        </div>
+    </div>
+    
+    <!-- Вкладка: Сверка с актами -->
+    <div id="tab-reconciliation" class="tab-content">
+        <div class="card">
+            <div class="card-title"><i class="bi bi-check2-circle"></i> Сверка банковских операций с актами сверки</div>
+            <div class="row g-3">
+                <div class="col-md-4"><input type="date" id="recStartDate" class="form-control" placeholder="Дата с"></div>
+                <div class="col-md-4"><input type="date" id="recEndDate" class="form-control" placeholder="Дата по"></div>
+                <div class="col-md-4"><button class="btn btn-primary w-100" onclick="loadReconciliationData()"><i class="bi bi-search"></i> Загрузить данные</button></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title"><i class="bi bi-list-check"></i> Результаты сверки</div>
+            <div id="reconciliationResult"><div class="empty-state">Выберите период для сверки</div></div>
+        </div>
+    </div>
+</div>
+
+<a href="javascript:history.back()" class="back-button"><i class="bi bi-arrow-left"></i> Назад</a>
+
+<script>
+    let currentAccountId = null;
+    let templates = [];
+    let payments = [];
+    let selectedTransactions = new Set();
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        const today = new Date();
+        const monthAgo = new Date();
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        
+        document.getElementById('startDate').value = monthAgo.toISOString().split('T')[0];
+        document.getElementById('endDate').value = today.toISOString().split('T')[0];
+        document.getElementById('recStartDate').value = monthAgo.toISOString().split('T')[0];
+        document.getElementById('recEndDate').value = today.toISOString().split('T')[0];
+        document.getElementById('paymentDate').value = today.toISOString().split('T')[0];
+        
+        loadAccounts();
+        loadTemplates();
+        loadCalendar();
+        loadForecast();
+        
+        // Запрос разрешения на уведомления
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    });
+    
+    function showToast(message, isError = false) {
+        const toast = document.createElement('div');
+        toast.className = 'toast-notification';
+        toast.style.background = isError ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #10b981, #059669)';
+        toast.innerHTML = `<i class="bi ${isError ? 'bi-exclamation-triangle-fill' : 'bi-check-circle-fill'} me-2"></i> ${message}`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+        
+        if (!isError && 'Notification' in window && Notification.permission === 'granted') {
+            new Notification('FinCore - Банк', { body: message, icon: '/favicon.svg' });
+        }
+    }
+    
+    function showTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(`tab-${tabName}`).classList.add('active');
+        event.target.classList.add('active');
+        if (tabName === 'templates') loadTemplates();
+        if (tabName === 'calendar') { loadCalendar(); loadForecast(); }
+    }
+    
+    function toggleSelectAll() {
+        const isChecked = document.getElementById('selectAllCheckbox').checked;
+        document.querySelectorAll('.transaction-checkbox').forEach(cb => {
+            cb.checked = isChecked;
+            if (isChecked) selectedTransactions.add(cb.value);
+            else selectedTransactions.delete(cb.value);
         });
-        
-        function showTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById(`tab-${tabName}`).classList.add('active');
-            event.target.classList.add('active');
-            if (tabName === 'templates') loadTemplates();
-            if (tabName === 'calendar') loadCalendar();
-        }
-        
-        async function loadAccounts() {
-            try {
-                const token = localStorage.getItem('token');
-                const res = await fetch('/api/bank/accounts', { headers: { 'Authorization': 'Bearer ' + token } });
-                const data = await res.json();
-                const accounts = data.accounts || data || [];
-                
-                document.getElementById('totalAccounts').textContent = accounts.length;
-                document.getElementById('statsGrid').style.display = 'grid';
-                
-                const select = document.getElementById('accountSelect');
-                select.innerHTML = '<option value="">-- Выберите счёт --</option>' + accounts.map(a => `<option value="${a.id}">${a.bank_name} - ${a.account_number}</option>`).join('');
-                
-                const accountsList = document.getElementById('accountsList');
-                if (accounts.length > 0) {
-                    accountsList.innerHTML = accounts.map(a => `
-                        <div class="account-item ${currentAccountId === a.id ? 'active' : ''}" onclick="selectAccount('${a.id}')">
-                            <div><div class="account-name">${a.bank_name}</div><div class="account-number">${a.account_number}</div></div>
-                            <div><i class="bi bi-chevron-right"></i></div>
-                        </div>
-                    `).join('');
-                    if (!currentAccountId && accounts[0]) selectAccount(accounts[0].id);
-                } else {
-                    accountsList.innerHTML = '<div class="empty-state"><i class="bi bi-inbox"></i><br>Нет подключённых счетов</div>';
-                }
-            } catch(err) { console.error(err); }
-        }
-        
-        function selectAccount(accountId) {
-            currentAccountId = accountId;
-            loadTransactions();
-            loadAccounts();
-        }
-        
-        async function connectBank() {
-            const bankName = document.getElementById('bankName').value;
-            const accountNumber = document.getElementById('accountNumber').value;
-            const bic = document.getElementById('bic').value;
-            const apiKey = document.getElementById('apiKey').value;
-            
-            if (!accountNumber || !bic) { alert('Заполните номер счёта и БИК'); return; }
-            
+    }
+    
+    function selectTransaction(id, checked) {
+        if (checked) selectedTransactions.add(id);
+        else selectedTransactions.delete(id);
+    }
+    
+    async function loadAccounts() {
+        try {
             const token = localStorage.getItem('token');
+            const res = await fetch('/api/bank/accounts', { headers: { 'Authorization': 'Bearer ' + token } });
+            const data = await res.json();
+            const accounts = data.accounts || data || [];
+            
+            document.getElementById('totalAccounts').textContent = accounts.length;
+            document.getElementById('statsGrid').style.display = 'grid';
+            
+            const select = document.getElementById('accountSelect');
+            select.innerHTML = '<option value="">-- Выберите счёт --</option>' + accounts.map(a => `<option value="${a.id}">${a.bank_name} - ${a.account_number}</option>`).join('');
+            
+            const accountsList = document.getElementById('accountsList');
+            if (accounts.length > 0) {
+                accountsList.innerHTML = accounts.map(a => `
+                    <div class="account-item ${currentAccountId === a.id ? 'active' : ''}" onclick="selectAccount('${a.id}')">
+                        <div><div class="account-name">${a.bank_name}</div><div class="account-number">${a.account_number}</div></div>
+                        <div><i class="bi bi-chevron-right"></i></div>
+                    </div>
+                `).join('');
+                if (!currentAccountId && accounts[0]) selectAccount(accounts[0].id);
+            } else {
+                accountsList.innerHTML = '<div class="empty-state"><i class="bi bi-inbox"></i><br>Нет подключённых счетов</div>';
+            }
+        } catch(err) { console.error(err); }
+    }
+    
+    function selectAccount(accountId) {
+        currentAccountId = accountId;
+        loadTransactions();
+        loadAccounts();
+        showToast(`Выбран счёт`, false);
+    }
+    
+    async function connectBank() {
+        const bankName = document.getElementById('bankName').value;
+        const accountNumber = document.getElementById('accountNumber').value;
+        const bic = document.getElementById('bic').value;
+        const initialBalance = parseFloat(document.getElementById('initialBalance').value) || 0;
+        
+        if (!accountNumber || !bic) { showToast('Заполните номер счёта и БИК', true); return; }
+        
+        const token = localStorage.getItem('token');
+        try {
             const res = await fetch('/api/bank/connect', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify({ bank_name: bankName, account_number: accountNumber, bic, api_key: apiKey })
+                body: JSON.stringify({ bank_name: bankName, account_number: accountNumber, bic, initial_balance: initialBalance })
             });
             const data = await res.json();
-            alert(data.message || 'Счёт успешно подключён');
+            showToast(data.message || 'Счёт успешно подключён', !data.success);
             document.getElementById('accountNumber').value = '';
             document.getElementById('bic').value = '';
-            document.getElementById('apiKey').value = '';
+            document.getElementById('initialBalance').value = '';
             await loadAccounts();
-        }
+        } catch(err) { showToast('Ошибка подключения', true); }
+    }
+    
+    async function loadTransactions() {
+        if (!currentAccountId) return;
+        const accountId = document.getElementById('accountSelect').value || currentAccountId;
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        let url = `/api/bank/statements?account_id=${accountId}`;
+        if (startDate) url += `&start_date=${startDate}`;
+        if (endDate) url += `&end_date=${endDate}`;
         
-        async function loadTransactions() {
-            if (!currentAccountId) return;
-            const accountId = document.getElementById('accountSelect').value || currentAccountId;
-            const startDate = document.getElementById('startDate').value;
-            const endDate = document.getElementById('endDate').value;
-            let url = `/api/bank/statements?account_id=${accountId}`;
-            if (startDate) url += `&start_date=${startDate}`;
-            if (endDate) url += `&end_date=${endDate}`;
-            
-            const token = localStorage.getItem('token');
+        const token = localStorage.getItem('token');
+        try {
             const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
             const data = await res.json();
             const transactions = data.transactions || data || [];
             const tbody = document.getElementById('transactionsList');
             
             if (!transactions.length) {
-                tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><i class="bi bi-inbox"></i><br>Нет транзакций</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="bi bi-inbox"></i><br>Нет транзакций</td></tr>';
                 return;
             }
             
             let totalIncome = 0, totalExpense = 0;
+            selectedTransactions.clear();
+            document.getElementById('selectAllCheckbox').checked = false;
+            
             tbody.innerHTML = transactions.map(t => {
                 const amount = t.amount || 0;
                 if (amount > 0) totalIncome += amount;
                 else totalExpense += Math.abs(amount);
                 return `
                     <tr>
+                        <td><input type="checkbox" class="transaction-checkbox" value="${t.id}" onchange="selectTransaction('${t.id}', this.checked)"></td>
                         <td>${t.date || t.operation_date || '-'}</td>
                         <td class="${amount > 0 ? 'transaction-positive' : 'transaction-negative'}">${amount > 0 ? '+' : ''}${amount.toLocaleString()} ₽</td>
                         <td>${t.counterparty || t.counterparty_name || '-'}</td>
                         <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis;">${t.purpose || t.description || '-'}</td>
                         <td><span class="badge ${t.is_matched ? 'badge-matched' : 'badge-pending'}">${t.is_matched ? 'Сопоставлено' : 'Ожидает'}</span></td>
-                        <td><button class="btn btn-outline btn-sm" onclick="matchTransaction('${t.id}')"><i class="bi bi-magic"></i></button></td>
+                        <td>${t.reconciled_with_act ? '<span class="badge badge-success">Сверено</span>' : '<span class="badge badge-warning">Не сверено</span>'}</td>
+                        <td><button class="btn btn-outline btn-sm" onclick="reconcileWithAct('${t.id}')"><i class="bi bi-check2"></i></button></td>
                     </tr>
                 `;
             }).join('');
             
             document.getElementById('totalIncome').innerHTML = totalIncome.toLocaleString() + ' ₽';
             document.getElementById('totalExpense').innerHTML = totalExpense.toLocaleString() + ' ₽';
-            document.getElementById('totalBalance').innerHTML = (totalIncome - totalExpense).toLocaleString() + ' ₽';
-        }
-        
-        async function syncTransactions() {
-            if (!currentAccountId) { alert('Выберите счёт для синхронизации'); return; }
-            const token = localStorage.getItem('token');
+            
+            const currentBalance = await getCurrentBalance();
+            document.getElementById('totalBalance').innerHTML = currentBalance.toLocaleString() + ' ₽';
+            
+        } catch(err) { console.error(err); }
+    }
+    
+    async function getCurrentBalance() {
+        if (!currentAccountId) return 0;
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`/api/bank/accounts/${currentAccountId}/balance`, { headers: { 'Authorization': 'Bearer ' + token } });
+            const data = await res.json();
+            return data.balance || 0;
+        } catch(err) { return 0; }
+    }
+    
+    async function syncTransactions() {
+        if (!currentAccountId) { showToast('Выберите счёт для синхронизации', true); return; }
+        const token = localStorage.getItem('token');
+        try {
             const res = await fetch(`/api/bank/sync/${currentAccountId}`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
             const data = await res.json();
-            alert(data.message || 'Синхронизация завершена');
+            showToast(data.message || 'Синхронизация завершена', !data.success);
             await loadTransactions();
-        }
-        
-        async function matchTransactions() {
-            if (!currentAccountId) { alert('Выберите счёт'); return; }
-            const token = localStorage.getItem('token');
+        } catch(err) { showToast('Ошибка синхронизации', true); }
+    }
+    
+    async function massReconcile() {
+        if (!currentAccountId) { showToast('Выберите счёт', true); return; }
+        const token = localStorage.getItem('token');
+        try {
             const res = await fetch(`/api/bank/match/${currentAccountId}`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
             const data = await res.json();
-            alert(data.message || 'Сопоставление выполнено');
+            showToast(data.message || 'Массовая сверка выполнена', !data.success);
             await loadTransactions();
-        }
+        } catch(err) { showToast('Ошибка сверки', true); }
+    }
+    
+    async function reconcileWithAct(transactionId) {
+        showToast('🔄 Сверка с актами...', false);
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`/api/bank/reconcile/${transactionId}`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
+            const data = await res.json();
+            if (data.success && data.act_found) {
+                showToast(`✅ Сверено с актом №${data.act_id?.slice(0,8)}`, false);
+            } else if (data.success && !data.act_found) {
+                showToast(`⚠️ Акт не найден, создан новый`, false);
+            } else {
+                showToast(`❌ ${data.error || 'Ошибка сверки'}`, true);
+            }
+            await loadTransactions();
+        } catch(err) { showToast('Ошибка', true); }
+    }
+    
+    async function massDeleteSelected() {
+        if (selectedTransactions.size === 0) { showToast('Выберите транзакции для удаления', true); return; }
+        if (!confirm(`Удалить ${selectedTransactions.size} транзакций?`)) return;
         
-        function matchTransaction(id) { alert('Сопоставление транзакции с проводкой'); }
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch('/api/bank/transactions/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ transaction_ids: Array.from(selectedTransactions) })
+            });
+            const data = await res.json();
+            showToast(data.message || `${data.deleted || 0} транзакций удалено`, !data.success);
+            await loadTransactions();
+        } catch(err) { showToast('Ошибка удаления', true); }
+    }
+    
+    async function massCreateActsFromSelected() {
+        if (selectedTransactions.size === 0) { showToast('Выберите транзакции для создания актов', true); return; }
+        if (!confirm(`Создать акты сверки для ${selectedTransactions.size} транзакций?`)) return;
         
-        function importExcel() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.xlsx, .xls, .csv';
-            input.onchange = async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('account_id', currentAccountId || '');
-                const token = localStorage.getItem('token');
-                try {
-                    const res = await fetch('/api/import/bank-statement', {
-                        method: 'POST',
-                        headers: { 'Authorization': 'Bearer ' + token },
-                        body: formData
-                    });
-                    const data = await res.json();
-                    alert(data.message || `✅ Импортировано ${data.imported || 0} транзакций`);
-                    loadTransactions();
-                } catch(err) { alert('❌ Ошибка импорта'); }
-            };
-            input.click();
-        }
-        
-        async function exportTransactions() {
-            if (!currentAccountId) { alert('Выберите счёт'); return; }
-            const startDate = document.getElementById('startDate').value;
-            const endDate = document.getElementById('endDate').value;
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch('/api/bank/create-acts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ transaction_ids: Array.from(selectedTransactions) })
+            });
+            const data = await res.json();
+            showToast(data.message || `Создано актов: ${data.created}`, !data.success);
+            await loadTransactions();
+        } catch(err) { showToast('Ошибка создания актов', true); }
+    }
+    
+    function importExcel() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.xlsx, .xls, .csv';
+        input.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('account_id', currentAccountId || '');
             const token = localStorage.getItem('token');
-            window.open(`/api/bank/statements/export?account_id=${currentAccountId}&start_date=${startDate}&end_date=${endDate}&token=${encodeURIComponent(token)}`, '_blank');
-        }
-        
-        function saveTemplate() {
-            const name = document.getElementById('templateName').value;
-            const counterparty = document.getElementById('templateCounterparty').value;
-            const amount = document.getElementById('templateAmount').value;
-            if (!name || !counterparty) { alert('Заполните название и контрагента'); return; }
-            templates.push({ name, counterparty, amount: parseFloat(amount) || 0 });
-            localStorage.setItem('bank_templates', JSON.stringify(templates));
-            alert('Шаблон сохранён');
-            document.getElementById('templateName').value = '';
-            document.getElementById('templateCounterparty').value = '';
-            document.getElementById('templateAmount').value = '';
-            loadTemplates();
-        }
-        
-        function loadTemplates() {
-            const saved = localStorage.getItem('bank_templates');
-            templates = saved ? JSON.parse(saved) : [];
-            const container = document.getElementById('templatesList');
-            if (!templates.length) { container.innerHTML = '<div class="empty-state"><i class="bi bi-inbox"></i><br>Нет сохранённых шаблонов</div>'; return; }
-            container.innerHTML = templates.map((t, i) => `
-                <div class="template-item">
-                    <div><strong>${t.name}</strong><br><small>${t.counterparty}</small></div>
-                    <div>${t.amount.toLocaleString()} ₽</div>
-                    <div><button class="btn btn-outline btn-sm" onclick="useTemplate(${i})"><i class="bi bi-send"></i> Использовать</button></div>
+            try {
+                const res = await fetch('/api/import/bank-statement', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
+                });
+                const data = await res.json();
+                showToast(data.message || `✅ Импортировано ${data.imported || 0} транзакций`, !data.success);
+                loadTransactions();
+                loadForecast();
+            } catch(err) { showToast('❌ Ошибка импорта', true); }
+        };
+        input.click();
+    }
+    
+    async function exportTransactions() {
+        if (!currentAccountId) { showToast('Выберите счёт', true); return; }
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        const token = localStorage.getItem('token');
+        window.open(`/api/bank/statements/export?account_id=${currentAccountId}&start_date=${startDate}&end_date=${endDate}&token=${encodeURIComponent(token)}`, '_blank');
+    }
+    
+    function saveTemplate() {
+        const name = document.getElementById('templateName').value;
+        const counterparty = document.getElementById('templateCounterparty').value;
+        const amount = document.getElementById('templateAmount').value;
+        if (!name || !counterparty) { showToast('Заполните название и контрагента', true); return; }
+        templates.push({ name, counterparty, amount: parseFloat(amount) || 0 });
+        localStorage.setItem('bank_templates', JSON.stringify(templates));
+        showToast('Шаблон сохранён', false);
+        document.getElementById('templateName').value = '';
+        document.getElementById('templateCounterparty').value = '';
+        document.getElementById('templateAmount').value = '';
+        loadTemplates();
+    }
+    
+    function loadTemplates() {
+        const saved = localStorage.getItem('bank_templates');
+        templates = saved ? JSON.parse(saved) : [];
+        const container = document.getElementById('templatesList');
+        if (!templates.length) { container.innerHTML = '<div class="empty-state"><i class="bi bi-inbox"></i><br>Нет сохранённых шаблонов</div>'; return; }
+        container.innerHTML = templates.map((t, i) => `
+            <div class="template-item">
+                <div><strong>${t.name}</strong><br><small>${t.counterparty}</small></div>
+                <div>${t.amount.toLocaleString()} ₽</div>
+                <div>
+                    <button class="btn btn-outline btn-sm me-2" onclick="useTemplate(${i})"><i class="bi bi-send"></i> Использовать</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteTemplate(${i})"><i class="bi bi-trash"></i></button>
                 </div>
-            `).join('');
-        }
+            </div>
+        `).join('');
+    }
+    
+    function deleteTemplate(index) {
+        templates.splice(index, 1);
+        localStorage.setItem('bank_templates', JSON.stringify(templates));
+        loadTemplates();
+        showToast('Шаблон удалён', false);
+    }
+    
+    function useTemplate(index) {
+        const t = templates[index];
+        showToast(`Шаблон "${t.name}" применён: ${t.amount.toLocaleString()} ₽`, false);
+    }
+    
+    function addPayment() {
+        const date = document.getElementById('paymentDate').value;
+        const counterparty = document.getElementById('paymentCounterparty').value;
+        const amount = parseFloat(document.getElementById('paymentAmount').value);
+        const type = document.getElementById('paymentType').value;
+        const purpose = document.getElementById('paymentPurpose').value;
         
-        function useTemplate(index) {
-            const t = templates[index];
-            alert(`Шаблон "${t.name}" применён\nСумма: ${t.amount.toLocaleString()} ₽\nКонтрагент: ${t.counterparty}`);
-        }
+        if (!date || !counterparty || !amount) { showToast('Заполните дату, контрагента и сумму', true); return; }
         
-        function addPayment() {
-            const date = document.getElementById('paymentDate').value;
-            const counterparty = document.getElementById('paymentCounterparty').value;
-            const amount = document.getElementById('paymentAmount').value;
-            if (!date || !counterparty) { alert('Заполните дату и контрагента'); return; }
-            payments.push({ date, counterparty, amount: parseFloat(amount) || 0 });
-            localStorage.setItem('bank_payments', JSON.stringify(payments));
-            alert('Платёж добавлен в календарь');
-            document.getElementById('paymentCounterparty').value = '';
-            document.getElementById('paymentAmount').value = '';
-            loadCalendar();
-        }
+        payments.push({ date, counterparty, amount, type, purpose, status: 'pending', id: Date.now() });
+        localStorage.setItem('bank_payments', JSON.stringify(payments));
+        showToast(`Платёж добавлен в календарь`, false);
         
-        function loadCalendar() {
-            const saved = localStorage.getItem('bank_payments');
-            payments = saved ? JSON.parse(saved) : [];
-            const container = document.getElementById('calendarList');
-            if (!payments.length) { container.innerHTML = '<div class="empty-state"><i class="bi bi-inbox"></i><br>Нет запланированных платежей</div>'; return; }
-            container.innerHTML = payments.sort((a,b) => new Date(a.date) - new Date(b.date)).map(p => `
-                <div class="payment-item">
-                    <div><strong>${p.date}</strong><br><small>${p.counterparty}</small></div>
-                    <div>${p.amount.toLocaleString()} ₽</div>
-                    <div><button class="btn btn-success btn-sm" onclick="executePayment('${p.date}')"><i class="bi bi-check"></i> Выполнить</button></div>
+        document.getElementById('paymentCounterparty').value = '';
+        document.getElementById('paymentAmount').value = '';
+        document.getElementById('paymentPurpose').value = '';
+        
+        loadCalendar();
+        loadForecast();
+    }
+    
+    function loadCalendar() {
+        const saved = localStorage.getItem('bank_payments');
+        payments = saved ? JSON.parse(saved) : [];
+        const container = document.getElementById('calendarList');
+        if (!payments.length) { container.innerHTML = '<div class="empty-state"><i class="bi bi-inbox"></i><br>Нет запланированных платежей</div>'; return; }
+        container.innerHTML = payments.sort((a,b) => new Date(a.date) - new Date(b.date)).map(p => `
+            <div class="payment-item">
+                <div><strong>${p.date}</strong><br><small>${p.counterparty}</small><br><small class="text-muted">${p.purpose || '-'}</small></div>
+                <div class="${p.type === 'income' ? 'transaction-positive' : 'transaction-negative'}">${p.type === 'income' ? '+' : '-'}${p.amount.toLocaleString()} ₽</div>
+                <div>
+                    <button class="btn btn-success btn-sm me-2" onclick="executePayment(${p.id})"><i class="bi bi-check"></i> Выполнить</button>
+                    <button class="btn btn-danger btn-sm" onclick="deletePayment(${p.id})"><i class="bi bi-trash"></i></button>
                 </div>
-            `).join('');
+            </div>
+        `).join('');
+    }
+    
+    function deletePayment(id) {
+        payments = payments.filter(p => p.id !== id);
+        localStorage.setItem('bank_payments', JSON.stringify(payments));
+        loadCalendar();
+        loadForecast();
+        showToast('Платёж удалён', false);
+    }
+    
+    async function executePayment(id) {
+        const payment = payments.find(p => p.id === id);
+        if (!payment) return;
+        
+        if (!currentAccountId) { showToast('Выберите счёт для выполнения платежа', true); return; }
+        
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch('/api/bank/execute-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({
+                    account_id: currentAccountId,
+                    counterparty: payment.counterparty,
+                    amount: payment.amount,
+                    date: payment.date,
+                    purpose: payment.purpose,
+                    type: payment.type
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast(`✅ Платёж выполнен: ${payment.amount.toLocaleString()} ₽`, false);
+                deletePayment(id);
+                await loadTransactions();
+                await loadForecast();
+            } else {
+                showToast(`❌ ${data.error || 'Ошибка выполнения'}`, true);
+            }
+        } catch(err) { showToast('Ошибка', true); }
+    }
+    
+    async function loadForecast() {
+        const token = localStorage.getItem('token');
+        const payments_saved = localStorage.getItem('bank_payments');
+        const allPayments = payments_saved ? JSON.parse(payments_saved) : [];
+        
+        let currentBalance = await getCurrentBalance();
+        const today = new Date();
+        const forecasts = [];
+        let hasWarning = false;
+        let minBalance = currentBalance;
+        
+        for (let i = 0; i < 28; i++) {
+            const date = new Date(today);
+            date.setDate(today.getDate() + i);
+            const dateStr = date.toISOString().split('T')[0];
+            
+            const dailyIncome = allPayments.filter(p => p.date === dateStr && p.type === 'income').reduce((s, p) => s + p.amount, 0);
+            const dailyExpense = allPayments.filter(p => p.date === dateStr && p.type === 'expense').reduce((s, p) => s + p.amount, 0);
+            
+            currentBalance += dailyIncome;
+            currentBalance -= dailyExpense;
+            
+            forecasts.push({ date: dateStr, income: dailyIncome, expense: dailyExpense, balance: currentBalance });
+            if (currentBalance < minBalance) minBalance = currentBalance;
+            if (currentBalance < 0) hasWarning = true;
         }
         
-        function executePayment(date) { alert(`Платёж от ${date} выполнен!`); }
-    </script>
+        const container = document.getElementById('forecastList');
+        container.innerHTML = forecasts.map(f => `
+            <div class="forecast-row ${f.balance < 0 ? 'forecast-warning' : 'forecast-safe'}">
+                <div>${f.date}</div>
+                <div class="transaction-positive">${f.income > 0 ? '+' : ''}${f.income.toLocaleString()} ₽</div>
+                <div class="transaction-negative">${f.expense > 0 ? '-' : ''}${f.expense.toLocaleString()} ₽</div>
+                <div><strong>${f.balance.toLocaleString()} ₽</strong></div>
+            </div>
+        `).join('');
+        
+        const warningDiv = document.getElementById('cashWarning');
+        if (hasWarning || minBalance < currentBalance * 0.2) {
+            warningDiv.style.display = 'block';
+            document.getElementById('cashWarningText').innerHTML = `Минимальный остаток: ${minBalance.toLocaleString()} ₽. Рекомендуем сократить расходы или пополнить счёт.`;
+        } else {
+            warningDiv.style.display = 'none';
+        }
+    }
+    
+    function exportForecast() {
+        const forecasts = [];
+        const payments_saved = localStorage.getItem('bank_payments');
+        const allPayments = payments_saved ? JSON.parse(payments_saved) : [];
+        
+        getCurrentBalance().then(currentBalance => {
+            let balance = currentBalance;
+            const today = new Date();
+            let csv = 'Дата,Приход,Расход,Прогноз остатка\n';
+            
+            for (let i = 0; i < 28; i++) {
+                const date = new Date(today);
+                date.setDate(today.getDate() + i);
+                const dateStr = date.toISOString().split('T')[0];
+                const income = allPayments.filter(p => p.date === dateStr && p.type === 'income').reduce((s, p) => s + p.amount, 0);
+                const expense = allPayments.filter(p => p.date === dateStr && p.type === 'expense').reduce((s, p) => s + p.amount, 0);
+                balance += income - expense;
+                csv += `${dateStr},${income},${expense},${balance}\n`;
+            }
+            
+            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `forecast_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
+            showToast('📊 Прогноз экспортирован', false);
+        });
+    }
+    
+    async function loadReconciliationData() {
+        const startDate = document.getElementById('recStartDate').value;
+        const endDate = document.getElementById('recEndDate').value;
+        
+        if (!startDate || !endDate) { showToast('Выберите период', true); return; }
+        
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`/api/bank/reconciliation?start_date=${startDate}&end_date=${endDate}`, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const data = await res.json();
+            
+            const container = document.getElementById('reconciliationResult');
+            if (!data.transactions || data.transactions.length === 0) {
+                container.innerHTML = '<div class="empty-state"><i class="bi bi-inbox"></i><br>Нет операций за выбранный период</div>';
+                return;
+            }
+            
+            let matched = 0, unmatched = 0, totalAmount = 0;
+            data.transactions.forEach(t => {
+                if (t.reconciled_with_act) matched++;
+                else unmatched++;
+                totalAmount += Math.abs(t.amount);
+            });
+            
+            container.innerHTML = `
+                <div class="stats-grid" style="margin-bottom: 20px;">
+                    <div class="stat-card"><div class="stat-value">${data.transactions.length}</div><div class="stat-label">Всего операций</div></div>
+                    <div class="stat-card"><div class="stat-value" style="color: #10b981;">${matched}</div><div class="stat-label">Сверено</div></div>
+                    <div class="stat-card"><div class="stat-value" style="color: #f59e0b;">${unmatched}</div><div class="stat-label">Не сверено</div></div>
+                    <div class="stat-card"><div class="stat-value">${totalAmount.toLocaleString()} ₽</div><div class="stat-label">Общая сумма</div></div>
+                </div>
+                <div class="table-container">
+                    <table class="table">
+                        <thead><tr><th>Дата</th><th>Сумма</th><th>Контрагент</th><th>Статус сверки</th><th>Акт сверки</th></tr></thead>
+                        <tbody>
+                            ${data.transactions.map(t => `
+                                <tr>
+                                    <td>${t.date}</td>
+                                    <td class="${t.amount > 0 ? 'transaction-positive' : 'transaction-negative'}">${t.amount > 0 ? '+' : ''}${t.amount.toLocaleString()} ₽</td>
+                                    <td>${t.counterparty || '-'}</td>
+                                    <td><span class="badge ${t.reconciled_with_act ? 'badge-matched' : 'badge-pending'}">${t.reconciled_with_act ? 'Сверено' : 'Не сверено'}</span></td>
+                                    <td>${t.act_id ? `<code>${t.act_id.slice(0,8)}</code>` : '-'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-3 text-end">
+                    <button class="btn btn-primary" onclick="massReconcileUnmatched()"><i class="bi bi-magic"></i> Сверить все несверенные</button>
+                </div>
+            `;
+        } catch(err) { console.error(err); showToast('Ошибка загрузки данных', true); }
+    }
+    
+    async function massReconcileUnmatched() {
+        const startDate = document.getElementById('recStartDate').value;
+        const endDate = document.getElementById('recEndDate').value;
+        const token = localStorage.getItem('token');
+        
+        try {
+            const res = await fetch(`/api/bank/reconcile-all?start_date=${startDate}&end_date=${endDate}`, {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const data = await res.json();
+            showToast(data.message || `Сверено ${data.reconciled || 0} операций`, !data.success);
+            loadReconciliationData();
+            loadTransactions();
+        } catch(err) { showToast('Ошибка', true); }
+    }
+</script>
 </body>
 </html>

@@ -240,6 +240,92 @@ if err != nil {
 } else {
     log.Println("✅ Таблица month_closing готова")
 }
+
+// ========== СОЗДАНИЕ ТАБЛИЦЫ PAYROLL_HISTORY ==========
+_, err = database.Pool.Exec(ctx, `
+    CREATE TABLE IF NOT EXISTS payroll_history (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        tenant_id UUID NOT NULL,
+        employee_id UUID,
+        employee_name VARCHAR(255) NOT NULL,
+        month INTEGER NOT NULL,
+        year INTEGER NOT NULL,
+        gross DECIMAL(15,2) DEFAULT 0,
+        tax DECIMAL(15,2) DEFAULT 0,
+        net DECIMAL(15,2) DEFAULT 0,
+        status VARCHAR(50) DEFAULT 'accrued',
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+    )
+`)
+if err != nil {
+    log.Printf("⚠️ Ошибка создания payroll_history: %v", err)
+} else {
+    log.Println("✅ Таблица payroll_history готова")
+}
+
+// Создаём индексы
+_, err = database.Pool.Exec(ctx, `
+    CREATE INDEX IF NOT EXISTS idx_payroll_history_tenant ON payroll_history(tenant_id);
+    CREATE INDEX IF NOT EXISTS idx_payroll_history_employee ON payroll_history(employee_id);
+    CREATE INDEX IF NOT EXISTS idx_payroll_history_period ON payroll_history(year, month);
+`)
+if err != nil {
+    log.Printf("⚠️ Ошибка создания индексов payroll_history: %v", err)
+}
+
+// ========== СОЗДАНИЕ ТАБЛИЦЫ PAYROLL ==========
+_, err = database.Pool.Exec(ctx, `
+    CREATE TABLE IF NOT EXISTS payroll (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        tenant_id UUID NOT NULL,
+        employee_id UUID NOT NULL,
+        period_month INTEGER NOT NULL,
+        period_year INTEGER NOT NULL,
+        salary DECIMAL(15,2) DEFAULT 0,
+        tax DECIMAL(15,2) DEFAULT 0,
+        net_amount DECIMAL(15,2) DEFAULT 0,
+        status VARCHAR(50) DEFAULT 'calculated',
+        paid_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW(),
+        CONSTRAINT unique_employee_period UNIQUE(employee_id, period_month, period_year)
+    )
+`)
+if err != nil {
+    log.Printf("⚠️ Ошибка создания payroll: %v", err)
+} else {
+    log.Println("✅ Таблица payroll готова")
+}
+
+// ========== СОЗДАНИЕ ТАБЛИЦЫ АРХИВА PAYSLIP ==========
+_, err = database.Pool.Exec(ctx, `
+    CREATE TABLE IF NOT EXISTS payslip_archive (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        tenant_id UUID NOT NULL,
+        employee_id UUID,
+        employee_name VARCHAR(255) NOT NULL,
+        position VARCHAR(255),
+        month INTEGER NOT NULL,
+        year INTEGER NOT NULL,
+        content TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+    )
+`)
+if err != nil {
+    log.Printf("⚠️ Ошибка создания payslip_archive: %v", err)
+} else {
+    log.Println("✅ Таблица payslip_archive готова")
+}
+
+// Создаём индексы
+_, err = database.Pool.Exec(ctx, `
+    CREATE INDEX IF NOT EXISTS idx_payslip_archive_tenant ON payslip_archive(tenant_id);
+    CREATE INDEX IF NOT EXISTS idx_payslip_archive_period ON payslip_archive(year, month);
+`)
+if err != nil {
+    log.Printf("⚠️ Ошибка создания индексов payslip_archive: %v", err)
+}
     
     handlers.InitVPNWithDB(database.Pool)
     // Инициализация Stealth VPN сервиса
@@ -1290,7 +1376,7 @@ r.GET("/reconciliation-acts", middleware.AuthMiddleware(cfg), middleware.Require
         "title": "Акты сверки | FinCore",
     })
 })
-   // ========== РАСШИРЕННЫЙ ЗУП ==========
+  // ========== РАСШИРЕННЫЙ ЗУП ==========
 payrollAPI := r.Group("/api/payroll")
 payrollAPI.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("payroll"))
 {
@@ -1300,10 +1386,25 @@ payrollAPI.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("p
     payrollAPI.DELETE("/employees/:id", handlers.DeleteEmployeeFromPayroll) 
     payrollAPI.POST("/calculate", handlers.CalculatePayroll)
     payrollAPI.GET("/history", handlers.GetPayrollHistory)
+    
+    // ✅ ДОБАВИТЬ ЭТИ ТРИ СТРОКИ:
+    payrollAPI.POST("/history", handlers.CreatePayrollHistory)       // создание записи в истории
+    payrollAPI.PUT("/history/:id", handlers.UpdatePayrollHistory)    // обновление (статус paid)
+    payrollAPI.DELETE("/history/:id", handlers.DeletePayrollHistory) // удаление записи
+
+   payrollAPI.DELETE("/history/clear-all", handlers.ClearAllPayrollHistory)
+
+// В секции payrollAPI добавьте:
+payrollAPI.POST("/archive", handlers.SavePayslipToArchive)           // сохранение в архив
+payrollAPI.GET("/archive", handlers.GetPayslipArchive)               // получение списка
+payrollAPI.GET("/archive/:id", handlers.GetPayslipContent)           // получение содержимого
+payrollAPI.DELETE("/archive/:id", handlers.DeletePayslipFromArchive) // удаление документа
+payrollAPI.DELETE("/archive/clear-all", handlers.ClearPayslipArchive) // очистка всего архива
+payrollAPI.GET("/benchmark", handlers.GetBenchmarkData)
+    
     payrollAPI.POST("/pay", handlers.ProcessPayrollPayment)
     payrollAPI.POST("/tax-report", handlers.GenerateTaxReport)
     
-    // НОВЫЕ МАРШРУТЫ
     payrollAPI.POST("/sick-leave", handlers.CalculateSickLeave)
     payrollAPI.POST("/vacation", handlers.CalculateVacation)
     payrollAPI.POST("/alimony", handlers.CalculateAlimony)

@@ -1346,15 +1346,19 @@
         .total-row { padding: 5px 0; font-size: 14px; }
         .amount { font-weight: bold; color: #667eea; font-size: 16px; }
         
-        .signatures {
-            display: flex;
-            justify-content: space-between;
+              .signatures {
+            width: 100%;
             margin-top: 60px;
-            gap: 60px;
+            overflow: hidden;
         }
         .signature-col {
-            flex: 1;
+            float: left;
+            width: 45%;
             text-align: center;
+            margin-right: 10%;
+        }
+        .signature-col:last-child {
+            margin-right: 0;
         }
         .signature-line {
             border-top: 1px solid #000;
@@ -1366,9 +1370,9 @@
         .signer-position { font-size: 11px; color: #666; margin: 3px 0; }
         .signature-date { font-size: 10px; color: #999; margin-top: 5px; }
         .stamp { margin-top: 20px; }
-        .stamp-img { max-width: 70px; }
+        .stamp-img { max-width: 70px; max-height: 70px; }
         .stamp-placeholder { width: 60px; height: 60px; border: 1px solid #ccc; border-radius: 50%; margin: 0 auto; }
-        .footer { margin-top: 50px; text-align: center; font-size: 9px; color: #999; border-top: 1px solid #eee; padding-top: 15px; }
+        .clearfix { clear: both; }
         @page { size: A4; margin: 2cm; }
     </style>
 </head>

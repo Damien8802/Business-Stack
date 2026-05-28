@@ -561,36 +561,55 @@
     let itemsPerPage = 20;
     let filteredEntries = [];
 
-    async function loadEntries() {
-        try {
-            const response = await fetch('/api/journal-entries', {
-                headers: { 'Authorization': 'Bearer ' + token }
+   async function loadEntries() {
+    try {
+        const response = await fetch('/api/journal-entries', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await response.json();
+        allEntries = data.entries || data;
+        filteredEntries = [...allEntries];
+        
+        updateStats();
+        applyFilters();
+        
+        const updateTime = new Date().toLocaleString('ru-RU');
+        document.getElementById('lastUpdate').innerHTML = `<i class="far fa-clock"></i> ${updateTime}`;
+        
+        // ✅ Показываем уведомление об успешном обновлении
+        showNotification(`✅ Журнал обновлён! Загружено ${allEntries.length} проводок`, 'success');
+        
+        // ✅ Push-уведомление (если разрешено)
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('FinCore - Журнал обновлён', {
+                body: `Загружено ${allEntries.length} проводок`,
+                icon: '/favicon.svg',
+                silent: false
             });
-            const data = await response.json();
-            allEntries = data.entries || data;
-            filteredEntries = [...allEntries];
-            
-            updateStats();
-            applyFilters();
-            
-            document.getElementById('lastUpdate').innerHTML = `<i class="far fa-clock"></i> ${new Date().toLocaleString('ru-RU')}`;
-        } catch (error) {
-            console.error('Ошибка:', error);
-            document.getElementById('entriesTable').innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 60px; color: #ef4444;">❌ Ошибка загрузки<\/tr>';
         }
+        
+    } catch (error) {
+        console.error('Ошибка:', error);
+        document.getElementById('entriesTable').innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 60px; color: #ef4444;">❌ Ошибка загрузки</tr>';
+        showNotification('❌ Ошибка загрузки журнала', 'error');
     }
+}
 
-    function updateStats() {
-        let totalDebitSum = 0, totalCreditSum = 0;
-        for (let e of allEntries) {
-            totalDebitSum += e.debit_amount || 0;
-            totalCreditSum += e.credit_amount || 0;
-        }
-        document.getElementById('totalCount').innerText = allEntries.length;
-        document.getElementById('totalDebit').innerHTML = totalDebitSum.toLocaleString() + ' ₽';
-        document.getElementById('totalCredit').innerHTML = totalCreditSum.toLocaleString() + ' ₽';
-        document.getElementById('balance').innerHTML = (totalDebitSum - totalCreditSum).toLocaleString() + ' ₽';
+  function updateStats() {
+    let totalDebitSum = 0;
+    let totalCreditSum = 0;
+    
+    for (let e of allEntries) {
+        const amount = e.debit_amount || 0;
+        totalDebitSum += amount;   // сумма идёт в дебет
+        totalCreditSum += amount;  // сумма идёт в кредит (это было 0)
     }
+    
+    document.getElementById('totalCount').innerText = allEntries.length;
+    document.getElementById('totalDebit').innerHTML = totalDebitSum.toLocaleString() + ' ₽';
+    document.getElementById('totalCredit').innerHTML = totalCreditSum.toLocaleString() + ' ₽';
+    document.getElementById('balance').innerHTML = (totalDebitSum - totalCreditSum).toLocaleString() + ' ₽';
+}
 
     function applyFilters() {
         const dateFrom = document.getElementById('filterDateFrom').value;
@@ -1001,27 +1020,28 @@
                         <div class="subtitle">Полный реестр бухгалтерских проводок</div>
                         <div class="report-date">Дата формирования: ${reportDate} в ${reportTime}</div>
                     </div>
-                    <div class="stats-grid">
-                        <div class="stat-card-pdf">
-                            <div class="stat-icon">📄</div>
-                            <div class="stat-value">${totalCount}</div>
-                            <div class="stat-label">Всего проводок</div>
-                        </div>
-                        <div class="stat-card-pdf">
-                            <div class="stat-icon">📈</div>
-                            <div class="stat-value">${totalDebit}</div>
-                            <div class="stat-label">Оборот по дебету</div>
-                        </div>
-                        <div class="stat-card-pdf">
-                            <div class="stat-icon">📉</div>
-                            <div class="stat-value">${totalCredit}</div>
-                            <div class="stat-label">Оборот по кредиту</div>
-                        </div>
-                        <div class="stat-card-pdf">
-                            <div class="stat-icon">⚖️</div>
-                            <div class="stat-value">${balance}</div>
-                            <div class="stat-label">Сальдо</div>
-                        </div>
+                  <div class="stats-grid">
+    <div class="stat-card-pdf">
+        <div class="stat-icon">📄</div>
+        <div class="stat-value">${totalCount}</div>
+        <div class="stat-label">Всего проводок</div>
+    </div>
+    <div class="stat-card-pdf">
+        <div class="stat-icon">📈</div>
+        <div class="stat-value">${totalDebit}</div>
+        <div class="stat-label">Оборот по дебету</div>
+    </div>
+    <div class="stat-card-pdf">
+        <div class="stat-icon">📉</div>
+        <div class="stat-value">${totalCredit}</div>
+        <div class="stat-label">Оборот по кредиту</div>
+    </div>
+    <div class="stat-card-pdf">
+        <div class="stat-icon">⚖️</div>
+        <div class="stat-value">${balance}</div>
+        <div class="stat-label">Баланс</div>
+    </div>
+</div>
                     </div>
                     <div class="report-content">
                         <h3 style="margin-bottom: 15px;">📋 Список проводок</h3>
@@ -1071,11 +1091,60 @@
         setTimeout(() => toast.remove(), 3000);
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        document.getElementById('new_operation_date').value = new Date().toISOString().split('T')[0];
-        loadEntries();
-        setInterval(loadEntries, 60000);
-    });
+// ========== ФИКС: Пересчёт акта из проводок ==========
+async function recalcActFromTransactions(actId) {
+    showNotification('🔄 Пересчёт акта из проводок...', 'info');
+    
+    try {
+        const res = await fetch(`/api/reconciliation/acts/${actId}/recalc-from-transactions`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token,
+                'X-Tenant-ID': localStorage.getItem('tenant_id') || '11111111-1111-1111-1111-111111111111'
+            },
+            body: JSON.stringify({ recalc: true })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+            showNotification(`✅ Акт пересчитан! Дебет: ${data.total_debit} ₽, Кредит: ${data.total_credit} ₽`, 'success');
+            
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('Акт сверки обновлён', {
+                    body: `Дебет: ${data.total_debit} ₽ | Кредит: ${data.total_credit} ₽`,
+                    icon: '/favicon.svg'
+                });
+            }
+        } else {
+            showNotification('❌ Ошибка пересчёта: ' + (data.error || 'Неизвестная ошибка'), 'error');
+        }
+    } catch(e) {
+        console.error('Ошибка:', e);
+        showNotification('❌ Ошибка сети: ' + e.message, 'error');
+    }
+}
+
+// Запрос разрешения на push-уведомления при загрузке
+function requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+                console.log('✅ Уведомления разрешены');
+            }
+        });
+    }
+}
+
+   document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('new_operation_date').value = new Date().toISOString().split('T')[0];
+    loadEntries();
+    setInterval(loadEntries, 60000);
+    
+    // ✅ Запрос разрешения на уведомления
+    requestNotificationPermission();
+});
 </script>
 </body>
 </html>

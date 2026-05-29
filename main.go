@@ -13,7 +13,8 @@ import (
     //"net"
     //"strconv"
      "os" 
-
+     
+     
     "github.com/gin-gonic/gin"
     "github.com/jackc/pgx/v5"  // ДОБАВЛЕНО ДЛЯ pgx.Rows
     "github.com/joho/godotenv"
@@ -676,6 +677,47 @@ journalAPI.POST("/entries/bulk", handlers.BulkCreateJournalEntries)
 journalAPI.POST("/entries/import", handlers.ImportJournalEntries)
 journalAPI.GET("/entries/export", handlers.ExportJournalEntries)
 }
+
+// ========== НАЛОГОВАЯ ОТЧЁТНОСТЬ API ==========
+taxAPI := r.Group("/api/tax")
+taxAPI.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("tax-reporting"))
+{
+    taxAPI.POST("/generate/usn", handlers.GenerateUSN)
+    taxAPI.POST("/generate/ndfl", handlers.GenerateNDFL)
+    taxAPI.POST("/generate/rsv", handlers.GenerateRSV)
+    taxAPI.POST("/generate/nds", handlers.GenerateNDS)
+    taxAPI.GET("/reports", handlers.GetTaxReports)
+    taxAPI.GET("/report/:id", handlers.GetTaxReportByID)
+    taxAPI.DELETE("/report/:id", handlers.DeleteTaxReport)
+    taxAPI.GET("/export/xml/:id", handlers.ExportTaxReportXML)
+    taxAPI.GET("/view/:id", handlers.ViewTaxReport)
+    taxAPI.POST("/send/:id", handlers.SendTaxReport)
+    taxAPI.POST("/create-tables", handlers.CreateTaxTables)
+    taxAPI.GET("/check/:id", handlers.CheckTaxReportStatus)
+    taxAPI.GET("/view-xml/:id", handlers.ViewXMLReport)
+    taxAPI.GET("/view-pretty/:id", handlers.ViewPrettyReport)
+    taxAPI.PUT("/report/:id", handlers.UpdateTaxReport)
+
+
+taxAPI.GET("/penalty/:id", handlers.CalculateReportPenalty)
+taxAPI.GET("/validate/:id", handlers.ValidateReport)
+taxAPI.POST("/clone/:id", handlers.CloneReport)
+taxAPI.GET("/compare", handlers.CompareReports)
+taxAPI.GET("/export-excel/:id", handlers.ExportToExcel)
+taxAPI.GET("/deadlines", handlers.GetDeadlineNotifications)
+}
+
+// ========== НАСТРОЙКИ ФНС ==========
+fnsAPI := r.Group("/api/fns")
+fnsAPI.Use(middleware.AuthMiddleware(cfg))
+{
+    fnsAPI.GET("/settings", handlers.GetFNSSettings)
+    fnsAPI.POST("/settings", handlers.SaveFNSSettings)
+    fnsAPI.GET("/report-status/:id", handlers.CheckTaxReportStatus)
+}
+
+r.GET("/api/tax/diagnose", middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handlers.DiagnoseTaxReports)
+
 
     r.GET("/marketplace", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("marketplace"), handlers.MarketplacePageHandler)
         // ========== НОВЫЕ РОУТЫ ==========
@@ -1477,20 +1519,6 @@ scrumAPI.Use(middleware.AuthMiddleware(cfg))
         emailAPI.GET("/templates", handlers.GetEmailTemplates)
         emailAPI.POST("/templates", handlers.CreateEmailTemplate)
     }
-// ========== НАЛОГОВАЯ ОТЧЁТНОСТЬ API ==========
-taxAPI := r.Group("/api/tax")
-taxAPI.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("tax-reporting"))
-{
-    taxAPI.POST("/generate/usn", handlers.GenerateUSN)
-    taxAPI.POST("/generate/ndfl", handlers.GenerateNDFL)
-    taxAPI.POST("/generate/rsv", handlers.GenerateRSV)      
-    taxAPI.POST("/generate/nds", handlers.GenerateNDS)  
-    taxAPI.GET("/reports", handlers.GetTaxReports)
-    taxAPI.GET("/export/xml/:id", handlers.ExportTaxReportXML)
-    taxAPI.GET("/view/:id", handlers.ViewTaxReport)      
-    taxAPI.POST("/send/:id", handlers.SendTaxReport)      
-    taxAPI.POST("/create-tables", handlers.CreateTaxTables)
-}
     // Страница email-маркетинга
     r.GET("/email-marketing", func(c *gin.Context) {
         c.HTML(http.StatusOK, "email_marketing.html", gin.H{
@@ -3209,6 +3237,7 @@ r.PUT("/api/orders/:id/remaining", middleware.AuthMiddleware(cfg), middleware.Ad
             "title": "Управленческий учёт | FinCore",
         })
     })
+
 
       r.NoRoute(func(c *gin.Context) {
         c.HTML(http.StatusNotFound, "404.html", gin.H{

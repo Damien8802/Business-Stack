@@ -1295,19 +1295,64 @@ responsesAPI.Use(middleware.AuthMiddleware(cfg))
         archiveGroup.DELETE("/api/trash/:id", handlers.DeleteFromTrashPermanently)
         archiveGroup.DELETE("/api/trash/clear", handlers.ClearTrashBin)
     }
-
-    // Банк-клиент
-    bankAPI := r.Group("/api/bank")
-    bankAPI.Use(middleware.AuthMiddleware(cfg))
-    {
-        bankAPI.GET("/accounts", handlers.GetBankAccounts)
-        bankAPI.POST("/connect", handlers.ConnectBankAccount)
-        bankAPI.POST("/sync/:id", handlers.SyncBankStatements)
-        bankAPI.POST("/match/:id", handlers.MatchTransactionsByAccount)
-        bankAPI.GET("/statements", handlers.GetBankStatementsByAccount)
-       // Экспорт выписок
-        bankAPI.GET("/statements/export", handlers.ExportBankStatementsToExcel)
-    }
+// ========== БАНК-КЛИЕНТ ==========
+bankAPI := r.Group("/api/bank")
+bankAPI.Use(middleware.AuthMiddleware(cfg))
+{
+    // Основные счета
+    bankAPI.GET("/accounts", handlers.GetBankAccounts)
+    bankAPI.POST("/connect", handlers.ConnectBankAccount)
+    bankAPI.POST("/sync/:id", handlers.SyncBankStatements)
+    bankAPI.POST("/match/:id", handlers.MatchTransactionsByAccount)
+    
+    // Выписки и транзакции
+    bankAPI.GET("/statements", handlers.GetBankStatementsByAccount)
+    bankAPI.GET("/statements/:id", handlers.GetBankStatementsByAccount)
+    bankAPI.GET("/statements/export", handlers.ExportBankStatementsToExcel)
+    bankAPI.POST("/transactions", handlers.AddTestTransaction)
+    bankAPI.DELETE("/transactions/:id", handlers.DeleteTransaction)
+    bankAPI.DELETE("/transactions/delete-all/:account_id", handlers.DeleteAllTransactions)
+    
+    // Импорт/экспорт
+    bankAPI.POST("/import-statement", handlers.ImportStatementHandler)
+    bankAPI.GET("/export-1c/:account_id", handlers.ExportTo1CFormat)
+    bankAPI.GET("/test-excel", handlers.GenerateValidExcelFile)
+    
+    // Категории
+    bankAPI.GET("/categories", handlers.GetPaymentCategories)
+    bankAPI.POST("/categories", handlers.CreatePaymentCategory)
+    bankAPI.DELETE("/categories/:id", handlers.DeletePaymentCategory)
+    
+    // Автоплатежи
+    bankAPI.GET("/recurring", handlers.GetRecurringPayments)
+    bankAPI.POST("/recurring", handlers.CreateRecurringPayment)
+    bankAPI.DELETE("/recurring/:id", handlers.DeleteRecurringPayment)
+    
+    // API банка
+    bankAPI.POST("/connect-api", handlers.ConnectBankAPI)
+    bankAPI.POST("/sync-api", handlers.SyncViaBankAPI)
+    
+    // Статусы и категоризация
+    bankAPI.PUT("/payments/:id/status", handlers.UpdatePaymentStatus)
+    bankAPI.POST("/payments/auto-categorize", handlers.AutoCategorizePayments)
+    
+    // СВЕРКА (без дубликатов)
+    bankAPI.GET("/reconciliation/data", handlers.GetReconciliationData)
+    bankAPI.GET("/reconciliation/stats", handlers.GetReconciliationStats)
+    bankAPI.GET("/reconciliation/reconciled", handlers.GetReconciledTransactions)
+    bankAPI.POST("/reconcile-all", handlers.MassReconcile)
+    bankAPI.POST("/reconcile-all/:account_id", handlers.MassReconcileAll)
+    bankAPI.POST("/reconcile/:id", handlers.ReconcileTransaction) 
+    bankAPI.POST("/undo-reconciliation/:id", handlers.UndoReconciliation)
+    
+    // Массовые операции
+    bankAPI.POST("/transactions/delete", handlers.BulkDeleteTransactions)
+    bankAPI.POST("/create-acts", handlers.BulkCreateActsFromTransactions)
+    
+    // Баланс и платежи
+    bankAPI.GET("/accounts/:id/balance", handlers.GetAccountBalance)
+    bankAPI.POST("/execute-payment", handlers.ExecutePayment)
+}
 
     // ========== WHATSAPP BUSINESS API ==========
     whatsappAPI := r.Group("/api/whatsapp")

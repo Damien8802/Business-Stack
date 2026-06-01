@@ -92,7 +92,7 @@ func GetMyModuleSubscriptions(c *gin.Context) {
     })
 }
 
-// StartModuleTrialHandler - активация пробного периода (переименовано из StartModuleTrial чтобы избежать конфликта с oauth.go)
+// StartModuleTrialHandler - активация пробного периода
 func StartModuleTrialHandler(c *gin.Context) {
     userID := c.GetString("user_id")
     
@@ -107,8 +107,7 @@ func StartModuleTrialHandler(c *gin.Context) {
     
     // Проверяем, есть ли уже подписка
     var exists bool
-    var err error
-    err = database.Pool.QueryRow(c.Request.Context(), `
+    err := database.Pool.QueryRow(c.Request.Context(), `
         SELECT EXISTS(SELECT 1 FROM user_module_subscriptions 
         WHERE user_id = $1 AND module_code = $2)
     `, userID, req.ModuleCode).Scan(&exists)
@@ -180,4 +179,144 @@ func CheckModuleAccess(c *gin.Context) {
         "end_date":    endDate,
         "message":     "Доступ разрешен",
     })
+}
+
+// ========== DEV MODULES FUNCTIONS ==========
+
+// GetModuleStatus - получить статус модуля (для страницы)
+func GetModuleStatus(c *gin.Context) {
+    route := c.Param("route")
+    
+    var status string
+    var message string
+    
+    _, _ = database.Pool.Exec(c.Request.Context(), `
+        ALTER TABLE dev_modules ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'development';
+        ALTER TABLE dev_modules ADD COLUMN IF NOT EXISTS message TEXT;
+    `)
+    
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COALESCE(status, 'development'), COALESCE(message, '')
+        FROM dev_modules 
+        WHERE route = $1
+    `, "/"+route).Scan(&status, &message)
+    
+    if err != nil {
+        c.JSON(http.StatusOK, gin.H{"status": "development", "message": ""})
+        return
+    }
+    
+    c.JSON(http.StatusOK, gin.H{"status": status, "message": message})
+}
+
+// UpdateModuleStatus - обновить статус модуля
+func UpdateModuleStatus(c *gin.Context) {
+    route := c.Param("route")
+    
+    var req struct {
+        Status  string `json:"status"`
+        Message string `json:"message"`
+    }
+    
+    if err := c.BindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    
+    validStatuses := map[string]bool{
+        "development": true, "beta": true, "stable": true, "deprecated": true,
+    }
+    
+    if !validStatuses[req.Status] {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid status"})
+        return
+    }
+    
+    _, err := database.Pool.Exec(c.Request.Context(), `
+        INSERT INTO dev_modules (route, name, icon, status, message, updated_at)
+        VALUES ($1, $2, '🔧', $3, $4, NOW())
+        ON CONFLICT (route) DO UPDATE SET
+            status = EXCLUDED.status,
+            message = EXCLUDED.message,
+            updated_at = NOW()
+    `, "/"+route, route, req.Status, req.Message)
+    
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    
+    c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+// ReportModuleIssue - сообщить о проблеме
+func ReportModuleIssue(c *gin.Context) {
+    userID := c.GetString("user_id")
+    userEmail := c.GetString("user_email")
+    userName := c.GetString("user_name")
+    
+    var req struct {
+        Module    string `json:"module"`
+        Issue     string `json:"issue"`
+        Status    string `json:"status"`
+        URL       string `json:"url"`
+        UserAgent string `json:"userAgent"`
+    }
+    
+    if err := c.BindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    
+    _, _ = database.Pool.Exec(c.Request.Context(), `
+        CREATE TABLE IF NOT EXISTS module_feedback (
+            id SERIAL PRIMARY KEY,
+            user_id UUID, user_email VARCHAR(255), user_name VARCHAR(255),
+            module VARCHAR(255) NOT NULL, issue TEXT NOT NULL, status VARCHAR(50),
+            url TEXT, user_agent TEXT, created_at TIMESTAMP DEFAULT NOW(),
+            resolved BOOLEAN DEFAULT FALSE
+        )
+    `)
+    
+    _, err := database.Pool.Exec(c.Request.Context(), `
+        INSERT INTO module_feedback (user_id, user_email, user_name, module, issue, status, url, user_agent)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `, userID, userEmail, userName, req.Module, req.Issue, req.Status, req.URL, req.UserAgent)
+    
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    
+    c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+// GetModuleFeedback - получить отзывы (админ)
+func GetModuleFeedback(c *gin.Context) {
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT id, user_email, user_name, module, issue, status, created_at, resolved
+        FROM module_feedback ORDER BY created_at DESC LIMIT 100
+    `)
+    
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    defer rows.Close()
+    
+    var feedbacks []gin.H
+    for rows.Next() {
+        var id int
+        var userEmail, userName, module, issue, status string
+        var createdAt time.Time
+        var resolved bool
+        rows.Scan(&id, &userEmail, &userName, &module, &issue, &status, &createdAt, &resolved)
+        feedbacks = append(feedbacks, gin.H{
+            "id": id, "user_email": userEmail, "user_name": userName,
+            "module": module, "issue": issue, "status": status,
+            "created_at": createdAt, "resolved": resolved,
+        })
+    }
+    
+    c.JSON(http.StatusOK, feedbacks)
 }

@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.title}}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* Анимированный фон */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+        }
+        
+        .bg-animation .circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(102, 126, 234, 0.1);
+            animation: float 20s infinite ease-in-out;
+        }
+        
+        .circle:nth-child(1) { width: 300px; height: 300px; top: -100px; left: -100px; animation-delay: 0s; }
+        .circle:nth-child(2) { width: 500px; height: 500px; bottom: -200px; right: -200px; animation-delay: 5s; }
+        .circle:nth-child(3) { width: 200px; height: 200px; top: 50%; left: 20%; animation-delay: 2s; }
+        .circle:nth-child(4) { width: 400px; height: 400px; bottom: 20%; right: 10%; animation-delay: 8s; }
+        .circle:nth-child(5) { width: 150px; height: 150px; top: 20%; right: 30%; animation-delay: 12s; }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-30px) rotate(180deg); }
+        }
+        
+        /* Главная карточка */
+        .construction-card {
+            position: relative;
+            z-index: 1;
+            background: rgba(15, 25, 35, 0.85);
+            backdrop-filter: blur(20px);
+            border-radius: 48px;
+            padding: 50px;
+            text-align: center;
+            max-width: 700px;
+            margin: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            animation: slideUp 0.6s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Иконка с пульсацией */
+        .icon-wrapper {
+            background: linear-gradient(135deg, rgba(102,126,234,0.2), rgba(118,75,162,0.2));
+            width: 120px;
+            height: 120px;
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            animation: pulse 2s infinite;
+        }
+        
+        .icon {
+            font-size: 65px;
+            filter: drop-shadow(0 0 20px rgba(102,126,234,0.5));
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(102,126,234,0.4);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 20px rgba(102,126,234,0);
+            }
+        }
+        
+        /* Заголовок */
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff, #a5b4fc, #c4b5fd);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 15px;
+        }
+        
+        /* Имя модуля */
+        .module-name {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 12px 28px;
+            border-radius: 60px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin: 20px 0;
+            box-shadow: 0 4px 15px rgba(102,126,234,0.3);
+        }
+        
+        /* Описание */
+        .description {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            color: rgba(255,255,255,0.85);
+        }
+        
+        /* Прогресс-бар */
+        .progress-section {
+            margin: 35px 0;
+        }
+        
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: rgba(255,255,255,0.7);
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            width: 65%;
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f59e0b);
+            border-radius: 10px;
+            animation: shimmer 2s infinite;
+            background-size: 200% 100%;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        /* Статистика */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 30px 0;
+        }
+        
+        .stat-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #a78bfa;
+        }
+        
+        .stat-label {
+            font-size: 11px;
+            color: rgba(255,255,255,0.5);
+            margin-top: 5px;
+        }
+        
+        /* Кнопки */
+        .buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 30px 0 20px;
+        }
+        
+        .btn {
+            padding: 14px 32px;
+            border: none;
+            border-radius: 60px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102,126,234,0.4);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102,126,234,0.5);
+        }
+        
+        .btn-outline {
+            background: transparent;
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+        }
+        
+        .btn-outline:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.5);
+            transform: translateY(-3px);
+        }
+        
+        .btn-gold {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+        
+        .btn-gold:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(245,158,11,0.4);
+        }
+        
+        /* Форма подписки */
+        .subscribe-form {
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .subscribe-input-group {
+            display: flex;
+            gap: 10px;
+            max-width: 400px;
+            margin: 15px auto 0;
+        }
+        
+        .subscribe-input {
+            flex: 1;
+            padding: 12px 20px;
+            border-radius: 60px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 14px;
+            outline: none;
+        }
+        
+        .subscribe-input::placeholder {
+            color: rgba(255,255,255,0.5);
+        }
+        
+        .subscribe-input:focus {
+            border-color: #667eea;
+        }
+        
+        /* Футер */
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+        }
+        
+        .footer a {
+            color: #a78bfa;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Адаптив */
+        @media (max-width: 600px) {
+            .construction-card {
+                padding: 30px 20px;
+                margin: 15px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .module-name {
+                font-size: 1rem;
+                padding: 8px 20px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .buttons {
+                flex-direction: column;
+            }
+            
+            .btn {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation">
+        <div class="circle"></div>
+        <div class="circle"></div>
+        <div class="circle"></div>
+        <div class="circle"></div>
+        <div class="circle"></div>
+    </div>
+    
+    <div class="construction-card">
+        <div class="icon-wrapper">
+            <div class="icon">{{.icon}}</div>
+        </div>
+        
+        <h1>Модуль в разработке</h1>
+        
+        <div class="module-name">
+            <i class="fas fa-code-branch"></i> {{.name}}
+        </div>
+        
+        <div class="description">
+            {{if .desc}}
+                {{.desc}}
+            {{else}}
+                Мы активно работаем над этим модулем, чтобы сделать его<br>
+                максимально удобным и функциональным для вас!
+            {{end}}
+        </div>
+        
+        <div class="progress-section">
+            <div class="progress-label">
+                <span><i class="fas fa-chart-line"></i> Прогресс разработки</span>
+                <span>65%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">🎯 65%</div>
+                <div class="stat-label">Готовность</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">📅 ~2 недели</div>
+                <div class="stat-label">До релиза</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">⚡ 24/7</div>
+                <div class="stat-label">Поддержка</div>
+            </div>
+        </div>
+        
+        <div class="buttons">
+            <a href="/dashboard-improved" class="btn btn-primary">
+                <i class="fas fa-arrow-left"></i> Вернуться на главную
+            </a>
+            <button class="btn btn-outline" onclick="reportInterest()">
+                <i class="fas fa-bell"></i> Сообщить о заинтересованности
+            </button>
+            <button class="btn btn-gold" onclick="requestEarlyAccess()">
+                <i class="fas fa-star"></i> Запросить ранний доступ
+            </button>
+        </div>
+        
+        <div class="subscribe-form">
+            <div style="font-size: 13px; color: rgba(255,255,255,0.6);">
+                <i class="fas fa-envelope"></i> Получите уведомление о запуске модуля
+            </div>
+            <div class="subscribe-input-group">
+                <input type="email" id="notifyEmail" class="subscribe-input" placeholder="Ваш email">
+                <button class="btn btn-primary" style="padding: 12px 24px;" onclick="subscribeToNotify()">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>
+                <i class="fas fa-tachometer-alt"></i> Хотите ускорить разработку? 
+                <a href="/contact"><strong>Свяжитесь с нами</strong></a>
+            </p>
+            <p style="margin-top: 10px;">
+                <i class="fas fa-shield-alt"></i> Ваши данные в безопасности
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        function reportInterest() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                if (confirm('Для отправки интереса нужно войти в систему. Перейти на страницу входа?')) {
+                    window.location.href = '/login';
+                }
+                return;
+            }
+            
+            showToast('📤 Отправка...', 'info');
+            
+            fetch('/api/dev-modules/report-issue', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({
+                    module: '{{.name}}',
+                    issue: 'Пользователь заинтересован в модуле',
+                    status: 'interest',
+                    url: window.location.href,
+                    userAgent: navigator.userAgent
+                })
+            }).then(res => {
+                if (res.ok) {
+                    showToast('✅ Спасибо! Мы учтём ваш интерес при планировании.', 'success');
+                } else {
+                    showToast('❌ Ошибка отправки', 'error');
+                }
+            }).catch(() => {
+                showToast('❌ Ошибка сети', 'error');
+            });
+        }
+        
+        function requestEarlyAccess() {
+            const name = prompt('Введите ваше имя:');
+            if (!name) return;
+            
+            const email = prompt('Введите ваш email:');
+            if (!email) return;
+            
+            showToast('📤 Отправка заявки...', 'info');
+            
+            fetch('/api/dev-modules/report-issue', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + localStorage.getItem('token') || ''
+                },
+                body: JSON.stringify({
+                    module: '{{.name}}',
+                    issue: `ЗАЯВКА НА РАННИЙ ДОСТУП\nИмя: ${name}\nEmail: ${email}`,
+                    status: 'early_access',
+                    url: window.location.href,
+                    userAgent: navigator.userAgent
+                })
+            }).then(res => {
+                if (res.ok) {
+                    showToast('✅ Заявка отправлена! Менеджер свяжется с вами.', 'success');
+                } else {
+                    showToast('❌ Ошибка отправки', 'error');
+                }
+            }).catch(() => {
+                showToast('❌ Ошибка сети', 'error');
+            });
+        }
+        
+        function subscribeToNotify() {
+            const email = document.getElementById('notifyEmail').value;
+            if (!email || !email.includes('@')) {
+                showToast('❌ Введите корректный email', 'error');
+                return;
+            }
+            
+            showToast('📝 Вы подписаны на уведомления!', 'success');
+            document.getElementById('notifyEmail').value = '';
+        }
+        
+        function showToast(msg, type) {
+            const colors = {
+                success: 'linear-gradient(135deg, #10b981, #059669)',
+                error: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                info: 'linear-gradient(135deg, #3b82f6, #1d4ed8)'
+            };
+            
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 30px;
+                right: 30px;
+                padding: 12px 24px;
+                background: ${colors[type]};
+                color: white;
+                border-radius: 12px;
+                font-size: 14px;
+                z-index: 10000;
+                animation: fadeOut 3s ease forwards;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            `;
+            toast.innerHTML = msg;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        // Добавляем стиль для анимации тоста
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeOut {
+                0% { opacity: 1; transform: translateY(0); }
+                70% { opacity: 1; }
+                100% { opacity: 0; transform: translateY(-20px); display: none; }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

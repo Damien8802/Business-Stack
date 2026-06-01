@@ -537,3 +537,4 @@ func StartFincoreTrial(userID string) error {
     log.Printf("✅ FinCore trial activated for user %s with all submodules", userID)
     return nil
 }
+

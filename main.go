@@ -327,6 +327,24 @@ _, err = database.Pool.Exec(ctx, `
 if err != nil {
     log.Printf("⚠️ Ошибка создания индексов payslip_archive: %v", err)
 }
+
+// ========== ТАБЛИЦА МОДУЛЕЙ В РАЗРАБОТКЕ ==========
+_, err = database.Pool.Exec(ctx, `
+    CREATE TABLE IF NOT EXISTS dev_modules (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        route VARCHAR(255) NOT NULL UNIQUE,
+        icon VARCHAR(50) DEFAULT '🔧',
+        description TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+    )
+`)
+if err != nil {
+    log.Printf("⚠️ Ошибка создания dev_modules: %v", err)
+} else {
+    log.Println("✅ Таблица dev_modules готова")
+}
     
     handlers.InitVPNWithDB(database.Pool)
     // Инициализация Stealth VPN сервиса
@@ -397,30 +415,29 @@ log.Println("✅ AI Autonomous Scheduler запущен")
         gin.SetMode(gin.ReleaseMode)
     }
 
-    r := gin.New()
+  r := gin.New()
 
-    // ========== МЕГА-БЕЗОПАСНОСТЬ ==========
-    r.Use(middleware.MegaSecurityMiddleware())
-    // ========================================
+// ========== БАЗОВЫЕ MIDDLEWARE ==========
+r.Use(middleware.MegaSecurityMiddleware())
+r.Use(middleware.AuditMiddleware())
+r.Use(middleware.Fail2BanMiddleware())
+r.Use(middleware.ForcePasswordChangeMiddleware())
 
-    r.Use(middleware.AuditMiddleware())          // Аудит действий
-    r.Use(middleware.Fail2BanMiddleware())       // Блокировка IP
-    r.Use(middleware.ForcePasswordChangeMiddleware()) // Принудительная смена пароля
+r.Use(gin.Logger())
+r.Use(gin.Recovery())
+r.Use(middleware.Logger())
+r.SetTrustedProxies(cfg.TrustedProxies)
+r.Use(middleware.SetupCORS(cfg))
 
-  //r.Use(middleware.AIWidgetMiddleware())
-// AI Assistant API
-// AI Assistant API
-r.POST("/api/ai/yandex", middleware.AuthMiddleware(cfg), handlers.YandexHRHandler)
-    r.Use(gin.Logger())
-    r.Use(gin.Recovery())
-    r.Use(middleware.Logger())
-    r.SetTrustedProxies(cfg.TrustedProxies)
-    r.Use(middleware.SetupCORS(cfg))
-    r.Use(middleware.TenantMiddleware(database.Pool))
+// ========== ОСНОВНЫЕ MIDDLEWARE (ТОЛЬКО ОДИН РАЗ!) ==========
+r.Use(middleware.TenantMiddleware(database.Pool))  // ← ТОЛЬКО ОДИН РАЗ!
+r.Use(middleware.AuthMiddleware(cfg))              // ← Auth после Tenant
+r.Use(middleware.DevModulesMiddleware())           // ← DevModules после Auth!
 
-    rateLimiter := middleware.NewRateLimiter(30, time.Minute)
-    r.Use(middleware.SecurityMonitor())
-    authLimiter := middleware.NewRateLimiter(3, time.Minute)
+// ========== ЛИМИТЕРЫ ==========
+rateLimiter := middleware.NewRateLimiter(60, time.Minute)
+r.Use(middleware.SecurityMonitor())
+authLimiter := middleware.NewRateLimiter(60, time.Minute)
 
 
 
@@ -1526,6 +1543,31 @@ monthEndAPI.Use(middleware.AuthMiddleware(cfg))
     monthEndAPI.POST("/create-tables", handlers.CreateMonthEndTables)
 }
 
+// API для управления данными клиента (статистика, экспорт, удаление)
+clientDataAPI := r.Group("/api/client")
+clientDataAPI.Use(middleware.AuthMiddleware(cfg))
+{
+    // Статистика и управление
+    clientDataAPI.GET("/data-info", handlers.GetClientDataInfo)
+    clientDataAPI.GET("/export-all-data", handlers.ExportAllData)
+    clientDataAPI.DELETE("/delete-all-data", handlers.DeleteAllClientData)
+    
+    // ========== ПРОСМОТР ДАННЫХ (ДОБАВИТЬ ЭТИ СТРОКИ) ==========
+    clientDataAPI.GET("/transactions", handlers.GetClientTransactions)
+    clientDataAPI.GET("/payments", handlers.GetClientPayments)
+    clientDataAPI.GET("/categories", handlers.GetClientCategories)
+    clientDataAPI.GET("/recurring", handlers.GetClientRecurring)
+    clientDataAPI.GET("/stats", handlers.GetClientStats)
+    clientDataAPI.GET("/export", handlers.ExportClientData)
+    clientDataAPI.DELETE("/delete-all", handlers.DeleteClientAllData)
+}
+
+// SQL-доступ заявки
+sqlAPI := r.Group("/api/client")
+sqlAPI.Use(middleware.AuthMiddleware(cfg))
+{
+    sqlAPI.POST("/request-sql-access", handlers.RequestSQLAccess)
+}
 // ========== TEAMSPHERE - СКРАМ-ДОСКА ==========
 scrumAPI := r.Group("/api/scrum")
 scrumAPI.Use(middleware.AuthMiddleware(cfg))
@@ -3283,6 +3325,91 @@ r.PUT("/api/orders/:id/remaining", middleware.AuthMiddleware(cfg), middleware.Ad
         })
     })
 
+// ========== ПАНЕЛЬ РАЗРАБОТЧИКА ==========
+r.GET("/dev-modules", middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), func(c *gin.Context) {
+    c.HTML(http.StatusOK, "dev_modules_panel", gin.H{
+        "title": "DevModules | Управление модулями в разработке",
+    })
+})
+
+// ========== API ДЛЯ УПРАВЛЕНИЯ МОДУЛЯМИ В РАЗРАБОТКЕ ==========
+// Получить все модули
+r.GET("/api/dev-modules", middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), func(c *gin.Context) {
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT id, name, route, COALESCE(icon, '🔧'), COALESCE(description, ''), created_at 
+        FROM dev_modules ORDER BY created_at DESC
+    `)
+    if err != nil {
+        c.JSON(500, gin.H{"error": err.Error()})
+        return
+    }
+    defer rows.Close()
+    
+    var modules []gin.H
+    for rows.Next() {
+        var id int
+        var name, route, icon, desc string
+        var createdAt time.Time
+        rows.Scan(&id, &name, &route, &icon, &desc, &createdAt)
+        modules = append(modules, gin.H{
+            "id": id, "name": name, "route": route,
+            "icon": icon, "desc": desc, "created_at": createdAt,
+        })
+    }
+    c.JSON(200, modules)
+})
+
+// Добавить модуль
+r.POST("/api/dev-modules", middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), func(c *gin.Context) {
+    var req struct {
+        Name  string `json:"name"`
+        Route string `json:"route"`
+        Icon  string `json:"icon"`
+        Desc  string `json:"desc"`
+    }
+    if err := c.BindJSON(&req); err != nil {
+        c.JSON(400, gin.H{"error": err.Error()})
+        return
+    }
+    
+    _, err := database.Pool.Exec(c.Request.Context(), `
+        INSERT INTO dev_modules (name, route, icon, description, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, NOW(), NOW())
+        ON CONFLICT (route) DO UPDATE SET
+            name = EXCLUDED.name,
+            icon = EXCLUDED.icon,
+            description = EXCLUDED.description,
+            updated_at = NOW()
+    `, req.Name, req.Route, req.Icon, req.Desc)
+    
+    if err != nil {
+        c.JSON(500, gin.H{"error": err.Error()})
+        return
+    }
+    c.JSON(200, gin.H{"success": true})
+})
+
+// Удалить модуль
+r.DELETE("/api/dev-modules/:route", middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), func(c *gin.Context) {
+    route := c.Param("route")
+    _, err := database.Pool.Exec(c.Request.Context(), `
+        DELETE FROM dev_modules WHERE route = $1
+    `, "/"+route)
+    
+    if err != nil {
+        c.JSON(500, gin.H{"error": err.Error()})
+        return
+    }
+    c.JSON(200, gin.H{"success": true})
+})
+
+
+// ========== API ДЛЯ СТАТУСА МОДУЛЕЙ И ОТЗЫВОВ ==========
+r.GET("/api/dev-modules/status/:route", middleware.AuthMiddleware(cfg), handlers.GetModuleStatus)
+r.PUT("/api/dev-modules/status/:route", middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handlers.UpdateModuleStatus)
+r.POST("/api/dev-modules/report-issue", middleware.AuthMiddleware(cfg), handlers.ReportModuleIssue)
+r.GET("/api/dev-modules/feedback", middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handlers.GetModuleFeedback)
+
 
       r.NoRoute(func(c *gin.Context) {
         c.HTML(http.StatusNotFound, "404.html", gin.H{
@@ -3345,7 +3472,7 @@ r.PUT("/api/orders/:id/remaining", middleware.AuthMiddleware(cfg), middleware.Ad
     handlers.StartBitrixSyncScheduler()
     handlers.StartTeamSphereScheduler()
 
-
+   
   // Favicon обработка
 r.GET("/favicon.ico", func(c *gin.Context) {
     c.File("./static/favicon.ico")
@@ -3417,6 +3544,13 @@ r.GET("/month-end", middleware.AuthMiddleware(cfg), middleware.RequireModuleAcce
         "title": "Закрытие месяца | FinCore",
     })
 })    
+
+// Страница управления данными клиента
+r.GET("/client-data", middleware.AuthMiddleware(cfg), func(c *gin.Context) {
+    c.HTML(http.StatusOK, "client_data_management", gin.H{
+        "title": "Управление данными | FinCore",
+    })
+})
     // Страница "Мои приложения"
     r.GET("/my-apps", handlers.GetMyApps)
     r.GET("/my-apps/settings", handlers.AppSettingsPage)

@@ -1,0 +1,1336 @@
+{{define "client_data_management"}}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мои данные | FinCore</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+        .navbar {
+            background: rgba(15, 25, 35, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff, #a5b4fc, #c4b5fd);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-decoration: none;
+        }
+        .nav-link {
+            color: rgba(255,255,255,0.7);
+            transition: all 0.3s;
+            margin: 0 5px;
+            border-radius: 12px;
+            padding: 8px 16px;
+            text-decoration: none;
+            font-size: 13px;
+            display: inline-block;
+        }
+        .nav-link:hover, .nav-link.active { color: #fff; background: rgba(102,126,234,0.2); }
+        .container { max-width: 1400px; margin: 0 auto; padding: 30px 20px; }
+        .card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+            backdrop-filter: blur(12px);
+            border-radius: 28px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .card-title { font-size: 20px; font-weight: 600; margin-bottom: 20px; color: #a78bfa; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .table-responsive { overflow-x: auto; }
+        .table { width: 100%; border-collapse: collapse; }
+        .table th, .table td { padding: 12px; border: 1px solid rgba(255,255,255,0.1); text-align: left; color: #ffffff; }
+        .table th { background: rgba(102,126,234,0.3); font-weight: 600; }
+        .table tr:hover { background: rgba(255,255,255,0.05); }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 8px 20px;
+            border-radius: 40px;
+            color: rgba(255,255,255,0.7);
+            cursor: pointer;
+        }
+        .tab-btn:hover { background: rgba(102,126,234,0.2); color: white; }
+        .tab-btn.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 20px; }
+        .stat-card { background: rgba(255,255,255,0.05); border-radius: 16px; padding: 15px; text-align: center; }
+        .stat-value { font-size: 28px; font-weight: 700; color: #a78bfa; }
+        .stat-label { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 5px; }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); border: none; padding: 8px 16px; border-radius: 50px; color: white; cursor: pointer; font-size: 13px; }
+        .btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); border: none; padding: 8px 16px; border-radius: 50px; color: white; cursor: pointer; font-size: 13px; }
+        .btn-outline { background: transparent; border: 1px solid rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 50px; color: white; cursor: pointer; font-size: 13px; }
+        .btn-sm { padding: 5px 12px; font-size: 12px; }
+        .btn-gold { background: linear-gradient(135deg, #f59e0b, #d97706); border: none; color: white; font-weight: 600; }
+        .text-success { color: #10b981 !important; }
+        .text-danger { color: #ef4444 !important; }
+        .text-muted { color: rgba(255,255,255,0.5); }
+        .mb-4 { margin-bottom: 20px; }
+        .mt-3 { margin-top: 20px; }
+        .me-2 { margin-right: 10px; }
+        .row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .col { flex: 1; }
+        .delete-btn { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 16px; }
+        .delete-btn:hover { color: #dc2626; }
+        .toast-notification {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 12px 24px;
+            border-radius: 12px;
+            color: white;
+            z-index: 9999;
+            animation: fadeOut 3s ease forwards;
+        }
+        .toast-success { background: linear-gradient(135deg, #10b981, #059669); }
+        .toast-error { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .toast-info { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: translateY(0); }
+            70% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-20px); display: none; }
+        }
+        .button-bar {
+            position: sticky;
+            top: 20px;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 60px;
+            max-width: 350px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .btn-print, .btn-close {
+            padding: 10px 28px;
+            border: none;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-print { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .btn-close { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+        .sql-card {
+            background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(217,119,6,0.05));
+            border: 2px solid #f59e0b;
+            position: relative;
+            overflow: hidden;
+        }
+        .sql-card::before {
+            content: "⭐";
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 28px;
+            opacity: 0.3;
+        }
+        .sql-badge {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .price-card {
+            background: rgba(0,0,0,0.3);
+            border-radius: 16px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .price-card:hover {
+            transform: translateY(-5px);
+            background: rgba(245,158,11,0.2);
+        }
+        
+        /* Стили для статус-бара модуля */
+        .module-status-bar {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border-bottom: 3px solid #f59e0b;
+            padding: 12px 24px;
+            margin-bottom: 25px;
+            border-radius: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .dev-badge {
+            background: #f59e0b;
+            color: #1a1a2e;
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .dev-message {
+            color: #a78bfa;
+            font-size: 14px;
+        }
+        .admin-controls {
+            background: rgba(245,158,11,0.1);
+            border: 1px solid #f59e0b;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        .status-select {
+            background: rgba(0,0,0,0.3);
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            margin-bottom: 12px;
+            width: 100%;
+            max-width: 250px;
+        }
+        
+        @media (max-width: 768px) { 
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .module-status-bar { flex-direction: column; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="container-fluid" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+            <a class="navbar-brand" href="/">🚀 Business Stack</a>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="/dashboard-improved" class="nav-link">📊 Главная</a>
+                <a href="/finance" class="nav-link">💰 Финансы</a>
+                <a href="/reports" class="nav-link">📈 Отчёты</a>
+                <a href="/reconciliation-acts" class="nav-link">📄 Акты сверки</a>
+                <a href="/journal" class="nav-link">📓 Журнал</a>
+                <a href="/management" class="nav-link">🏷️ Управленка</a>
+                <a href="/bank" class="nav-link">🏦 Банк</a>
+                <a href="/payroll" class="nav-link">💸 Зарплата</a>
+                <a href="/tax-reports" class="nav-link">📑 Налоги</a>
+                <a href="/import-excel" class="nav-link">📎 Импорт</a>
+                <a href="/month-end" class="nav-link">📅 Закрытие</a>
+                <a href="/client-data" class="nav-link active">🗄️ Мои данные</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+
+        <!-- ========== БЛОК СТАТУСА МОДУЛЯ "В РАЗРАБОТКЕ" ========== -->
+        <div id="moduleStatusBar" class="module-status-bar">
+            <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                <span id="devBadge" class="dev-badge">
+                    <i class="fas fa-code-branch"></i> В РАЗРАБОТКЕ
+                </span>
+                <span id="devMessage" class="dev-message">
+                    <i class="fas fa-info-circle"></i> Модуль находится в стадии активной разработки
+                </span>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button id="toggleDevModeBtn" class="btn-outline btn-sm" onclick="toggleDevPanel()" style="display: none;">
+                    <i class="fas fa-sliders-h"></i> Управление
+                </button>
+                <button class="btn-outline btn-sm" onclick="reportBug()">
+                    <i class="fas fa-bug"></i> Сообщить о проблеме
+                </button>
+            </div>
+        </div>
+
+        <!-- Панель управления статусом (только для админов/владельцев) -->
+        <div id="adminDevPanel" style="display: none;">
+            <div class="admin-controls">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap;">
+                    <h5 style="margin: 0;"><i class="fas fa-cog"></i> Управление статусом модуля</h5>
+                    <button class="btn-outline btn-sm" onclick="toggleDevPanel()">✕ Закрыть</button>
+                </div>
+                <div class="row" style="align-items: flex-end;">
+                    <div class="col">
+                        <label style="font-size: 12px; color: #a78bfa;">Статус модуля:</label>
+                        <select id="moduleStatusSelect" class="status-select">
+                            <option value="development">⚠️ В разработке</option>
+                            <option value="beta">🧪 Бета-тестирование</option>
+                            <option value="stable">✅ Стабильная версия</option>
+                            <option value="deprecated">📦 В архиве</option>
+                        </select>
+                    </div>
+                    <div class="col">
+                        <label style="font-size: 12px; color: #a78bfa;">Сообщение для пользователей:</label>
+                        <input type="text" id="moduleCustomMessage" class="status-select" placeholder="Дополнительное сообщение..." style="width: 100%;">
+                    </div>
+                    <div class="col">
+                        <button class="btn-primary" onclick="saveModuleStatus()" style="width: 100%;">
+                            <i class="fas fa-save"></i> Сохранить
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Статистика -->
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-value" id="statTables">0</div><div class="stat-label">Таблиц</div></div>
+            <div class="stat-card"><div class="stat-value" id="statRecords">0</div><div class="stat-label">Всего записей</div></div>
+            <div class="stat-card"><div class="stat-value" id="statIncome">0 ₽</div><div class="stat-label">Всего доходов</div></div>
+            <div class="stat-card"><div class="stat-value" id="statExpense">0 ₽</div><div class="stat-label">Всего расходов</div></div>
+        </div>
+
+        <!-- Кнопки экспорта -->
+        <div class="row" style="margin-bottom: 20px;">
+            <div class="col"><button class="btn-outline" style="width:100%;" onclick="exportToPDF()"><i class="fas fa-file-pdf"></i> PDF</button></div>
+            <div class="col"><button class="btn-outline" style="width:100%;" onclick="exportToExcel()"><i class="fas fa-file-excel"></i> Excel</button></div>
+            <div class="col"><button class="btn-outline" style="width:100%;" onclick="exportToWord()"><i class="fas fa-file-word"></i> Word</button></div>
+            <div class="col"><button class="btn-outline" style="width:100%;" onclick="exportToCSV()"><i class="fas fa-file-csv"></i> CSV</button></div>
+        </div>
+
+        <!-- Вкладки -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('transactions')">📋 Транзакции</button>
+            <button class="tab-btn" onclick="showTab('payments')">💸 Платежи</button>
+            <button class="tab-btn" onclick="showTab('categories')">🏷️ Категории</button>
+            <button class="tab-btn" onclick="showTab('recurring')">🔄 Автоплатежи</button>
+            <button class="tab-btn" onclick="showTab('closing')">📅 Закрытие месяца</button>
+        </div>
+
+        <!-- Транзакции -->
+        <div id="tab-transactions" class="tab-content active">
+            <div class="card">
+                <div class="card-title">
+                    <span><i class="fas fa-list"></i> Мои транзакции</span>
+                    <button class="btn-danger btn-sm" onclick="confirmDeleteCurrentTable()">🗑 Удалить все</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table" id="transactionsTable">
+                        <thead><tr><th>Дата</th><th>Сумма</th><th>Партнёр</th><th>Назначение</th><th>Тип</th><th style="width:50px"></th></tr></thead>
+                        <tbody id="transactionsTableBody"><tr><td colspan="6" class="text-muted text-center">Загрузка...</td></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Платежи -->
+        <div id="tab-payments" class="tab-content">
+            <div class="card">
+                <div class="card-title">
+                    <span><i class="fas fa-money-bill"></i> Мои платежи</span>
+                    <button class="btn-danger btn-sm" onclick="confirmDeleteCurrentTable()">🗑 Удалить все</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table" id="paymentsTable">
+                        <thead><tr><th>Дата</th><th>Партнёр</th><th>Сумма</th><th>Тип</th><th>Назначение</th><th style="width:50px"></th></tr></thead>
+                        <tbody id="paymentsTableBody"><tr><td colspan="6" class="text-muted text-center">Загрузка...</td></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Категории -->
+        <div id="tab-categories" class="tab-content">
+            <div class="card">
+                <div class="card-title">
+                    <span><i class="fas fa-tags"></i> Мои категории</span>
+                    <button class="btn-danger btn-sm" onclick="confirmDeleteCurrentTable()">🗑 Удалить все</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table" id="categoriesTable">
+                        <thead><tr><th>Название</th><th>Ключевые слова</th><th>Цвет</th><th style="width:50px"></th></tr></thead>
+                        <tbody id="categoriesTableBody"><tr><td colspan="4" class="text-muted text-center">Загрузка...</td></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Автоплатежи -->
+        <div id="tab-recurring" class="tab-content">
+            <div class="card">
+                <div class="card-title">
+                    <span><i class="fas fa-sync"></i> Мои автоплатежи</span>
+                    <button class="btn-danger btn-sm" onclick="confirmDeleteCurrentTable()">🗑 Удалить все</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table" id="recurringTable">
+                        <thead><tr><th>Партнёр</th><th>Сумма</th><th>Периодичность</th><th>День месяца</th><th>Назначение</th><th style="width:50px"></th></tr></thead>
+                        <tbody id="recurringTableBody"><tr><td colspan="6" class="text-muted text-center">Загрузка...</td></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Закрытие месяца -->
+        <div id="tab-closing" class="tab-content">
+            <div class="card">
+                <div class="card-title">
+                    <span><i class="fas fa-calendar-check"></i> История закрытий</span>
+                    <button class="btn-danger btn-sm" onclick="confirmDeleteCurrentTable()">🗑 Удалить все</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table" id="closingTable">
+                        <thead><tr><th>Период</th><th>Статус</th><th>Доходы</th><th>Расходы</th><th>Налог</th><th>Чистая прибыль</th><th>Дата</th><th style="width:50px"></th></tr></thead>
+                        <tbody id="closingTableBody"><tr><td colspan="8" class="text-muted text-center">Загрузка...</td></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Удаление всех данных -->
+        <div class="card">
+            <div class="card-title"><i class="fas fa-trash-alt"></i> Полное удаление данных</div>
+            <p class="text-muted mb-4"><strong>⚠️ Внимание!</strong> Это действие удалит ВСЕ ваши данные: транзакции, платежи, категории, автоплатежи, историю закрытий. Данные нельзя будет восстановить.</p>
+            <button class="btn-danger" style="width:100%;" onclick="confirmDeleteAllData()"><i class="fas fa-trash-alt"></i> Удалить все данные компании</button>
+        </div>
+
+        <!-- SQL ДОСТУП - ШИКАРНЫЙ БЛОК -->
+        <div class="card sql-card">
+            <div class="card-title">
+                <span><i class="fas fa-database"></i> 🚀 Premium SQL-доступ</span>
+                <span class="sql-badge">⭐ Эксклюзивная опция</span>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <p style="font-size: 15px; line-height: 1.5;">
+                    <strong>Получите собственную изолированную базу данных на нашем сервере!</strong><br>
+                    Мы выделим для вас отдельный PostgreSQL сервер, создадим уникальную БД<br>
+                    и подключим её к вашему аккаунту FinCore. Вы получаете полный SQL-доступ<br>
+                    через любой клиент (DBeaver, DataGrip, pgAdmin) с собственными credentials.
+                </p>
+            </div>
+
+            <!-- Что вы получаете -->
+            <div style="background: rgba(0,0,0,0.3); border-radius: 16px; padding: 20px; margin-bottom: 20px;">
+                <div class="row">
+                    <div class="col">
+                        <i class="fas fa-check-circle text-success"></i> <strong>Отдельный сервер</strong>
+                        <div class="small text-muted">Выделенные ресурсы</div>
+                    </div>
+                    <div class="col">
+                        <i class="fas fa-check-circle text-success"></i> <strong>Ваша собственная БД</strong>
+                        <div class="small text-muted">Не зависит от других клиентов</div>
+                    </div>
+                    <div class="col">
+                        <i class="fas fa-check-circle text-success"></i> <strong>Полный SQL-доступ</strong>
+                        <div class="small text-muted">Любые запросы, любые данные</div>
+                    </div>
+                    <div class="col">
+                        <i class="fas fa-check-circle text-success"></i> <strong>Мониторинг 24/7</strong>
+                        <div class="small text-muted">Мы следим за всеми событиями</div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col">
+                        <i class="fas fa-check-circle text-success"></i> <strong>Безлимитные запросы</strong>
+                        <div class="small text-muted">Нет ограничений на SQL</div>
+                    </div>
+                    <div class="col">
+                        <i class="fas fa-check-circle text-success"></i> <strong>SSL/TLS шифрование</strong>
+                        <div class="small text-muted">Безопасное соединение</div>
+                    </div>
+                    <div class="col">
+                        <i class="fas fa-check-circle text-success"></i> <strong>Автобэкап каждый день</strong>
+                        <div class="small text-muted">Ваши данные в сохранности</div>
+                    </div>
+                    <div class="col">
+                        <i class="fas fa-check-circle text-success"></i> <strong>Telegram-уведомления</strong>
+                        <div class="small text-muted">О всех важных событиях</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Тарифы -->
+            <div class="row" style="margin-bottom: 20px;">
+                <div class="col">
+                    <div class="price-card">
+                        <i class="fas fa-rocket" style="font-size: 32px; color: #f59e0b; margin-bottom: 10px;"></i>
+                        <div style="font-size: 24px; font-weight: 800;">10 000 ₽</div>
+                        <div style="font-size: 13px; margin: 5px 0;">Бизнес</div>
+                        <div style="font-size: 11px; color: rgba(255,255,255,0.5);">до 3 подключений</div>
+                        <div style="font-size: 11px; color: rgba(255,255,255,0.5);">5 ГБ хранилища</div>
+                        <div style="font-size: 11px; color: rgba(255,255,255,0.5);">20 000 запросов/мес</div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="price-card" style="border: 1px solid #f59e0b;">
+                        <i class="fas fa-crown" style="font-size: 32px; color: #f59e0b; margin-bottom: 10px;"></i>
+                        <div style="font-size: 24px; font-weight: 800;">20 000 ₽</div>
+                        <div style="font-size: 13px; margin: 5px 0;">Корпоративный</div>
+                        <div style="font-size: 11px; color: rgba(255,255,255,0.5);">до 10 подключений</div>
+                        <div style="font-size: 11px; color: rgba(255,255,255,0.5);">20 ГБ хранилища</div>
+                        <div style="font-size: 11px; color: rgba(255,255,255,0.5);">100 000 запросов/мес</div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="price-card">
+                        <i class="fas fa-building" style="font-size: 32px; color: #f59e0b; margin-bottom: 10px;"></i>
+                        <div style="font-size: 20px; font-weight: 800;">По запросу</div>
+                        <div style="font-size: 13px; margin: 5px 0;">Enterprise</div>
+                        <div style="font-size: 11px; color: rgba(255,255,255,0.5);">индивидуально</div>
+                        <div style="font-size: 11px; color: rgba(255,255,255,0.5);">неограниченно</div>
+                        <div style="font-size: 11px; color: rgba(255,255,255,0.5);">VIP поддержка 24/7</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Кнопка заявки -->
+            <div style="text-align: center;">
+                <button class="btn-gold" style="padding: 14px 40px; font-size: 16px; border-radius: 50px;" onclick="requestSQLAccess()">
+                    <i class="fas fa-paper-plane"></i> Заказать отдельную БД
+                </button>
+                <p class="text-muted mt-2" style="font-size: 13px;">
+                    ⚡ <strong>После отправки заявки менеджер свяжется с вами в течение 15 минут</strong>
+                </p>
+            </div>
+
+            <!-- Подпись и гарантии -->
+            <div style="text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+                <p style="font-size: 12px; color: rgba(255,255,255,0.5);">
+                    🔒 <strong>Мы выделим для вас отдельный сервер с PostgreSQL и создадим собственную базу данных</strong><br>
+                    📊 Вы получите уникальные данные для подключения: хост, порт, имя БД, логин и пароль<br>
+                    🎯 Подключайтесь через любой SQL-клиент: DBeaver, DataGrip, pgAdmin, TablePlus<br>
+                    ⏱️ <strong>Среднее время подключения: от 1 до 3 дней после оплаты</strong><br>
+                    ✉️ <strong>После заявки менеджер свяжется с вами в течение 15 минут для уточнения деталей</strong>
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        var token = localStorage.getItem('token');
+        var allData = { transactions: [], payments: [], categories: [], recurring: [], closing: [] };
+        var currentModuleStatus = 'development';
+        var isAdmin = false;
+
+        // ========== ФУНКЦИИ УПРАВЛЕНИЯ СТАТУСОМ МОДУЛЯ ==========
+        
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.remove('active'); });
+            document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+            document.getElementById('tab-' + tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function escapeHtml(str) { if (!str) return ''; return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+
+        function getCurrentTabName() {
+            var activeTab = document.querySelector('.tab-content.active');
+            if (!activeTab) return 'transactions';
+            return activeTab.id.replace('tab-', '');
+        }
+
+        function getCurrentTabData() {
+            var tabName = getCurrentTabName();
+            switch(tabName) {
+                case 'transactions': return allData.transactions || [];
+                case 'payments': return allData.payments || [];
+                case 'categories': return allData.categories || [];
+                case 'recurring': return allData.recurring || [];
+                case 'closing': return allData.closing || [];
+                default: return [];
+            }
+        }
+
+        function getCurrentTabTitle() {
+            var titles = {
+                transactions: 'Транзакции',
+                payments: 'Платежи',
+                categories: 'Категории',
+                recurring: 'Автоплатежи',
+                closing: 'Закрытие месяца'
+            };
+            return titles[getCurrentTabName()] || 'Мои данные';
+        }
+
+        // Загрузить статус модуля
+        async function loadModuleStatus() {
+            try {
+                const res = await fetch('/api/dev-modules/status/client-data', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    currentModuleStatus = data.status;
+                    updateModuleUI(data.status, data.message);
+                }
+            } catch(e) {
+                console.log('Статус не загружен, используем по умолчанию');
+                updateModuleUI('development');
+            }
+            await checkAdminAccess();
+        }
+
+        // Проверить права администратора
+        async function checkAdminAccess() {
+            try {
+                const res = await fetch('/api/user/role', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                if (data.role === 'admin' || data.role === 'developer' || data.role === 'owner') {
+                    isAdmin = true;
+                    document.getElementById('toggleDevModeBtn').style.display = 'inline-flex';
+                }
+            } catch(e) {}
+        }
+
+        // Обновить UI в зависимости от статуса
+        function updateModuleUI(status, customMessage) {
+            const badge = document.getElementById('devBadge');
+            const messageSpan = document.getElementById('devMessage');
+            const statusBar = document.getElementById('moduleStatusBar');
+            
+            const statusConfig = {
+                development: {
+                    icon: '<i class="fas fa-code-branch"></i>',
+                    text: 'В РАЗРАБОТКЕ',
+                    bg: '#f59e0b',
+                    message: '⚠️ Модуль находится в стадии активной разработки. Некоторые функции могут работать некорректно.'
+                },
+                beta: {
+                    icon: '<i class="fas fa-flask"></i>',
+                    text: 'БЕТА-ТЕСТ',
+                    bg: '#3b82f6',
+                    message: '🧪 Модуль в бета-тестировании. Сообщайте о найденных ошибках!'
+                },
+                stable: {
+                    icon: '<i class="fas fa-check-circle"></i>',
+                    text: 'СТАБИЛЬНАЯ',
+                    bg: '#10b981',
+                    message: '✅ Модуль полностью готов к использованию.'
+                },
+                deprecated: {
+                    icon: '<i class="fas fa-archive"></i>',
+                    text: 'В АРХИВЕ',
+                    bg: '#6b7280',
+                    message: '📦 Модуль устарел и будет заменён в ближайшее время.'
+                }
+            };
+            
+            const config = statusConfig[status] || statusConfig.development;
+            badge.innerHTML = config.icon + ' ' + config.text;
+            badge.style.background = config.bg;
+            messageSpan.innerHTML = '<i class="fas fa-info-circle"></i> ' + (customMessage || config.message);
+            statusBar.style.borderBottomColor = config.bg;
+            
+            // Если модуль стабильный - показываем все функции
+            // Если в разработке - добавляем предупреждения
+            if (status === 'development') {
+                addDevWarnings();
+            } else if (status === 'stable') {
+                removeDevWarnings();
+            }
+        }
+
+        // Добавить предупреждения для режима разработки
+        function addDevWarnings() {
+            const deleteButtons = document.querySelectorAll('.btn-danger');
+            deleteButtons.forEach(btn => {
+                if (!btn.hasAttribute('data-warning-added')) {
+                    btn.setAttribute('data-warning-added', 'true');
+                    const originalClick = btn.onclick;
+                    btn.onclick = function(e) {
+                        if (!confirm('⚠️ Модуль в разработке. Удаление данных может работать некорректно. Продолжить?')) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            return false;
+                        }
+                        if (originalClick) return originalClick.call(btn, e);
+                    };
+                }
+            });
+        }
+
+        function removeDevWarnings() {
+            const deleteButtons = document.querySelectorAll('.btn-danger');
+            deleteButtons.forEach(btn => {
+                btn.removeAttribute('data-warning-added');
+            });
+        }
+
+        // Показать/скрыть панель управления
+        function toggleDevPanel() {
+            const panel = document.getElementById('adminDevPanel');
+            if (panel.style.display === 'none' || !panel.style.display) {
+                panel.style.display = 'block';
+                loadCurrentStatusToSelect();
+            } else {
+                panel.style.display = 'none';
+            }
+        }
+
+        // Загрузить текущий статус в селект
+        function loadCurrentStatusToSelect() {
+            const select = document.getElementById('moduleStatusSelect');
+            if (select) {
+                select.value = currentModuleStatus;
+            }
+        }
+
+        // Сохранить статус модуля
+        async function saveModuleStatus() {
+            const select = document.getElementById('moduleStatusSelect');
+            const newStatus = select.value;
+            const customMessage = document.getElementById('moduleCustomMessage').value;
+            
+            showNotification('Сохранение статуса...', 'info');
+            
+            try {
+                const res = await fetch('/api/dev-modules/status/client-data', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        status: newStatus,
+                        message: customMessage
+                    })
+                });
+                
+                if (res.ok) {
+                    currentModuleStatus = newStatus;
+                    updateModuleUI(newStatus, customMessage);
+                    showNotification('✅ Статус модуля обновлён!', 'success');
+                    document.getElementById('adminDevPanel').style.display = 'none';
+                } else {
+                    showNotification('❌ Ошибка обновления статуса', 'error');
+                }
+            } catch(e) {
+                showNotification('❌ Ошибка сети', 'error');
+            }
+        }
+
+        // Сообщить о проблеме
+        function reportBug() {
+            const bugDescription = prompt('Опишите проблему или предложение по улучшению модуля:');
+            if (bugDescription && bugDescription.trim()) {
+                showNotification('📤 Отправка отзыва...', 'info');
+                fetch('/api/dev-modules/report-issue', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        module: 'client-data',
+                        issue: bugDescription,
+                        status: currentModuleStatus,
+                        url: window.location.href,
+                        userAgent: navigator.userAgent
+                    })
+                }).then(function(res) {
+                    if (res.ok) {
+                        showNotification('✅ Спасибо! Ваше сообщение отправлено разработчикам.', 'success');
+                    } else {
+                        showNotification('❌ Не удалось отправить сообщение', 'error');
+                    }
+                }).catch(function() {
+                    showNotification('❌ Ошибка сети', 'error');
+                });
+            }
+        }
+
+        // ========== ОСНОВНЫЕ ФУНКЦИИ ==========
+        
+        async function loadAllData() {
+            await loadTransactions();
+            await loadPayments();
+            await loadCategories();
+            await loadRecurring();
+            await loadClosing();
+            await loadStats();
+        }
+
+        function renderTransactionsTable() {
+            var tbody = document.getElementById('transactionsTableBody');
+            if (!tbody) return;
+            if (!allData.transactions.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center">Нет транзакций</td></tr>';
+                return;
+            }
+            var html = '';
+            for (var i = 0; i < allData.transactions.length; i++) {
+                var t = allData.transactions[i];
+                var amountClass = t.amount >= 0 ? 'text-success' : 'text-danger';
+                var amountSign = t.amount >= 0 ? '+' : '';
+                var partner = t.partner || t.counterparty || '-';
+                html += '<tr>' +
+                    '<td>' + (t.date || '-') + '</td>' +
+                    '<td class="' + amountClass + '">' + amountSign + t.amount.toLocaleString() + ' ₽</td>' +
+                    '<td>' + escapeHtml(partner) + '</td>' +
+                    '<td>' + escapeHtml(t.purpose || '-') + '</td>' +
+                    '<td>' + (t.type === 'income' ? '💰 Доход' : '💸 Расход') + '</td>' +
+                    '<td><button class="delete-btn" onclick="deleteRow(\'transactions\', ' + i + ')">🗑</button></td>' +
+                '</tr>';
+            }
+            tbody.innerHTML = html;
+        }
+
+        async function loadTransactions() {
+            try {
+                var res = await fetch('/api/client/transactions', { headers: { 'Authorization': 'Bearer ' + token } });
+                var data = await res.json();
+                allData.transactions = data && Array.isArray(data) ? data : [];
+                renderTransactionsTable();
+            } catch(e) { console.error(e); }
+        }
+
+        function renderPaymentsTable() {
+            var tbody = document.getElementById('paymentsTableBody');
+            if (!tbody) return;
+            if (!allData.payments.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center">Нет платежей</td></tr>';
+                return;
+            }
+            var html = '';
+            for (var i = 0; i < allData.payments.length; i++) {
+                var p = allData.payments[i];
+                var amountClass = p.type === 'income' ? 'text-success' : 'text-danger';
+                var amountSign = p.type === 'income' ? '+' : '-';
+                html += '<tr>' +
+                    '<td>' + (p.date || '-') + '</td>' +
+                    '<td>' + escapeHtml(p.partner || '-') + '</td>' +
+                    '<td class="' + amountClass + '">' + amountSign + p.amount.toLocaleString() + ' ₽</td>' +
+                    '<td>' + (p.type === 'income' ? '💰 Доход' : '💸 Расход') + '</td>' +
+                    '<td>' + escapeHtml(p.purpose || '-') + '</td>' +
+                    '<td><button class="delete-btn" onclick="deleteRow(\'payments\', ' + i + ')">🗑</button></td>' +
+                '</tr>';
+            }
+            tbody.innerHTML = html;
+        }
+
+        async function loadPayments() {
+            try {
+                var res = await fetch('/api/client/payments', { headers: { 'Authorization': 'Bearer ' + token } });
+                var data = await res.json();
+                allData.payments = data && Array.isArray(data) ? data : [];
+                renderPaymentsTable();
+            } catch(e) { console.error(e); }
+        }
+
+        function renderCategoriesTable() {
+            var tbody = document.getElementById('categoriesTableBody');
+            if (!tbody) return;
+            if (!allData.categories.length) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-muted text-center">Нет категорий</td></tr>';
+                return;
+            }
+            var html = '';
+            for (var i = 0; i < allData.categories.length; i++) {
+                var c = allData.categories[i];
+                html += '<tr>' +
+                    '<td>' + escapeHtml(c.name) + '</td>' +
+                    '<td>' + escapeHtml(c.keywords || '-') + '</td>' +
+                    '<td><span style="background:' + c.color + '; padding:4px 12px; border-radius:20px;">' + c.color + '</span></td>' +
+                    '<td><button class="delete-btn" onclick="deleteRow(\'categories\', ' + i + ')">🗑</button></td>' +
+                '</tr>';
+            }
+            tbody.innerHTML = html;
+        }
+
+        async function loadCategories() {
+            try {
+                var res = await fetch('/api/client/categories', { headers: { 'Authorization': 'Bearer ' + token } });
+                var data = await res.json();
+                allData.categories = data && Array.isArray(data) ? data : [];
+                renderCategoriesTable();
+            } catch(e) { console.error(e); }
+        }
+
+        function renderRecurringTable() {
+            var tbody = document.getElementById('recurringTableBody');
+            if (!tbody) return;
+            if (!allData.recurring.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center">Нет автоплатежей</td></tr>';
+                return;
+            }
+            var html = '';
+            for (var i = 0; i < allData.recurring.length; i++) {
+                var r = allData.recurring[i];
+                html += '<tr>' +
+                    '<td>' + escapeHtml(r.partner) + '</td>' +
+                    '<td class="text-danger">-' + (r.amount || 0).toLocaleString() + ' ₽</td>' +
+                    '<td>' + (r.frequency === 'monthly' ? 'Ежемесячно' : 'Еженедельно') + '</td>' +
+                    '<td>' + (r.day_of_month || '-') + '</td>' +
+                    '<td>' + escapeHtml(r.purpose || '-') + '</td>' +
+                    '<td><button class="delete-btn" onclick="deleteRow(\'recurring\', ' + i + ')">🗑</button></td>' +
+                '</tr>';
+            }
+            tbody.innerHTML = html;
+        }
+
+        async function loadRecurring() {
+            try {
+                var res = await fetch('/api/client/recurring', { headers: { 'Authorization': 'Bearer ' + token } });
+                var data = await res.json();
+                allData.recurring = data && Array.isArray(data) ? data : [];
+                renderRecurringTable();
+            } catch(e) { console.error(e); }
+        }
+
+        function renderClosingTable() {
+            var tbody = document.getElementById('closingTableBody');
+            if (!tbody) return;
+            if (!allData.closing.length) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-muted text-center">Нет закрытий месяца</td></tr>';
+                return;
+            }
+            var html = '';
+            for (var i = 0; i < allData.closing.length; i++) {
+                var c = allData.closing[i];
+                var period = (c.month && c.year) ? c.month + '/' + c.year : (c.period || '-');
+                var status = c.status === 'completed' ? '✅ Завершено' : '⏳ В процессе';
+                html += '<tr>' +
+                    '<td>' + period + '</td>' +
+                    '<td>' + status + '</td>' +
+                    '<td class="text-success">' + (c.income || 0).toLocaleString() + ' ₽</td>' +
+                    '<td class="text-danger">' + (c.expense || 0).toLocaleString() + ' ₽</td>' +
+                    '<td class="text-warning">' + (c.tax || c.tax_amount || 0).toLocaleString() + ' ₽</td>' +
+                    '<td class="text-success">' + (c.net_profit || 0).toLocaleString() + ' ₽</td>' +
+                    '<td>' + (c.completed_at ? new Date(c.completed_at).toLocaleDateString() : '-') + '</td>' +
+                    '<td><button class="delete-btn" onclick="deleteRow(\'closing\', ' + i + ')">🗑</button></td>' +
+                '</tr>';
+            }
+            tbody.innerHTML = html;
+        }
+
+        async function loadClosing() {
+            try {
+                var res = await fetch('/api/month-end/history', { headers: { 'Authorization': 'Bearer ' + token } });
+                var data = await res.json();
+                allData.closing = data && Array.isArray(data) ? data : [];
+                renderClosingTable();
+            } catch(e) { console.error(e); }
+        }
+
+        async function loadStats() {
+            try {
+                var totalIncome = 0, totalExpense = 0;
+                for (var i = 0; i < allData.transactions.length; i++) {
+                    if (allData.transactions[i].amount > 0) totalIncome += allData.transactions[i].amount;
+                    else totalExpense += Math.abs(allData.transactions[i].amount);
+                }
+                document.getElementById('statTables').innerText = '5';
+                document.getElementById('statRecords').innerText = allData.transactions.length;
+                document.getElementById('statIncome').innerHTML = totalIncome.toLocaleString() + ' ₽';
+                document.getElementById('statExpense').innerHTML = totalExpense.toLocaleString() + ' ₽';
+            } catch(e) { console.error(e); }
+        }
+
+        function deleteRow(tableName, index) {
+            if (!confirm('Удалить эту запись?')) return;
+            allData[tableName].splice(index, 1);
+            if (tableName === 'transactions') renderTransactionsTable();
+            else if (tableName === 'payments') renderPaymentsTable();
+            else if (tableName === 'categories') renderCategoriesTable();
+            else if (tableName === 'recurring') renderRecurringTable();
+            else if (tableName === 'closing') renderClosingTable();
+            loadStats();
+            showNotification('✅ Запись удалена', 'success');
+        }
+
+        function confirmDeleteCurrentTable() {
+            var tableName = getCurrentTabName();
+            var names = { transactions: 'транзакции', payments: 'платежи', categories: 'категории', recurring: 'автоплатежи', closing: 'закрытия месяца' };
+            if (!confirm('⚠️ Удалить ВСЕ ' + names[tableName] + '? Это действие НЕОБРАТИМО!')) return;
+            var confirmText = prompt('Введите "УДАЛИТЬ" для подтверждения:');
+            if (confirmText !== 'УДАЛИТЬ') { showNotification('Удаление отменено', 'info'); return; }
+            
+            allData[tableName] = [];
+            if (tableName === 'transactions') renderTransactionsTable();
+            else if (tableName === 'payments') renderPaymentsTable();
+            else if (tableName === 'categories') renderCategoriesTable();
+            else if (tableName === 'recurring') renderRecurringTable();
+            else if (tableName === 'closing') renderClosingTable();
+            loadStats();
+            showNotification('✅ Все ' + names[tableName] + ' удалены', 'success');
+        }
+
+        function confirmDeleteAllData() {
+            if (!confirm('⚠️ УДАЛИТЬ ВСЕ ДАННЫЕ? Это действие НЕОБРАТИМО!')) return;
+            var confirmText = prompt('Введите "УДАЛИТЬ ВСЕ" для подтверждения:');
+            if (confirmText !== 'УДАЛИТЬ ВСЕ') { showNotification('Удаление отменено', 'info'); return; }
+            deleteAllData();
+        }
+
+        async function deleteAllData() {
+            showNotification('Удаление всех данных...', 'info');
+            try {
+                var res = await fetch('/api/client/delete-all-data', { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+                if (res.ok) {
+                    showNotification('✅ Все данные удалены', 'success');
+                    loadAllData();
+                } else { showNotification('Ошибка удаления', 'error'); }
+            } catch(e) { showNotification('Ошибка сети', 'error'); }
+        }
+
+        function requestSQLAccess() {
+            var name = prompt('Введите ваше имя:');
+            if (!name || name.trim() === '') {
+                showNotification('❌ Имя обязательно для оформления заявки', 'error');
+                return;
+            }
+            
+            var phone = prompt('Введите ваш телефон (для связи):');
+            if (!phone || phone.trim() === '') {
+                showNotification('❌ Телефон обязателен для связи', 'error');
+                return;
+            }
+            
+            var tariff = prompt('Выберите тариф:\n\n1 - Бизнес (10 000 ₽/мес)\n2 - Корпоративный (20 000 ₽/мес)\n3 - Enterprise (по запросу)');
+            
+            var tariffText = '';
+            var price = '';
+            if (tariff === '1') {
+                tariffText = 'Бизнес';
+                price = '10 000 ₽/мес';
+            } else if (tariff === '2') {
+                tariffText = 'Корпоративный';
+                price = '20 000 ₽/мес';
+            } else {
+                tariffText = 'Enterprise';
+                price = 'по запросу';
+            }
+            
+            showNotification('📤 Отправка заявки...', 'info');
+            
+            fetch('/api/client/request-sql-access', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: name,
+                    phone: phone,
+                    tariff: tariffText,
+                    price: price,
+                    timestamp: new Date().toISOString()
+                })
+            }).then(function(res) {
+                if (res.ok) {
+                    showNotification('✅ Заявка отправлена! Менеджер свяжется с вами в течение 15 минут', 'success');
+                } else {
+                    showNotification('❌ Ошибка отправки заявки', 'error');
+                }
+            }).catch(function() {
+                showNotification('❌ Ошибка сети', 'error');
+            });
+        }
+
+        function exportToPDF() {
+            var tabName = getCurrentTabName();
+            var data = getCurrentTabData();
+            var title = getCurrentTabTitle();
+            
+            var totalIncome = 0, totalExpense = 0;
+            if (tabName === 'transactions' || tabName === 'payments') {
+                for (var i = 0; i < data.length; i++) {
+                    var amount = data[i].amount;
+                    if (amount > 0) totalIncome += amount;
+                    else totalExpense += Math.abs(amount);
+                }
+            }
+            
+            var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + title + '</title><style>' +
+                'body{font-family:"Segoe UI",Arial;margin:40px;background:linear-gradient(135deg,#667eea,#764ba2)}' +
+                '.report-container{max-width:1200px;margin:0 auto;background:white;border-radius:24px;box-shadow:0 20px 60px rgba(0,0,0,0.3)}' +
+                '.header{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:40px;text-align:center}' +
+                '.header h1{font-size:32px}.summary{display:flex;justify-content:space-around;padding:30px 40px;background:#f8f9fa}' +
+                '.summary-card{text-align:center}.summary-card .number{font-size:28px;font-weight:700;color:#667eea}' +
+                'table{width:100%;border-collapse:collapse}.table-wrapper{padding:0 40px 40px 40px}' +
+                'th{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:14px;text-align:left}' +
+                'td{padding:12px;border-bottom:1px solid #e9ecef}.income{color:#10b981}.expense{color:#ef4444}' +
+                '.footer{background:#f8f9fa;padding:20px;text-align:center;font-size:11px}.button-bar{position:sticky;top:20px;display:flex;justify-content:center;gap:15px;margin-bottom:20px}' +
+                '.btn-print,.btn-close{padding:10px 28px;border:none;border-radius:40px;cursor:pointer}.btn-print{background:#667eea;color:white}.btn-close{background:#ef4444;color:white}' +
+                '@media print{.button-bar{display:none}}' +
+                '</style></head><body>' +
+                '<div class="button-bar"><button class="btn-print" onclick="window.print()">🖨️ Печать</button><button class="btn-close" onclick="window.close()">❌ Закрыть</button></div>' +
+                '<div class="report-container"><div class="header"><h1>📊 ' + title + '</h1><p>Дата: ' + new Date().toLocaleString() + '</p></div>' +
+                '<div class="summary"><div class="summary-card"><div class="number">' + data.length + '</div><div class="label">Всего записей</div></div>';
+            
+            if (tabName === 'transactions' || tabName === 'payments') {
+                html += '<div class="summary-card"><div class="number" style="color:#10b981;">+' + totalIncome.toLocaleString() + ' ₽</div><div class="label">Доходы</div></div>' +
+                        '<div class="summary-card"><div class="number" style="color:#ef4444;">-' + totalExpense.toLocaleString() + ' ₽</div><div class="label">Расходы</div></div>';
+            }
+            
+            html += '</div><div class="table-wrapper"><table><thead><tr>';
+            
+            if (tabName === 'transactions') {
+                html += '<th>Дата</th><th>Сумма</th><th>Партнёр</th><th>Назначение</th><th>Тип</th>';
+            } else if (tabName === 'payments') {
+                html += '<th>Дата</th><th>Партнёр</th><th>Сумма</th><th>Тип</th><th>Назначение</th>';
+            } else if (tabName === 'categories') {
+                html += '<th>Название</th><th>Ключевые слова</th><th>Цвет</th>';
+            } else if (tabName === 'recurring') {
+                html += '<th>Партнёр</th><th>Сумма</th><th>Периодичность</th><th>День месяца</th><th>Назначение</th>';
+            } else if (tabName === 'closing') {
+                html += '<th>Период</th><th>Статус</th><th>Доходы</th><th>Расходы</th><th>Налог</th><th>Чистая прибыль</th><th>Дата</th>';
+            }
+            html += '</tr></thead><tbody>';
+            
+            for (var i = 0; i < data.length; i++) {
+                var item = data[i];
+                html += '<tr>';
+                if (tabName === 'transactions') {
+                    var amountClass = item.amount >= 0 ? 'income' : 'expense';
+                    var amountSign = item.amount >= 0 ? '+' : '';
+                    html += '<td>' + (item.date || '-') + '</td>' +
+                            '<td class="' + amountClass + '">' + amountSign + item.amount.toLocaleString() + ' ₽</td>' +
+                            '<td>' + escapeHtml(item.partner || item.counterparty || '-') + '</td>' +
+                            '<td>' + escapeHtml(item.purpose || '-') + '</td>' +
+                            '<td>' + (item.type === 'income' ? 'Доход' : 'Расход') + '</td>';
+                } else if (tabName === 'payments') {
+                    var amountClass = item.type === 'income' ? 'income' : 'expense';
+                    var amountSign = item.type === 'income' ? '+' : '-';
+                    html += '<td>' + (item.date || '-') + '</td>' +
+                            '<td>' + escapeHtml(item.partner || '-') + '</td>' +
+                            '<td class="' + amountClass + '">' + amountSign + item.amount.toLocaleString() + ' ₽</td>' +
+                            '<td>' + (item.type === 'income' ? 'Доход' : 'Расход') + '</td>' +
+                            '<td>' + escapeHtml(item.purpose || '-') + '</td>';
+                } else if (tabName === 'categories') {
+                    html += '<td>' + escapeHtml(item.name) + '</td>' +
+                            '<td>' + escapeHtml(item.keywords || '-') + '</td>' +
+                            '<td><span style="background:' + item.color + '; padding:4px 12px; border-radius:20px;">' + item.color + '</span></td>';
+                } else if (tabName === 'recurring') {
+                    html += '<td>' + escapeHtml(item.partner) + '</td>' +
+                            '<td class="expense">-' + (item.amount || 0).toLocaleString() + ' ₽</td>' +
+                            '<td>' + (item.frequency === 'monthly' ? 'Ежемесячно' : 'Еженедельно') + '</td>' +
+                            '<td>' + (item.day_of_month || '-') + '</td>' +
+                            '<td>' + escapeHtml(item.purpose || '-') + '</td>';
+                } else if (tabName === 'closing') {
+                    var period = (item.month && item.year) ? item.month + '/' + item.year : (item.period || '-');
+                    var status = item.status === 'completed' ? '✅ Завершено' : '⏳ В процессе';
+                    html += '<td>' + period + '</td>' +
+                            '<td>' + status + '</td>' +
+                            '<td class="income">' + (item.income || 0).toLocaleString() + ' ₽</td>' +
+                            '<td class="expense">' + (item.expense || 0).toLocaleString() + ' ₽</td>' +
+                            '<td class="expense">' + (item.tax || item.tax_amount || 0).toLocaleString() + ' ₽</td>' +
+                            '<td class="income">' + (item.net_profit || 0).toLocaleString() + ' ₽</td>' +
+                            '<td>' + (item.completed_at ? new Date(item.completed_at).toLocaleDateString() : '-') + '</td>';
+                }
+                html += '</tr>';
+            }
+            html += '</tbody></table></div><div class="footer"><p>📌 Отчёт сформирован в FinCore</p></div></div></body></html>';
+            
+            var win = window.open('', '_blank');
+            win.document.write(html);
+            win.document.close();
+        }
+
+        function exportToExcel() {
+            var tabName = getCurrentTabName();
+            var data = getCurrentTabData();
+            var title = getCurrentTabTitle();
+            var excelData = [];
+            
+            if (tabName === 'transactions') {
+                excelData = [['Дата', 'Сумма', 'Партнёр', 'Назначение', 'Тип']];
+                for (var i = 0; i < data.length; i++) {
+                    var amountSign = data[i].amount >= 0 ? '+' : '';
+                    excelData.push([data[i].date || '-', amountSign + data[i].amount, data[i].partner || data[i].counterparty || '-', data[i].purpose || '-', data[i].type === 'income' ? 'Доход' : 'Расход']);
+                }
+            } else if (tabName === 'payments') {
+                excelData = [['Дата', 'Партнёр', 'Сумма', 'Тип', 'Назначение']];
+                for (var i = 0; i < data.length; i++) {
+                    var amountSign = data[i].type === 'income' ? '+' : '-';
+                    excelData.push([data[i].date || '-', data[i].partner || '-', amountSign + data[i].amount, data[i].type === 'income' ? 'Доход' : 'Расход', data[i].purpose || '-']);
+                }
+            } else if (tabName === 'categories') {
+                excelData = [['Название', 'Ключевые слова', 'Цвет']];
+                for (var i = 0; i < data.length; i++) {
+                    excelData.push([data[i].name || '-', data[i].keywords || '-', data[i].color]);
+                }
+            } else if (tabName === 'recurring') {
+                excelData = [['Партнёр', 'Сумма', 'Периодичность', 'День месяца', 'Назначение']];
+                for (var i = 0; i < data.length; i++) {
+                    excelData.push([data[i].partner || '-', '-' + (data[i].amount || 0), data[i].frequency === 'monthly' ? 'Ежемесячно' : 'Еженедельно', data[i].day_of_month || '-', data[i].purpose || '-']);
+                }
+            } else if (tabName === 'closing') {
+                excelData = [['Период', 'Статус', 'Доходы', 'Расходы', 'Налог', 'Чистая прибыль', 'Дата']];
+                for (var i = 0; i < data.length; i++) {
+                    var period = (data[i].month && data[i].year) ? data[i].month + '/' + data[i].year : (data[i].period || '-');
+                    var status = data[i].status === 'completed' ? 'Завершено' : 'В процессе';
+                    excelData.push([period, status, data[i].income || 0, data[i].expense || 0, data[i].tax || data[i].tax_amount || 0, data[i].net_profit || 0, data[i].completed_at ? new Date(data[i].completed_at).toLocaleDateString() : '-']);
+                }
+            }
+            
+            var ws = XLSX.utils.aoa_to_sheet(excelData);
+            var wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, title);
+            XLSX.writeFile(wb, title + '_' + new Date().toISOString().split('T')[0] + '.xlsx');
+            showNotification('✅ Excel файл скачан', 'success');
+        }
+
+        function exportToWord() {
+            var tabName = getCurrentTabName();
+            var data = getCurrentTabData();
+            var title = getCurrentTabTitle();
+            
+            var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + title + '</title><style>' +
+                'body{font-family:Arial;margin:40px}h1{color:#667eea}table{width:100%;border-collapse:collapse;margin-top:20px}' +
+                'th,td{border:1px solid #ddd;padding:10px;text-align:left}th{background:#667eea;color:white}' +
+                '.income{color:green}.expense{color:red}</style></head><body>' +
+                '<h1>📊 ' + title + '</h1><p>Дата: ' + new Date().toLocaleString() + '</p><p>Всего записей: ' + data.length + '</p>' +
+                '<table><thead><tr>';
+            
+            if (tabName === 'transactions') {
+                html += '<th>Дата</th><th>Сумма</th><th>Партнёр</th><th>Назначение</th><th>Тип</th>';
+            } else if (tabName === 'payments') {
+                html += '<th>Дата</th><th>Партнёр</th><th>Сумма</th><th>Тип</th><th>Назначение</th>';
+            } else if (tabName === 'categories') {
+                html += '<th>Название</th><th>Ключевые слова</th><th>Цвет</th>';
+            } else if (tabName === 'recurring') {
+                html += '<th>Партнёр</th><th>Сумма</th><th>Периодичность</th><th>День месяца</th><th>Назначение</th>';
+            } else if (tabName === 'closing') {
+                html += '<th>Период</th><th>Статус</th><th>Доходы</th><th>Расходы</th><th>Налог</th><th>Чистая прибыль</th><th>Дата</th>';
+            }
+            html += '</tr></thead><tbody>';
+            
+            for (var i = 0; i < data.length; i++) {
+                var item = data[i];
+                html += '<tr>';
+                if (tabName === 'transactions') {
+                    var amountClass = item.amount >= 0 ? 'income' : 'expense';
+                    var amountSign = item.amount >= 0 ? '+' : '';
+                    html += '<td>' + (item.date || '-') + '</td>' +
+                            '<td class="' + amountClass + '">' + amountSign + item.amount + ' ₽</td>' +
+                            '<td>' + escapeHtml(item.partner || item.counterparty || '-') + '</td>' +
+                            '<td>' + escapeHtml(item.purpose || '-') + '</td>' +
+                            '<td>' + (item.type === 'income' ? 'Доход' : 'Расход') + '</td>';
+                } else if (tabName === 'payments') {
+                    var amountClass = item.type === 'income' ? 'income' : 'expense';
+                    var amountSign = item.type === 'income' ? '+' : '-';
+                    html += '<td>' + (item.date || '-') + '</td>' +
+                            '<td>' + escapeHtml(item.partner || '-') + '</td>' +
+                            '<td class="' + amountClass + '">' + amountSign + item.amount + ' ₽</td>' +
+                            '<td>' + (item.type === 'income' ? 'Доход' : 'Расход') + '</td>' +
+                            '<td>' + escapeHtml(item.purpose || '-') + '</td>';
+                } else if (tabName === 'categories') {
+                    html += '<td>' + escapeHtml(item.name) + '</td>' +
+                            '<td>' + escapeHtml(item.keywords || '-') + '</td>' +
+                            '<td><span style="background:' + item.color + '; padding:4px 12px; border-radius:20px;">' + item.color + '</span></td>';
+                } else if (tabName === 'recurring') {
+                    html += '<td>' + escapeHtml(item.partner) + '</td>' +
+                            '<td class="expense">-' + (item.amount || 0) + ' ₽</td>' +
+                            '<td>' + (item.frequency === 'monthly' ? 'Ежемесячно' : 'Еженедельно') + '</td>' +
+                            '<td>' + (item.day_of_month || '-') + '</td>' +
+                            '<td>' + escapeHtml(item.purpose || '-') + '</td>';
+                } else if (tabName === 'closing') {
+                    var period = (item.month && item.year) ? item.month + '/' + item.year : (item.period || '-');
+                    var status = item.status === 'completed' ? '✅ Завершено' : '⏳ В процессе';
+                    html += '<td>' + period + '</td>' +
+                            '<td>' + status + '<tr>' +
+                            '<td class="income">' + (item.income || 0) + ' ₽</td>' +
+                            '<td class="expense">' + (item.expense || 0) + ' ₽</td>' +
+                            '<td class="expense">' + (item.tax || item.tax_amount || 0) + ' ₽</td>' +
+                            '<td class="income">' + (item.net_profit || 0) + ' ₽</td>' +
+                            '<td>' + (item.completed_at ? new Date(item.completed_at).toLocaleDateString() : '-') + '</td>';
+                }
+                html += '</tr>';
+            }
+            html += '</tbody></table></body></html>';
+            
+            var blob = new Blob([html], { type: 'application/msword' });
+            var link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = title + '_' + new Date().toISOString().split('T')[0] + '.doc';
+            link.click();
+            showNotification('✅ Word файл скачан', 'success');
+        }
+
+        function exportToCSV() {
+            var tabName = getCurrentTabName();
+            var data = getCurrentTabData();
+            var title = getCurrentTabTitle();
+            var csv = '';
+            
+            if (tabName === 'transactions') {
+                csv = 'Дата,Сумма,Партнёр,Назначение,Тип\n';
+                for (var i = 0; i < data.length; i++) {
+                    var amountSign = data[i].amount >= 0 ? '+' : '';
+                    csv += '"' + (data[i].date || '-') + '","' + amountSign + data[i].amount + '","' + escapeHtml(data[i].partner || data[i].counterparty || '-') + '","' + escapeHtml(data[i].purpose || '-') + '","' + (data[i].type === 'income' ? 'Доход' : 'Расход') + '"\n';
+                }
+            } else if (tabName === 'payments') {
+                csv = 'Дата,Партнёр,Сумма,Тип,Назначение\n';
+                for (var i = 0; i < data.length; i++) {
+                    var amountSign = data[i].type === 'income' ? '+' : '-';
+                    csv += '"' + (data[i].date || '-') + '","' + escapeHtml(data[i].partner || '-') + '","' + amountSign + data[i].amount + '","' + (data[i].type === 'income' ? 'Доход' : 'Расход') + '","' + escapeHtml(data[i].purpose || '-') + '"\n';
+                }
+            } else if (tabName === 'categories') {
+                csv = 'Название,Ключевые слова,Цвет\n';
+                for (var i = 0; i < data.length; i++) {
+                    csv += '"' + escapeHtml(data[i].name) + '","' + escapeHtml(data[i].keywords || '-') + '","' + data[i].color + '"\n';
+                }
+            } else if (tabName === 'recurring') {
+                csv = 'Партнёр,Сумма,Периодичность,День месяца,Назначение\n';
+                for (var i = 0; i < data.length; i++) {
+                    csv += '"' + escapeHtml(data[i].partner) + '","-' + (data[i].amount || 0) + '","' + (data[i].frequency === 'monthly' ? 'Ежемесячно' : 'Еженедельно') + '","' + (data[i].day_of_month || '-') + '","' + escapeHtml(data[i].purpose || '-') + '"\n';
+                }
+            } else if (tabName === 'closing') {
+                csv = 'Период,Статус,Доходы,Расходы,Налог,Чистая прибыль,Дата\n';
+                for (var i = 0; i < data.length; i++) {
+                    var period = (data[i].month && data[i].year) ? data[i].month + '/' + data[i].year : (data[i].period || '-');
+                    var status = data[i].status === 'completed' ? 'Завершено' : 'В процессе';
+                    csv += '"' + period + '","' + status + '","' + (data[i].income || 0) + '","' + (data[i].expense || 0) + '","' + (data[i].tax || data[i].tax_amount || 0) + '","' + (data[i].net_profit || 0) + '","' + (data[i].completed_at ? new Date(data[i].completed_at).toLocaleDateString() : '-') + '"\n';
+                }
+            }
+            
+            var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            var link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = title + '_' + new Date().toISOString().split('T')[0] + '.csv';
+            link.click();
+            showNotification('✅ CSV файл скачан', 'success');
+        }
+
+        function showNotification(msg, type) {
+            var colors = { success: '#10b981', error: '#ef4444', info: '#3b82f6' };
+            var div = document.createElement('div');
+            div.className = 'toast-notification';
+            div.style.background = colors[type];
+            div.innerHTML = msg;
+            document.body.appendChild(div);
+            setTimeout(function() { div.remove(); }, 3000);
+        }
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            loadModuleStatus();
+            loadAllData();
+        });
+    </script>
+</body>
+</html>
+{{end}}

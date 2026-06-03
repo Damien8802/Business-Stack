@@ -20,14 +20,14 @@ type Claims struct {
 }
 
 // GenerateTokens создаёт access и refresh токены
-func GenerateTokens(userID, userName, email, role string) (string, string, error) {
+func GenerateTokens(userID, userName, email, role, tenantID string) (string, string, error) {
     // Access token
     accessClaims := Claims{
         UserID:   userID,
         UserName: userName,
         Email:    email,
         Role:     role,
-        TenantID: "11111111-1111-1111-1111-111111111111",
+        TenantID: tenantID,
         RegisteredClaims: jwt.RegisteredClaims{
             ExpiresAt: jwt.NewNumericDate(time.Now().Add(cfg.JWTAccessExpiry)),
             IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -45,7 +45,7 @@ func GenerateTokens(userID, userName, email, role string) (string, string, error
         UserName: userName,
         Email:    email,
         Role:     role,
-        TenantID: "11111111-1111-1111-1111-111111111111",
+        TenantID: tenantID,
         RegisteredClaims: jwt.RegisteredClaims{
             ExpiresAt: jwt.NewNumericDate(time.Now().Add(cfg.JWTRefreshExpiry)),
             IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -61,14 +61,14 @@ func GenerateTokens(userID, userName, email, role string) (string, string, error
 }
 
 // GenerateTokensWithExpiry создаёт токены с указанными сроками
-func GenerateTokensWithExpiry(userID, userName, email, role string, accessExpiry, refreshExpiry time.Duration) (string, string, error) {
+func GenerateTokensWithExpiry(userID, userName, email, role, tenantID string, accessExpiry, refreshExpiry time.Duration) (string, string, error) {
     // Access token
     accessClaims := Claims{
         UserID:   userID,
         UserName: userName,
         Email:    email,
         Role:     role,
-        TenantID: "11111111-1111-1111-1111-111111111111",
+        TenantID: tenantID,
         RegisteredClaims: jwt.RegisteredClaims{
             ExpiresAt: jwt.NewNumericDate(time.Now().Add(accessExpiry)),
             IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -86,7 +86,7 @@ func GenerateTokensWithExpiry(userID, userName, email, role string, accessExpiry
         UserName: userName,
         Email:    email,
         Role:     role,
-        TenantID: "11111111-1111-1111-1111-111111111111",
+        TenantID: tenantID,
         RegisteredClaims: jwt.RegisteredClaims{
             ExpiresAt: jwt.NewNumericDate(time.Now().Add(refreshExpiry)),
             IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -119,7 +119,7 @@ func ValidateToken(tokenString string) (*Claims, error) {
 }
 
 // RefreshToken обновляет access token
-func RefreshToken(refreshToken string) (string, error) {
+func RefreshToken(refreshToken string, tenantID string) (string, error) {
     token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
         return []byte(cfg.JWTRefreshSecret), nil
     })
@@ -143,7 +143,7 @@ func RefreshToken(refreshToken string) (string, error) {
         UserName: userName,
         Email:    email,
         Role:     role,
-        TenantID: "11111111-1111-1111-1111-111111111111",
+        TenantID: tenantID,
         RegisteredClaims: jwt.RegisteredClaims{
             ExpiresAt: jwt.NewNumericDate(time.Now().Add(cfg.JWTAccessExpiry)),
             IssuedAt:  jwt.NewNumericDate(time.Now()),

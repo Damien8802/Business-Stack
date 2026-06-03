@@ -552,29 +552,32 @@
                 </div>
             </div>
             
-            <div class="quick-buttons">
-                <button class="quick-btn" onclick="sendQuickMessage('создай вакансию разработчик')">
-                    <i class="fas fa-plus-circle me-1"></i> Создать вакансию
-                </button>
-                <button class="quick-btn" onclick="sendQuickMessage('список вакансий')">
-                    <i class="fas fa-list me-1"></i> Список вакансий
-                </button>
-                <button class="quick-btn" onclick="sendQuickMessage('статистика')">
-                    <i class="fas fa-chart-simple me-1"></i> Статистика
-                </button>
-                <button class="quick-btn" onclick="sendQuickMessage('создай клиента ООО Тест +7 999 888 77 66')">
-                    <i class="fas fa-user-plus me-1"></i> Создать клиента
-                </button>
-                <button class="quick-btn" onclick="sendQuickMessage('создай сделку для Тест на 500000')">
-                    <i class="fas fa-chart-line me-1"></i> Создать сделку
-                </button>
-                <button class="quick-btn" onclick="sendQuickMessage('выставь счёт Тест на 500000')">
-                    <i class="fas fa-file-invoice me-1"></i> Выставить счёт
-                </button>
-                <button class="quick-btn" onclick="sendQuickMessage('создай задачу Сделать отчёт для Петрова')">
-                    <i class="fas fa-tasks me-1"></i> Создать задачу
-                </button>
-            </div>
+          <div class="quick-buttons">
+    <button class="quick-btn" onclick="askForPartner()">
+        <i class="fas fa-user-plus me-1"></i> Создать партнёра
+    </button>
+    <button class="quick-btn" onclick="askForDeal()">
+        <i class="fas fa-chart-line me-1"></i> Создать сделку
+    </button>
+    <button class="quick-btn" onclick="askForInvoice()">
+        <i class="fas fa-file-invoice me-1"></i> Выставить счёт
+    </button>
+    <button class="quick-btn" onclick="askForAct()">
+        <i class="fas fa-file-contract me-1"></i> Акт сверки
+    </button>
+    <button class="quick-btn" onclick="askForTask()">
+        <i class="fas fa-tasks me-1"></i> Создать задачу
+    </button>
+    <button class="quick-btn" onclick="askForInfo()">
+        <i class="fas fa-info-circle me-1"></i> Информация о партнёре
+    </button>
+    <button class="quick-btn" onclick="sendQuickMessage('сколько стоит FinCore?')">
+        <i class="fas fa-question-circle me-1"></i> Цена FinCore
+    </button>
+    <button class="quick-btn" onclick="sendQuickMessage('что умеешь?')">
+        <i class="fas fa-robot me-1"></i> Помощь
+    </button>
+</div>
             
             <div class="chat-input">
                 <input type="text" id="messageInput" placeholder="Напишите сообщение..." onkeypress="if(event.keyCode===13) sendMessage()">
@@ -631,7 +634,11 @@ let aiModalTyping = false;
 // ========== ЗАГРУЗКА ИНФОРМАЦИИ О ПОЛЬЗОВАТЕЛЕ ==========
 async function loadUserInfo() {
     try {
-        const response = await fetch('/api/current-user');
+        const response = await fetch('/api/current-user', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
         if (response.ok) {
             const user = await response.json();
             document.getElementById('userName').innerHTML = user.name || user.email || 'Пользователь';
@@ -664,16 +671,33 @@ if (toggleBtn) {
     });
 }
 
-// ========== ФУНКЦИИ ЧАТА ==========
 function formatText(text) {
     if (!text) return '';
+    
+    // Обработка жирного текста
     text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    
+    // Обработка переносов строк
     text = text.replace(/\n/g, '<br>');
-    text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+    
+    // Обработка ссылок вида 🔗 Ссылка: http://example.com
+    text = text.replace(/(🔗\s*Ссылка:\s*)(https?:\/\/[^\s\n]+)/g, function(match, prefix, url) {
+        return prefix + '<a href="' + url + '" target="_blank" style="color: #667eea; text-decoration: underline; cursor: pointer;">' + url + '</a>';
+    });
+    
+    // Обработка ссылок в формате [текст](url)
+    text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color: #667eea; text-decoration: underline; cursor: pointer;">$1</a>');
+    
+    // Обработка простых URL (http://, https://)
+    text = text.replace(/(https?:\/\/[^\s\n<]+)/g, function(url) {
+        return '<a href="' + url + '" target="_blank" style="color: #667eea; text-decoration: underline; cursor: pointer;">' + url + '</a>';
+    });
+    
+    // Обработка маркеров списка
     text = text.replace(/• /g, '• ');
+    
     return text;
 }
-
 function addMessage(role, text) {
     const messagesDiv = document.getElementById('chatMessages');
     const messageDiv = document.createElement('div');
@@ -721,17 +745,16 @@ async function sendMessage() {
     input.value = '';
     showTyping();
     
+    const token = localStorage.getItem('token');
+    
     try {
-        const response = await fetch('/api/ai/universal/chat', {
+        const response = await fetch('/api/ai/executor/chat', {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                'X-Tenant-ID': currentTenantId
+                'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ 
-                message: message,
-                tenant_id: currentTenantId
-            })
+            body: JSON.stringify({ message: message })
         });
         
         const data = await response.json();
@@ -751,9 +774,16 @@ async function sendMessage() {
     }
 }
 
+// ========== БЫСТРЫЕ КНОПКИ ==========
 function sendQuickMessage(message) {
-    document.getElementById('messageInput').value = message;
-    sendMessage();
+    console.log('🔘 Быстрая кнопка:', message);
+    const input = document.getElementById('messageInput');
+    if (input) {
+        input.value = message;
+        sendMessage();
+    } else {
+        console.error('❌ Поле ввода не найдено');
+    }
 }
 
 // ========== ФУНКЦИИ МОДАЛЬНОГО ОКНА ==========
@@ -816,17 +846,16 @@ async function sendAIModalMessage(quickMsg) {
     addAIModalMessage('user', message);
     showAIModalTyping();
     
+    const token = localStorage.getItem('token');
+    
     try {
-        const response = await fetch('/api/ai/universal/chat', {
+        const response = await fetch('/api/ai/executor/chat', {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                'X-Tenant-ID': currentTenantId
+                'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ 
-                message: message,
-                tenant_id: currentTenantId
-            })
+            body: JSON.stringify({ message: message })
         });
         
         const data = await response.json();
@@ -863,6 +892,53 @@ function loadChatHistory() {
 }
 
 loadChatHistory();
+
+// ========== ИНТЕРАКТИВНЫЕ КНОПКИ С ЗАПРОСОМ ДАННЫХ ==========
+function askForPartner() {
+    const name = prompt("Введите название партнёра (например: ООО Ромашка):");
+    if (!name) return;
+    const phone = prompt("Введите телефон (например: +7 999 123 45 67):", "");
+    let message = `создай партнёра ${name}`;
+    if (phone) message += ` ${phone}`;
+    sendQuickMessage(message);
+}
+
+function askForDeal() {
+    const partner = prompt("Для какого партнёра создать сделку?");
+    if (!partner) return;
+    const amount = prompt("Введите сумму сделки (например: 500000):");
+    if (!amount) return;
+    sendQuickMessage(`создай сделку для ${partner} на ${amount}`);
+}
+
+function askForInvoice() {
+    const partner = prompt("Для какого партнёра выставить счёт?");
+    if (!partner) return;
+    const amount = prompt("Введите сумму счёта (например: 75000):");
+    if (!amount) return;
+    sendQuickMessage(`выставь счёт ${partner} на ${amount}`);
+}
+
+function askForAct() {
+    const partner = prompt("С каким партнёром создать акт сверки?");
+    if (!partner) return;
+    sendQuickMessage(`создай акт сверки с ${partner}`);
+}
+
+function askForTask() {
+    const title = prompt("Название задачи:");
+    if (!title) return;
+    const assignee = prompt("Кому назначить задачу? (например: Иванов):", "");
+    let message = `создай задачу ${title}`;
+    if (assignee) message += ` для ${assignee}`;
+    sendQuickMessage(message);
+}
+
+function askForInfo() {
+    const partner = prompt("Информацию о каком партнёре показать?");
+    if (!partner) return;
+    sendQuickMessage(`покажи информацию о ${partner}`);
+}
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

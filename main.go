@@ -746,67 +746,8 @@ r.GET("/api/tax/diagnose", middleware.AuthMiddleware(cfg), middleware.AdminMiddl
         })
     })
 
-    
     // Universal AI Assistant API
-  // AI Assistant - использует executor для реальных действий
-r.POST("/api/ai/universal/chat", func(c *gin.Context) {
-    // Получаем данные
-    tenantID := c.GetString("tenant_id")
-    if tenantID == "" {
-        tenantID = "default"
-    }
-    userID := c.GetString("user_id")
-    if userID == "" {
-        userID = "system"
-    }
-    
-    var req struct {
-        Message string `json:"message"`
-    }
-    if err := c.BindJSON(&req); err != nil {
-        c.JSON(400, gin.H{"error": err.Error()})
-        return
-    }
-    
-    // Используем AI Executor для анализа и выполнения
-    intent, entities := services.AnalyzeIntentExtended(req.Message)
-    
-    // Если это HR запрос - обрабатываем отдельно
-    if strings.Contains(strings.ToLower(req.Message), "ваканс") {
-        result := handleHRRequest(c, tenantID, userID, req.Message)
-        c.JSON(200, gin.H{
-            "response": result,
-            "success":  true,
-        })
-        return
-    }
-    
-    // Выполняем действие
-    result := aiExecutor.ExecuteAction(tenantID, userID, intent, entities)
-    
-    // Сохраняем историю
-    aiExecutor.SaveActionHistory(tenantID, userID, intent.Action, entities, result.Data, result.Error)
-    
-    // Запускаем workflows
-    if result.Success {
-        var resultData map[string]interface{}
-        if result.Data != nil {
-            if data, ok := result.Data.(map[string]interface{}); ok {
-                resultData = data
-            }
-        }
-        workflowResults := workflowEngine.ExecuteWorkflows(tenantID, intent.Action, resultData)
-        if len(workflowResults) > 0 {
-            result.Message += "\n\n📋 Автоматически выполнено:\n" + strings.Join(workflowResults, "\n")
-        }
-    }
-    
-    c.JSON(200, gin.H{
-        "response": result.Message,
-        "success":  result.Success,
-        "action":   intent.Action,
-    })
-})
+    r.POST("/api/ai/universal/chat", universalAI.ChatHandler)
     r.GET("/api/ai/universal/history", universalAI.GetHistory)
     r.GET("/api/ai/universal/actions", universalAI.GetActions)
     r.GET("/api/ai/universal/settings", universalAI.GetSettings)
@@ -1948,10 +1889,59 @@ modulesGroup.Use(middleware.AuthMiddleware(cfg))
 {
     modulesGroup.GET("", handlers.GetModules)
     modulesGroup.GET("/my-subscriptions", handlers.GetMyModuleSubscriptions)
-    modulesGroup.POST("/start-trial", handlers.StartModuleTrial)
+    modulesGroup.POST("/start-trial", func(c *gin.Context) {
+        var moduleName string
+        
+        // Пробуем получить из URL параметра ?module=xxx
+        moduleName = c.Query("module")
+        
+        // Если нет - пробуем из JSON { "module_code": "xxx" }
+        if moduleName == "" {
+            var req struct {
+                ModuleCode string `json:"module_code"`
+            }
+            if err := c.ShouldBindJSON(&req); err == nil && req.ModuleCode != "" {
+                moduleName = req.ModuleCode
+            }
+        }
+        
+        // Если нет - пробуем из JSON { "module": "xxx" }
+        if moduleName == "" {
+            var req struct {
+                Module string `json:"module"`
+            }
+            if err := c.ShouldBindJSON(&req); err == nil && req.Module != "" {
+                moduleName = req.Module
+            }
+        }
+        
+        if moduleName == "" {
+            c.JSON(http.StatusBadRequest, gin.H{"error": "Missing parameters", "message": "Parameter 'module' or 'module_code' is required"})
+            return
+        }
+        
+        userID := c.GetString("user_id")
+        if userID == "" {
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+            return
+        }
+        
+        err := middleware.StartModuleTrial(userID, moduleName)
+        if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+            return
+        }
+        
+        trialDays := middleware.GetModuleTrialDays(moduleName)
+        c.JSON(http.StatusOK, gin.H{
+            "success":     true,
+            "message":     "Пробный период активирован!",
+            "trial_days":  trialDays,
+            "module":      moduleName,
+        })
+    })
     modulesGroup.GET("/check/:module", handlers.CheckModuleAccess)
 }
-
     // Дашборды
     dashboards := r.Group("/")
     dashboards.Use(middleware.AuthMiddleware(cfg))
@@ -2152,6 +2142,8 @@ api.GET("/user/role", func(c *gin.Context) {
        // Партнёры для актов сверки
         api.GET("/crm/partners", handlers.GetPartners)
         api.POST("/crm/partners", handlers.CreatePartner)
+        api.PUT("/crm/partners/:id", handlers.UpdatePartner)    
+        api.DELETE("/crm/partners/:id", handlers.DeletePartner)
         api.GET("/crm/deals", handlers.GetDeals)
         api.POST("/crm/deals", handlers.CreateDeal)
         api.PUT("/crm/deals/:id", handlers.UpdateDeal)
@@ -2549,6 +2541,20 @@ api.DELETE("/api/webhooks/:id", func(c *gin.Context) {
     {
         adminTenants.GET("/", handlers.TenantAdminPage)
     }
+
+// ========== ЗАГРУЗКА ДОКУМЕНТАЦИИ ДЛЯ AI (RAG) ==========
+r.POST("/api/admin/load-knowledge", middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), func(c *gin.Context) {
+    kb := services.NewKnowledgeBase(database.Pool)
+    count, err := kb.LoadDirectory("./knowledge_base")
+    if err != nil {
+        c.JSON(500, gin.H{"error": err.Error()})
+        return
+    }
+    c.JSON(200, gin.H{
+        "success": true,
+        "message": fmt.Sprintf("Загружено %d документов", count),
+    })
+})
     
     // API Documentation with back button
     r.GET("/api-docs", func(c *gin.Context) {
@@ -3409,6 +3415,7 @@ r.GET("/api/dev-modules/status/:route", middleware.AuthMiddleware(cfg), handlers
 r.PUT("/api/dev-modules/status/:route", middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handlers.UpdateModuleStatus)
 r.POST("/api/dev-modules/report-issue", middleware.AuthMiddleware(cfg), handlers.ReportModuleIssue)
 r.GET("/api/dev-modules/feedback", middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handlers.GetModuleFeedback)
+
 
 
       r.NoRoute(func(c *gin.Context) {

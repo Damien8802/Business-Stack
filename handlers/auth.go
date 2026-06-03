@@ -147,16 +147,15 @@ func LoginHandler(c *gin.Context) {
     var isDeveloper bool
     var developerLevel int
 
-    err := database.Pool.QueryRow(c.Request.Context(),
-        `SELECT id, email, password_hash, name, role, 
-                COALESCE(tenant_id, '11111111-1111-1111-1111-111111111111') as tenant_id,
-                COALESCE(is_developer, false) as is_developer,
-                COALESCE(developer_level, 0) as developer_level
-         FROM users WHERE email = $1`,
-        req.Email).Scan(
-        &user.ID, &user.Email, &user.PasswordHash, &user.Name, &user.Role,
-        &tenantID, &isDeveloper, &developerLevel)
-
+   err := database.Pool.QueryRow(c.Request.Context(),
+    `SELECT id, email, password_hash, name, role, 
+            tenant_id,
+            COALESCE(is_developer, false) as is_developer,
+            COALESCE(developer_level, 0) as developer_level
+     FROM users WHERE email = $1`,
+    req.Email).Scan(
+    &user.ID, &user.Email, &user.PasswordHash, &user.Name, &user.Role,
+    &tenantID, &isDeveloper, &developerLevel)
     if err != nil {
         c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
         return
@@ -196,7 +195,7 @@ func LoginHandler(c *gin.Context) {
     }
 
     accessToken, refreshToken, err := utils.GenerateTokensWithExpiry(
-        user.ID.String(), user.Name, user.Email, user.Role, accessExpiry, refreshExpiry)
+    user.ID.String(), user.Name, user.Email, user.Role, user.TenantID, accessExpiry, refreshExpiry)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
         return
@@ -280,7 +279,7 @@ func RefreshHandler(c *gin.Context) {
         return
     }
 
-    newAccessToken, err := utils.RefreshToken(req.RefreshToken)
+   newAccessToken, err := utils.RefreshToken(req.RefreshToken, "")
     if err != nil {
         c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid refresh token"})
         return
@@ -367,7 +366,7 @@ func LoginByIDHandler(c *gin.Context) {
         return
     }
 
-    accessToken, refreshToken, err := utils.GenerateTokens(user.ID.String(), user.Name, user.Email, user.Role)
+   accessToken, refreshToken, err := utils.GenerateTokens(user.ID.String(), user.Name, user.Email, user.Role, user.TenantID)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
         return
@@ -426,7 +425,7 @@ func RegisterByIDHandler(c *gin.Context) {
         return
     }
 
-    accessToken, refreshToken, err := utils.GenerateTokens(userID.String(), req.Name, email, "user")
+accessToken, refreshToken, err := utils.GenerateTokens(userID.String(), req.Name, email, "user", "11111111-1111-1111-1111-111111111111")
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
         return
@@ -1048,7 +1047,7 @@ func RegisterEmailHandler(c *gin.Context) {
     }
 
     // Генерируем токены
-    accessToken, refreshToken, err := utils.GenerateTokens(userID.String(), req.Name, req.Email, "owner")
+    accessToken, refreshToken, err := utils.GenerateTokens(userID.String(), req.Name, req.Email, "owner", tenantID.String())
     if err != nil {
         log.Printf("❌ Ошибка генерации токенов: %v", err)
         c.JSON(http.StatusInternalServerError, gin.H{

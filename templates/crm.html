@@ -791,6 +791,10 @@
                 <i class="fas fa-tags"></i> Управление тегами
             </button>
         </h1>
+<a href="/dashboard-improved" class="btn btn-primary ms-3">
+        <i class="fas fa-chart-line me-2"></i>На дашборд
+    </a>
+</div>
 
         <!-- Вкладки -->
         <ul class="nav nav-tabs mb-4" id="crmTabs" role="tablist">
@@ -1636,30 +1640,7 @@
         </div>
     </div>
 
-    <!-- Модальное окно AI-чата (с голосовым вводом) -->
-    <div class="modal fade ai-chat-modal" id="aiChatModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="ai-chat-header">
-                    <h5><i class="fas fa-robot me-2"></i>AI-ассистент CRM</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="ai-chat-body" id="aiChatMessages">
-                    <div class="ai-message assistant">
-                        Здравствуйте! Я AI-ассистент CRM. Задайте мне вопрос голосом или текстом.
-                    </div>
-                </div>
-                <div class="ai-chat-footer">
-                    <input type="text" id="aiChatInput" class="form-control" placeholder="Введите ваш вопрос..." onkeypress="if(event.key==='Enter') sendAIMessage()">
-                    <button class="btn btn-primary voice-btn" id="voiceBtn" onclick="toggleVoiceInput()" title="Голосовой ввод">
-                        <i class="fas fa-microphone"></i>
-                    </button>
-                    <button class="btn btn-primary" onclick="sendAIMessage()"><i class="fas fa-paper-plane"></i></button>
-                </div>
-            </div>
-        </div>
-    </div>
-
+  
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -4011,45 +3992,38 @@ actionsCell.innerHTML = `
         }
 
         // ==================== ДОБАВЛЕНО: ПАРТНЁРЫ ====================
-        async function loadPartners() {
-            try {
-                const res = await fetch('/api/crm/partners', {
-                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
-                });
-                const data = await res.json();
-                
-                const tbody = document.getElementById('partnersTable');
-                if (data.partners && data.partners.length) {
-                    tbody.innerHTML = data.partners.map(p => `
-                        <tr>
-                            <td>${p.id.slice(0,8)}...</td>
-                            <td><strong>${escapeHtml(p.name)}</strong></td>
-                            <td>${p.inn || '-'}</td>
-                            <td>${p.phone || '-'}</td>
-                            <td>${p.email || '-'}</td>
-                            <td>
-                                <button class="btn btn-sm btn-danger" onclick="deletePartner('${p.id}')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                         </tr>
-                    `).join('');
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Нет партнёров. Создайте первого!</td></tr>';
-                }
-            } catch(e) {
-                console.error('Ошибка загрузки партнёров:', e);
-                document.getElementById('partnersTable').innerHTML = '<tr><td colspan="6" class="text-center text-danger">Ошибка загрузки</td></tr>';
-            }
+      async function loadPartners() {
+    try {
+        const res = await fetch('/api/crm/partners', {
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        const data = await res.json();
+        
+        const tbody = document.getElementById('partnersTable');
+        // ИСПРАВЛЕНО: data.data вместо data.partners
+        if (data.data && data.data.length) {
+            tbody.innerHTML = data.data.map(p => `
+                <tr>
+                    <td>${p.id.slice(0,8)}...</td>
+                    <td><strong>${escapeHtml(p.name)}</strong></td>
+                    <td>${p.inn || '-'}</td>
+                    <td>${p.phone || '-'}</td>
+                    <td>${p.email || '-'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="deletePartner('${p.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">Нет партнёров. Создайте первого!</td></tr>';
         }
-
-        function showCreatePartnerModal() {
-            document.getElementById('partnerName').value = '';
-            document.getElementById('partnerINN').value = '';
-            document.getElementById('partnerPhone').value = '';
-            document.getElementById('partnerEmail').value = '';
-            new bootstrap.Modal(document.getElementById('createPartnerModal')).show();
-        }
+    } catch(e) {
+        console.error('Ошибка загрузки партнёров:', e);
+        document.getElementById('partnersTable').innerHTML = '<tr><td colspan="6" class="text-center text-danger">Ошибка загрузки</td></tr>';
+    }
+}
 
         async function createPartner() {
             const name = document.getElementById('partnerName').value.trim();
@@ -4087,22 +4061,23 @@ actionsCell.innerHTML = `
         }
 
         async function deletePartner(id) {
-            if (!confirm('Удалить партнёра?')) return;
-            try {
-                const res = await fetch(`/api/crm/partners/${id}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
-                });
-                if (res.ok) {
-                    loadPartners();
-                    showToast('Партнёр удалён', 'danger');
-                } else {
-                    alert('Ошибка удаления');
-                }
-            } catch(e) {
-                alert('Ошибка: ' + e.message);
-            }
+    if (!confirm('Удалить партнёра?')) return;
+    try {
+        const res = await fetch(`/api/crm/partners/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        if (res.ok) {
+            loadPartners();
+            showToast('Партнёр удалён', 'danger');
+        } else {
+            const error = await res.text();
+            alert('Ошибка удаления: ' + error);
         }
+    } catch(e) {
+        alert('Ошибка: ' + e.message);
+    }
+}
     </script>
 
 <script>
@@ -4312,6 +4287,8 @@ function openAIChatFromServicesLeft() {
 
 <!-- ==================== ФУНКЦИЯ ДЛЯ ЗАГРУЗКИ ЗВОНКОВ ==================== -->
 <script>
+
+
 // Функция для загрузки звонка клиента
 function uploadCall(customerId) {
     // Получаем имя клиента из строки
@@ -4491,21 +4468,5 @@ document.addEventListener('DOMContentLoaded', function() {
     color: white;
 }
 </style>
-<a href="javascript:history.back()" class="btn-back-oval">
-    <i class="fas fa-arrow-left"></i>
-    <span>Назад</span>
-</a>
-<div class="ai-floating-widget">
-    <div class="ai-widget-button" onclick="openAIAssistant()">
-        🤖
-        <div class="ai-widget-badge">●</div>
-    </div>
-    <div class="ai-widget-tooltip">💬 Спросить AI ассистента</div>
-</div>
-<script>
-function openAIAssistant() {
-    window.open('/ai-assistant', '_blank', 'width=500,height=700,left=' + (screen.width - 520) + ',top=100');
-}
-</script>
 </body>
 </html>

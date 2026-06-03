@@ -106,3 +106,14 @@ func (s *YandexAIService) Ask(ctx context.Context, prompt string) (string, error
 
     return yandexResp.Result.Alternatives[0].Message.Text, nil
 }
+
+// NewYandexServiceWithKeys создаёт сервис YandexGPT с указанными ключами
+func NewYandexServiceWithKeys(apiKey, folderID string) *YandexAdapter {
+    cfg := &config.Config{
+        YandexAPIKey:   apiKey,
+        YandexFolderID: folderID,
+    }
+    return NewYandexService(cfg)
+}
+
+

@@ -8,6 +8,8 @@ import (
     
     "github.com/gin-gonic/gin"
     "github.com/jackc/pgx/v5/pgxpool"
+    
+    "subscription-system/services"  // 👈 ДОБАВИТЬ ЭТОТ ИМПОРТ!
 )
 
 // UniversalAIAssistant - универсальный AI ассистент
@@ -18,6 +20,7 @@ type UniversalAIAssistant struct {
     telegramChatID   string
     adminChatID      string
     db               *pgxpool.Pool
+    knowledgeBase    *services.KnowledgeBase  // 👈 ИСПРАВЛЕНО (было knowledgeBase)
 }
 
 // NewUniversalAIAssistant - создаёт нового AI ассистента
@@ -29,39 +32,91 @@ func NewUniversalAIAssistant(yandexAPIKey, yandexFolderID, telegramBotToken, tel
         telegramChatID:   telegramChatID,
         adminChatID:      adminChatID,
         db:               db,
+        knowledgeBase:    services.NewKnowledgeBase(db),  // 👈 ИСПРАВЛЕНО (добавлена запятая выше и точка с запятой)
     }
 }
 
 // ChatHandler - обрабатывает чат сообщения
 func (ai *UniversalAIAssistant) ChatHandler(c *gin.Context) {
+    var req struct {
+        Message string `json:"message"`
+    }
+    if err := c.BindJSON(&req); err != nil {
+        c.JSON(400, gin.H{"error": err.Error()})
+        return
+    }
+
     tenantID := c.GetString("tenant_id")
     if tenantID == "" {
         tenantID = "default"
     }
-    
     userID := c.GetString("user_id")
     if userID == "" {
         userID = "system"
     }
-    
-    var req struct {
-        Message string `json:"message"`
+
+    // ========== НОВОЕ: ПОИСК В БАЗЕ ЗНАНИЙ ==========
+    var contextDocs string
+    var foundDocs []string
+
+    if ai.knowledgeBase != nil {
+        docs, err := ai.knowledgeBase.SearchByKeyword(req.Message, 3)
+        if err == nil && len(docs) > 0 {
+            for i, doc := range docs {
+                contextDocs += fmt.Sprintf("\n--- Документ %d: %s ---\n%s\n", i+1, doc.Title, doc.Content)
+                foundDocs = append(foundDocs, doc.Title)
+            }
+        }
     }
-    
-    if err := c.BindJSON(&req); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+
+    // Формируем системный промпт (с контекстом или без)
+    var systemPrompt string
+    if contextDocs != "" {
+        systemPrompt = fmt.Sprintf(`Ты — AI-ассистент платформы Business Stack.
+Отвечай на вопросы пользователей, используя ТОЛЬКО предоставленный контекст документации.
+Если ответа нет в контексте — скажи, что не знаешь, и предложи обратиться в поддержку.
+Никогда не придумывай ответы.
+Будь вежливым, полезным и конкретным.
+Отвечай на русском языке.
+
+КОНТЕКСТ ИЗ ДОКУМЕНТАЦИИ:
+%s
+
+ВАЖНО: Отвечай ТОЛЬКО по контексту!`, contextDocs)
+    } else {
+        systemPrompt = `Ты — AI-ассистент платформы Business Stack.
+Помогай пользователям с вопросами по платформе.
+Если не знаешь ответа — предложи обратиться в поддержку.
+Будь полезным и конкретным.
+Отвечай на русском языке.`
+    }
+
+
+fmt.Printf("🔍 DEBUG: yandexAPIKey=%v, yandexFolderID=%v\n", ai.yandexAPIKey != "", ai.yandexFolderID != "")
+fmt.Printf("🔍 DEBUG: systemPrompt length=%d, userMessage=%s\n", len(systemPrompt), req.Message)
+
+    // Отправляем запрос в YandexGPT
+   yandexService := services.NewYandexServiceWithKeys(ai.yandexAPIKey, ai.yandexFolderID)
+   answer, err := yandexService.Ask(systemPrompt, req.Message, 0.7)
+    if err != nil {
+ fmt.Printf("❌ YandexGPT ERROR: %v\n", err)
+        c.JSON(500, gin.H{"error": err.Error()})
         return
     }
-    
-    // Сохраняем сообщение в историю
-    go ai.saveChatHistory(tenantID, userID, req.Message, "")
-    
-    // Простой ответ для теста
-    response := fmt.Sprintf("🤖 AI Assistant: Получено сообщение '%s'\n\nДоступные команды:\n- Создай клиента [имя]\n- Создай сделку [название]\n- Выставь счёт [клиент]\n- Создай задачу [название] для [сотрудника]", req.Message)
-    
-    c.JSON(http.StatusOK, gin.H{
-        "response": response,
-        "success":  true,
+
+    // Сохраняем запрос в историю для обучения
+    if ai.knowledgeBase != nil && len(foundDocs) > 0 {
+        ai.knowledgeBase.SaveQuery(userID, req.Message, answer, foundDocs)
+    }
+
+    // Сохраняем историю чата
+    ai.saveChatHistory(tenantID, userID, req.Message, answer)
+
+    c.JSON(200, gin.H{
+        "response":  answer,
+        "success":   true,
+        "source":    map[bool]string{true: "rag", false: "ai"}[contextDocs != ""],
+        "documents": foundDocs,
     })
 }
 

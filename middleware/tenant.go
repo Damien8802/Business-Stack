@@ -9,16 +9,15 @@ import (
     "github.com/jackc/pgx/v5/pgxpool"
 )
 
-// TenantMiddleware - определяет тенанта по subdomain или из пользователя
 func TenantMiddleware(db *pgxpool.Pool) gin.HandlerFunc {
     return func(c *gin.Context) {
         var tenantID uuid.UUID
         
-        // 1. Публичные маршруты - пропускаем (не требуют tenant)
+        // 1. Публичные маршруты - пропускаем
         publicPaths := []string{
             "/login", "/register", "/forgot-password", 
             "/api/auth/login", "/api/auth/register", "/api/auth/refresh",
-            "/", "/about", "/contact", "/pricing", "/docs",
+            "/", "/about", "/contact", "/pricing", "/docs", "/favicon.ico",
         }
         for _, path := range publicPaths {
             if c.Request.URL.Path == path {
@@ -27,69 +26,111 @@ func TenantMiddleware(db *pgxpool.Pool) gin.HandlerFunc {
             }
         }
         
-        // 2. Пробуем получить tenant из авторизованного пользователя
-        if userVal, exists := c.Get("user"); exists {
-            switch u := userVal.(type) {
-            case map[string]interface{}:
-                if tid, ok := u["tenant_id"].(string); ok && tid != "" {
-                    tenantID, _ = uuid.Parse(tid)
-                    log.Printf("🔍 TenantMiddleware: tenant from user map = %s", tenantID)
-                }
-            default:
-                log.Printf("🔍 TenantMiddleware: user type = %T", u)
+        // 2. Получаем данные из контекста (установлены AuthMiddleware)
+        userID := c.GetString("user_id")
+        userEmail := c.GetString("user_email")
+        tokenTenantID := c.GetString("tenant_id") // tenant из токена
+        
+        log.Printf("🔍 [TenantMiddleware] ========================================")
+        log.Printf("🔍 [TenantMiddleware] Path: %s", c.Request.URL.Path)
+        log.Printf("🔍 [TenantMiddleware] user_id: '%s'", userID)
+        log.Printf("🔍 [TenantMiddleware] user_email: '%s'", userEmail)
+        log.Printf("🔍 [TenantMiddleware] token_tenant_id: '%s'", tokenTenantID)
+        
+        // 3. СНАЧАЛА пробуем tenant из токена (самый быстрый)
+        if tokenTenantID != "" && tokenTenantID != "00000000-0000-0000-0000-000000000000" {
+            parsedTenant, err := uuid.Parse(tokenTenantID)
+            if err == nil && parsedTenant != uuid.Nil {
+                tenantID = parsedTenant
+                log.Printf("✅ [TenantMiddleware] Tenant из ТОКЕНА: %s", tenantID)
+            } else {
+                log.Printf("⚠️ [TenantMiddleware] Невалидный tenant из токена: '%s'", tokenTenantID)
             }
         }
         
-        // 3. Если не нашли в пользователе - берем из subdomain
+        // 4. Если не нашли - ищем по user_id в БД
+        if tenantID == uuid.Nil && userID != "" {
+            var dbTenantID uuid.UUID
+            err := db.QueryRow(c.Request.Context(), `
+                SELECT tenant_id FROM users WHERE id = $1
+            `, userID).Scan(&dbTenantID)
+            
+            if err == nil && dbTenantID != uuid.Nil {
+                tenantID = dbTenantID
+                log.Printf("✅ [TenantMiddleware] Tenant из БД по user_id %s: %s", userID, tenantID)
+            } else {
+                log.Printf("⚠️ [TenantMiddleware] user_id %s не найден или tenant = NULL, ошибка: %v", userID, err)
+            }
+        }
+        
+        // 5. Если не нашли - ищем по user_email в БД
+        if tenantID == uuid.Nil && userEmail != "" {
+            var dbTenantID uuid.UUID
+            err := db.QueryRow(c.Request.Context(), `
+                SELECT tenant_id FROM users WHERE email = $1
+            `, userEmail).Scan(&dbTenantID)
+            
+            if err == nil && dbTenantID != uuid.Nil {
+                tenantID = dbTenantID
+                log.Printf("✅ [TenantMiddleware] Tenant из БД по email %s: %s", userEmail, tenantID)
+            } else {
+                log.Printf("⚠️ [TenantMiddleware] email %s не найден или tenant = NULL, ошибка: %v", userEmail, err)
+            }
+        }
+        
+        // 6. Если не нашли - ищем по субдомену
         if tenantID == uuid.Nil {
             host := c.Request.Host
             subdomain := extractSubdomain(host)
             
-            // Для localhost - НЕ УСТАНАВЛИВАЕМ tenant_id, он должен быть из пользователя
             if subdomain == "default" || subdomain == "localhost" {
-                log.Printf("🔍 TenantMiddleware: localhost, tenant_id будет из пользователя")
-                c.Next()
+                log.Printf("❌ [TenantMiddleware] localhost без tenant, user_id=%s, user_email=%s", userID, userEmail)
+                c.AbortWithStatusJSON(401, gin.H{"error": "Authentication required", "details": "No tenant found for user"})
                 return
             }
             
-            // Ищем tenant по subdomain
             err := db.QueryRow(c.Request.Context(), `
                 SELECT id FROM tenants 
                 WHERE subdomain = $1 AND status = 'active'
             `, subdomain).Scan(&tenantID)
             
             if err != nil {
-                log.Printf("❌ TenantMiddleware: tenant not found for subdomain: %s", subdomain)
+                log.Printf("❌ [TenantMiddleware] Субдомен не найден: %s, ошибка: %v", subdomain, err)
                 c.AbortWithStatusJSON(404, gin.H{"error": "Company not found"})
                 return
             }
-            log.Printf("🔍 TenantMiddleware: tenant from subdomain %s = %s", subdomain, tenantID)
+            log.Printf("✅ [TenantMiddleware] Tenant из субдомена %s: %s", subdomain, tenantID)
         }
         
-        // 4. Проверяем, что tenant существует в БД
-        if tenantID != uuid.Nil {
-            var exists bool
-            err := db.QueryRow(c.Request.Context(), 
-                "SELECT EXISTS(SELECT 1 FROM tenants WHERE id = $1)", tenantID).Scan(&exists)
-            if err != nil || !exists {
-                log.Printf("❌ TenantMiddleware: tenant %s does not exist", tenantID)
-                c.AbortWithStatusJSON(401, gin.H{"error": "Invalid tenant"})
-                return
-            }
+        // 7. Финальная проверка
+        if tenantID == uuid.Nil {
+            log.Printf("❌ [TenantMiddleware] НЕ УДАЛОСЬ НАЙТИ TENANT! user_id=%s, user_email=%s", userID, userEmail)
+            c.AbortWithStatusJSON(401, gin.H{"error": "Invalid tenant"})
+            return
         }
         
-        // 5. Сохраняем tenant в контекст
+        // 8. Проверяем, что tenant существует в БД
+        var exists bool
+        err := db.QueryRow(c.Request.Context(), 
+            "SELECT EXISTS(SELECT 1 FROM tenants WHERE id = $1)", tenantID).Scan(&exists)
+        if err != nil || !exists {
+            log.Printf("❌ [TenantMiddleware] Tenant %s не существует в БД", tenantID)
+            c.AbortWithStatusJSON(401, gin.H{"error": "Invalid tenant"})
+            return
+        }
+        
+        // 9. Сохраняем в контекст
         c.Set("tenant_id", tenantID)
         c.Set("tenant_id_string", tenantID.String())
         c.Header("X-Tenant-ID", tenantID.String())
         
-        log.Printf("✅ TenantMiddleware: final tenant_id = %s for path %s", tenantID, c.Request.URL.Path)
+        log.Printf("✅ [TenantMiddleware] УСПЕХ! final tenant_id = %s для path %s", tenantID, c.Request.URL.Path)
+        log.Printf("🔍 [TenantMiddleware] ========================================")
         
         c.Next()
     }
 }
-
-// extractSubdomain - извлекает subdomain из host
+// extractSubdomain - извлекает субдомен из host
 func extractSubdomain(host string) string {
     if idx := strings.Index(host, ":"); idx != -1 {
         host = host[:idx]

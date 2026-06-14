@@ -428,6 +428,215 @@
             background: #c1c1c1;
             border-radius: 10px;
         }
+
+/* Модальное окно для кнопок */
+.action-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+}
+
+.action-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+}
+
+.action-modal-content {
+    position: relative;
+    width: 90%;
+    max-width: 700px;
+    max-height: 85vh;
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    animation: modalFadeIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.action-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.action-modal-header h3 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.action-modal-header h3 i {
+    margin-right: 10px;
+}
+
+.action-modal-close {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.action-modal-close:hover {
+    background: rgba(255,255,255,0.3);
+    transform: scale(1.05);
+}
+
+.action-modal-body {
+    padding: 20px 24px;
+    max-height: calc(85vh - 130px);
+    overflow-y: auto;
+}
+
+.action-section {
+    margin-bottom: 24px;
+}
+
+.action-section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #38bdf8;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.action-section-title i {
+    margin-right: 8px;
+}
+
+.action-buttons-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.action-modal-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 12px 16px;
+    border-radius: 14px;
+    color: #e2e8f0;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+}
+
+.action-modal-btn i {
+    width: 20px;
+    font-size: 14px;
+    color: #667eea;
+}
+
+.action-modal-btn:hover {
+    background: rgba(102, 126, 234, 0.3);
+    border-color: #667eea;
+    transform: translateX(4px);
+}
+
+.action-modal-btn.fincore i {
+    color: #10b981;
+}
+
+.action-modal-btn.fincore:hover {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: #10b981;
+}
+
+.action-modal-btn.help i {
+    color: #f59e0b;
+}
+
+.action-modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    justify-content: flex-end;
+}
+
+.action-modal-close-btn {
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    padding: 10px 24px;
+    border-radius: 30px;
+    color: #f87171;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.action-modal-close-btn:hover {
+    background: rgba(239, 68, 68, 0.4);
+    transform: scale(1.02);
+}
+
+/* Скроллбар */
+.action-modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.action-modal-body::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+}
+
+.action-modal-body::-webkit-scrollbar-thumb {
+    background: #667eea;
+    border-radius: 3px;
+}
+
+/* Кнопка открытия модального окна */
+.modal-trigger-btn {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none;
+    padding: 12px 20px;
+    border-radius: 40px;
+    color: white;
+    cursor: pointer;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s;
+}
+
+.modal-trigger-btn:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 15px rgba(102,126,234,0.4);
+}
     </style>
 </head>
 <body>
@@ -535,47 +744,31 @@
                         <strong>👋 Привет! Я AI-ассистент Business Stack!</strong><br><br>
                         <strong>Вот что я умею:</strong><br>
                         • 📋 <strong>HR:</strong> создать вакансию, список вакансий, статистика<br>
-                        • 👤 <strong>CRM:</strong> создать клиента, сделку<br>
-                        • 💰 <strong>Финансы:</strong> выставить счёт<br>
+                        • 👤 <strong>CRM:</strong> создать клиента, сделку, партнёра<br>
+                        • 💰 <strong>FinCore - Финансы:</strong><br>
+                        &nbsp;&nbsp;&nbsp;➜ создать платёж<br>
+                        &nbsp;&nbsp;&nbsp;➜ показать ОСВ, баланс<br>
+                        &nbsp;&nbsp;&nbsp;➜ архив счетов, экспорт в Excel<br>
+                        &nbsp;&nbsp;&nbsp;➜ архивировать/восстановить счёт<br>
                         • ✅ <strong>Задачи:</strong> создать задачу<br>
                         • 🔒 <strong>VPN:</strong> сгенерировать VPN-ключ<br><br>
                         <strong>💡 Примеры команд:</strong><br>
                         ─────────────────<br>
+                        💰 "создай платёж для ООО Поставщик на сумму 50000"<br>
+                        💰 "покажи ОСВ за январь 2025"<br>
+                        💰 "покажи бухгалтерский баланс"<br>
+                        💰 "покажи архив счетов"<br>
                         📋 "создай вакансию разработчик"<br>
-                        📋 "список вакансий"<br>
-                        📊 "статистика"<br>
                         👤 "создай клиента ООО Ромашка +7 999 123 45 67"<br>
                         💰 "создай сделку для Ромашки на 500000"<br>
-                        📄 "выставь счёт Ромашке на 500000"<br>
                         ✅ "создай задачу Позвонить клиенту для Иванова"
                     </div>
                 </div>
             </div>
             
           <div class="quick-buttons">
-    <button class="quick-btn" onclick="askForPartner()">
-        <i class="fas fa-user-plus me-1"></i> Создать партнёра
-    </button>
-    <button class="quick-btn" onclick="askForDeal()">
-        <i class="fas fa-chart-line me-1"></i> Создать сделку
-    </button>
-    <button class="quick-btn" onclick="askForInvoice()">
-        <i class="fas fa-file-invoice me-1"></i> Выставить счёт
-    </button>
-    <button class="quick-btn" onclick="askForAct()">
-        <i class="fas fa-file-contract me-1"></i> Акт сверки
-    </button>
-    <button class="quick-btn" onclick="askForTask()">
-        <i class="fas fa-tasks me-1"></i> Создать задачу
-    </button>
-    <button class="quick-btn" onclick="askForInfo()">
-        <i class="fas fa-info-circle me-1"></i> Информация о партнёре
-    </button>
-    <button class="quick-btn" onclick="sendQuickMessage('сколько стоит FinCore?')">
-        <i class="fas fa-question-circle me-1"></i> Цена FinCore
-    </button>
-    <button class="quick-btn" onclick="sendQuickMessage('что умеешь?')">
-        <i class="fas fa-robot me-1"></i> Помощь
+    <button class="modal-trigger-btn" onclick="openActionModal()">
+        <i class="fas fa-th-large"></i> Быстрые действия
     </button>
 </div>
             
@@ -589,47 +782,10 @@
     </div>
 </div>
 
-<!-- AI Widget Floating Button -->
-<div class="ai-floating-widget" style="position:fixed;bottom:20px;right:20px;z-index:10000">
-    <div class="ai-widget-button" style="width:56px;height:56px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 15px rgba(0,0,0,0.3);border:none;font-size:26px;color:#fff" onclick="openAIModal()">🤖</div>
-    <div class="ai-widget-tooltip" style="position:absolute;bottom:65px;right:0;background:rgba(0,0,0,0.8);color:#fff;padding:6px 12px;border-radius:12px;font-size:12px;white-space:nowrap;opacity:0;transition:opacity .3s;pointer-events:none">AI ассистент</div>
-</div>
-
-<!-- AI Modal -->
-<div class="ai-modal-overlay" id="aiModalOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);backdrop-filter:blur(5px);z-index:10001;justify-content:center;align-items:center" onclick="if(event.target===this) closeAIModal()">
-    <div class="ai-modal" style="width:450px;max-width:90%;height:600px;max-height:80vh;background:#fff;border-radius:24px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5)">
-        <div class="ai-modal-header" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center">
-            <h3 style="margin:0;font-size:18px"><i class="fas fa-robot"></i> AI ассистент</h3>
-            <div>
-                <span class="ai-modal-status" style="font-size:11px;background:rgba(255,255,255,0.2);padding:4px 10px;border-radius:20px"><i class="fas fa-circle" style="font-size:8px;color:#10b981"></i> Онлайн</span>
-                <button class="close-btn" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;margin-left:10px" onclick="closeAIModal()">✕</button>
-            </div>
-        </div>
-        <div class="ai-modal-messages" id="aiModalMessages" style="flex:1;overflow-y:auto;padding:16px;background:#f8f9fa;display:flex;flex-direction:column;gap:12px">
-            <div class="ai-msg assistant" style="display:flex;gap:10px">
-                <div class="ai-msg-avatar" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#10b981,#059669)">🤖</div>
-                <div class="ai-msg-content" style="max-width:75%;padding:10px 14px;border-radius:18px;background:#fff;border:1px solid #e0e0e0;font-size:13px"><strong>👋 Привет!</strong><br>Я AI ассистент Business Stack.<br><br>📋 "создай вакансию разработчик"<br>👤 "создай клиента ООО Ромашка"<br>❓ "Что ты умеешь?"</div>
-            </div>
-        </div>
-        <div class="ai-quick-buttons" style="display:flex;gap:8px;padding:10px 16px;background:#f8f9fa;border-top:1px solid #e0e0e0;flex-wrap:wrap">
-            <button class="ai-quick-btn" style="background:#fff;border:1px solid #ddd;padding:5px 12px;border-radius:20px;font-size:11px;cursor:pointer" onclick="sendAIModalMessage('создай вакансию разработчик')">📋 Вакансия</button>
-            <button class="ai-quick-btn" style="background:#fff;border:1px solid #ddd;padding:5px 12px;border-radius:20px;font-size:11px;cursor:pointer" onclick="sendAIModalMessage('список вакансий')">📋 Список</button>
-            <button class="ai-quick-btn" style="background:#fff;border:1px solid #ddd;padding:5px 12px;border-radius:20px;font-size:11px;cursor:pointer" onclick="sendAIModalMessage('статистика')">📊 Статистика</button>
-            <button class="ai-quick-btn" style="background:#fff;border:1px solid #ddd;padding:5px 12px;border-radius:20px;font-size:11px;cursor:pointer" onclick="sendAIModalMessage('создай клиента ООО Тест +7 999 123 45 67')">👤 Клиент</button>
-            <button class="ai-quick-btn" style="background:#fff;border:1px solid #ddd;padding:5px 12px;border-radius:20px;font-size:11px;cursor:pointer" onclick="sendAIModalMessage('Что ты умеешь?')">❓ Помощь</button>
-        </div>
-        <div class="ai-modal-input" style="padding:12px 16px;background:#fff;border-top:1px solid #e0e0e0;display:flex;gap:10px">
-            <input type="text" id="aiModalInput" placeholder="Напишите сообщение..." style="flex:1;padding:10px 16px;border:1px solid #ddd;border-radius:30px;outline:none;font-size:14px" onkeypress="if(event.keyCode===13) sendAIModalMessage()">
-            <button onclick="sendAIModalMessage()" style="padding:10px 20px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:30px;cursor:pointer;font-weight:600"><i class="fas fa-paper-plane"></i> Отправить</button>
-        </div>
-    </div>
-</div>
-
 <script>
 // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
 let currentTenantId = localStorage.getItem('tenant_id') || 'default';
 let isTyping = false;
-let aiModalTyping = false;
 
 // ========== ЗАГРУЗКА ИНФОРМАЦИИ О ПОЛЬЗОВАТЕЛЕ ==========
 async function loadUserInfo() {
@@ -674,30 +830,20 @@ if (toggleBtn) {
 function formatText(text) {
     if (!text) return '';
     
-    // Обработка жирного текста
     text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    
-    // Обработка переносов строк
     text = text.replace(/\n/g, '<br>');
-    
-    // Обработка ссылок вида 🔗 Ссылка: http://example.com
     text = text.replace(/(🔗\s*Ссылка:\s*)(https?:\/\/[^\s\n]+)/g, function(match, prefix, url) {
         return prefix + '<a href="' + url + '" target="_blank" style="color: #667eea; text-decoration: underline; cursor: pointer;">' + url + '</a>';
     });
-    
-    // Обработка ссылок в формате [текст](url)
     text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color: #667eea; text-decoration: underline; cursor: pointer;">$1</a>');
-    
-    // Обработка простых URL (http://, https://)
     text = text.replace(/(https?:\/\/[^\s\n<]+)/g, function(url) {
         return '<a href="' + url + '" target="_blank" style="color: #667eea; text-decoration: underline; cursor: pointer;">' + url + '</a>';
     });
-    
-    // Обработка маркеров списка
     text = text.replace(/• /g, '• ');
     
     return text;
 }
+
 function addMessage(role, text) {
     const messagesDiv = document.getElementById('chatMessages');
     const messageDiv = document.createElement('div');
@@ -786,94 +932,6 @@ function sendQuickMessage(message) {
     }
 }
 
-// ========== ФУНКЦИИ МОДАЛЬНОГО ОКНА ==========
-function openAIModal() {
-    document.getElementById('aiModalOverlay').style.display = 'flex';
-    document.getElementById('aiModalInput').focus();
-}
-
-function closeAIModal() {
-    document.getElementById('aiModalOverlay').style.display = 'none';
-}
-
-function addAIModalMessage(role, text) {
-    const container = document.getElementById('aiModalMessages');
-    const msgDiv = document.createElement('div');
-    msgDiv.className = `ai-msg ${role}`;
-    msgDiv.style.display = 'flex';
-    msgDiv.style.gap = '10px';
-    
-    const avatar = role === 'user' ? '👤' : '🤖';
-    const avatarBg = role === 'user' ? 'linear-gradient(135deg,#667eea,#764ba2)' : 'linear-gradient(135deg,#10b981,#059669)';
-    
-    msgDiv.innerHTML = `
-        <div class="ai-msg-avatar" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${avatarBg}">${avatar}</div>
-        <div class="ai-msg-content" style="max-width:75%;padding:10px 14px;border-radius:18px;background:${role === 'user' ? 'linear-gradient(135deg,#667eea,#764ba2)' : '#fff'};color:${role === 'user' ? '#fff' : '#333'};${role !== 'user' ? 'border:1px solid #e0e0e0' : ''};font-size:13px">${formatText(text)}</div>
-    `;
-    container.appendChild(msgDiv);
-    container.scrollTop = container.scrollHeight;
-}
-
-function showAIModalTyping() {
-    if (aiModalTyping) return;
-    aiModalTyping = true;
-    const container = document.getElementById('aiModalMessages');
-    const typingDiv = document.createElement('div');
-    typingDiv.className = 'ai-msg assistant';
-    typingDiv.id = 'aiModalTyping';
-    typingDiv.style.display = 'flex';
-    typingDiv.style.gap = '10px';
-    typingDiv.innerHTML = `
-        <div class="ai-msg-avatar" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#10b981,#059669)">🤖</div>
-        <div class="ai-typing" style="display:flex;gap:4px;padding:10px 14px;background:#fff;border-radius:18px;border:1px solid #e0e0e0"><span></span><span></span><span></span></div>
-    `;
-    container.appendChild(typingDiv);
-    container.scrollTop = container.scrollHeight;
-}
-
-function hideAIModalTyping() {
-    const typingDiv = document.getElementById('aiModalTyping');
-    if (typingDiv) typingDiv.remove();
-    aiModalTyping = false;
-}
-
-async function sendAIModalMessage(quickMsg) {
-    const input = document.getElementById('aiModalInput');
-    const message = quickMsg || input.value.trim();
-    if (!message) return;
-    
-    if (!quickMsg) input.value = '';
-    addAIModalMessage('user', message);
-    showAIModalTyping();
-    
-    const token = localStorage.getItem('token');
-    
-    try {
-        const response = await fetch('/api/ai/executor/chat', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ message: message })
-        });
-        
-        const data = await response.json();
-        hideAIModalTyping();
-        
-        let responseText = data.response || data.message || 'Извините, ошибка. Попробуйте позже.';
-        if (data.success === false && data.error) {
-            responseText = `❌ Ошибка: ${data.error}`;
-        }
-        
-        addAIModalMessage('assistant', responseText);
-    } catch(err) {
-        hideAIModalTyping();
-        addAIModalMessage('assistant', '❌ Ошибка соединения с сервером');
-        console.error('Error:', err);
-    }
-}
-
 // ========== ИНИЦИАЛИЗАЦИЯ ==========
 loadUserInfo();
 
@@ -939,8 +997,285 @@ function askForInfo() {
     if (!partner) return;
     sendQuickMessage(`покажи информацию о ${partner}`);
 }
+
+// Сохраняем историю при закрытии
+window.addEventListener('beforeunload', saveChatHistory);
+// ========== МОДАЛЬНОЕ ОКНО ==========
+function openActionModal() {
+    document.getElementById('actionModal').style.display = 'flex';
+}
+
+function closeActionModal() {
+    document.getElementById('actionModal').style.display = 'none';
+}
+
+// Закрытие по ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeActionModal();
+    }
+});
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Модальное окно для кнопок -->
+<div id="actionModal" class="action-modal">
+    <div class="action-modal-overlay" onclick="closeActionModal()"></div>
+    <div class="action-modal-content">
+        <div class="action-modal-header">
+            <h3><i class="fas fa-robot"></i> Быстрые действия</h3>
+            <button class="action-modal-close" onclick="closeActionModal()">&times;</button>
+        </div>
+        <div class="action-modal-body">
+            <!-- CRM секция -->
+            <div class="action-section">
+                <div class="action-section-title"><i class="fas fa-users"></i> CRM</div>
+                <div class="action-buttons-grid">
+                    <button class="action-modal-btn" onclick="askForPartner(); closeActionModal()">
+                        <i class="fas fa-user-plus"></i> Создать партнёра
+                    </button>
+                    <button class="action-modal-btn" onclick="askForDeal(); closeActionModal()">
+                        <i class="fas fa-chart-line"></i> Создать сделку
+                    </button>
+                    <button class="action-modal-btn" onclick="askForInvoice(); closeActionModal()">
+                        <i class="fas fa-file-invoice"></i> Выставить счёт
+                    </button>
+                    <button class="action-modal-btn" onclick="askForAct(); closeActionModal()">
+                        <i class="fas fa-file-contract"></i> Акт сверки
+                    </button>
+                    <button class="action-modal-btn" onclick="askForInfo(); closeActionModal()">
+                        <i class="fas fa-info-circle"></i> Информация о партнёре
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Задачи -->
+            <div class="action-section">
+                <div class="action-section-title"><i class="fas fa-tasks"></i> Задачи</div>
+                <div class="action-buttons-grid">
+                    <button class="action-modal-btn" onclick="askForTask(); closeActionModal()">
+                        <i class="fas fa-plus-circle"></i> Создать задачу
+                    </button>
+                </div>
+            </div>
+            
+            <!-- FinCore Финансы -->
+            <div class="action-section">
+                <div class="action-section-title"><i class="fas fa-chart-line"></i> FinCore - Финансы</div>
+                <div class="action-buttons-grid">
+                    <button class="action-modal-btn fincore" onclick="sendQuickMessage('создай платёж для ООО Поставщик на сумму 50000'); closeActionModal()">
+                        <i class="fas fa-credit-card"></i> Создать платёж
+                    </button>
+                    <button class="action-modal-btn fincore" onclick="sendQuickMessage('покажи ОСВ за январь 2025'); closeActionModal()">
+                        <i class="fas fa-table"></i> Показать ОСВ
+                    </button>
+                    <button class="action-modal-btn fincore" onclick="sendQuickMessage('покажи бухгалтерский баланс'); closeActionModal()">
+                        <i class="fas fa-scale-balanced"></i> Бухгалтерский баланс
+                    </button>
+                    <button class="action-modal-btn fincore" onclick="sendQuickMessage('покажи архив счетов'); closeActionModal()">
+                        <i class="fas fa-trash-alt"></i> Архив счетов
+                    </button>
+                    <button class="action-modal-btn fincore" onclick="sendQuickMessage('экспортируй ОСВ в Excel'); closeActionModal()">
+                        <i class="fas fa-file-excel"></i> Экспорт ОСВ
+                    </button>
+                    <button class="action-modal-btn fincore" onclick="sendQuickMessage('архивируй счёт 51'); closeActionModal()">
+                        <i class="fas fa-archive"></i> Архивировать счёт
+                    </button>
+                    <button class="action-modal-btn fincore" onclick="sendQuickMessage('восстанови счёт 51'); closeActionModal()">
+                        <i class="fas fa-undo-alt"></i> Восстановить счёт
+                    </button>
+                    <button class="action-modal-btn fincore" onclick="sendQuickMessage('закрой месяц'); closeActionModal()">
+                        <i class="fas fa-calendar-check"></i> Закрыть месяц
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Отчёты -->
+            <div class="action-section">
+                <div class="action-section-title"><i class="fas fa-file-alt"></i> Отчёты</div>
+                <div class="action-buttons-grid">
+                    <button class="action-modal-btn" onclick="sendQuickMessage('сформируй ОСВ за 1 квартал'); closeActionModal()">
+                        <i class="fas fa-chart-bar"></i> Сформировать ОСВ
+                    </button>
+                    <button class="action-modal-btn" onclick="sendQuickMessage('скачай отчёт ОСВ за январь в excel'); closeActionModal()">
+                        <i class="fas fa-file-excel"></i> Скачать ОСВ Excel
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Зарплата и Кадры -->
+            <div class="action-section">
+                <div class="action-section-title"><i class="fas fa-user-tie"></i> Зарплата и HR</div>
+                <div class="action-buttons-grid">
+                    <button class="action-modal-btn" onclick="sendQuickMessage('рассчитай зарплату за май'); closeActionModal()">
+                        <i class="fas fa-calculator"></i> Рассчитать зарплату
+                    </button>
+                    <button class="action-modal-btn" onclick="sendQuickMessage('создай вакансию разработчик'); closeActionModal()">
+                        <i class="fas fa-briefcase"></i> Создать вакансию
+                    </button>
+                    <button class="action-modal-btn" onclick="sendQuickMessage('список вакансий'); closeActionModal()">
+                        <i class="fas fa-list"></i> Список вакансий
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Банк -->
+            <div class="action-section">
+                <div class="action-section-title"><i class="fas fa-university"></i> Банк</div>
+                <div class="action-buttons-grid">
+                    <button class="action-modal-btn" onclick="sendQuickMessage('синхронизируй банк'); closeActionModal()">
+                        <i class="fas fa-sync-alt"></i> Синхронизировать банк
+                    </button>
+                    <button class="action-modal-btn" onclick="sendQuickMessage('покажи баланс'); closeActionModal()">
+                        <i class="fas fa-wallet"></i> Показать баланс
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Общие -->
+            <div class="action-section">
+                <div class="action-section-title"><i class="fas fa-info-circle"></i> Общие</div>
+                <div class="action-buttons-grid">
+                    <button class="action-modal-btn help" onclick="sendQuickMessage('сколько стоит FinCore?'); closeActionModal()">
+                        <i class="fas fa-question-circle"></i> Цена FinCore
+                    </button>
+                    <button class="action-modal-btn help" onclick="sendQuickMessage('что умеешь?'); closeActionModal()">
+                        <i class="fas fa-robot"></i> Помощь
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="action-modal-footer">
+            <button class="action-modal-close-btn" onclick="closeActionModal()">Закрыть</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для создания платежа -->
+<div id="paymentModal" class="action-modal">
+    <div class="action-modal-overlay" onclick="closePaymentModal()"></div>
+    <div class="action-modal-content" style="max-width: 500px;">
+        <div class="action-modal-header" style="background: linear-gradient(135deg, #10b981, #059669);">
+            <h3><i class="fas fa-credit-card"></i> Создание платежа</h3>
+            <button class="action-modal-close" onclick="closePaymentModal()">&times;</button>
+        </div>
+        <div class="action-modal-body">
+            <form id="paymentForm">
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; color: #38bdf8; font-weight: 600;">
+                        <i class="fas fa-user"></i> Получатель *
+                    </label>
+                    <input type="text" id="paymentRecipient" class="form-control" 
+                           style="width: 100%; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: white;"
+                           placeholder="ООО Ромашка" required>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; color: #38bdf8; font-weight: 600;">
+                        <i class="fas fa-ruble-sign"></i> Сумма *
+                    </label>
+                    <input type="number" id="paymentAmount" class="form-control" 
+                           style="width: 100%; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: white;"
+                           placeholder="50000" required>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; color: #38bdf8; font-weight: 600;">
+                        <i class="fas fa-file-alt"></i> Назначение платежа
+                    </label>
+                    <input type="text" id="paymentPurpose" class="form-control" 
+                           style="width: 100%; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: white;"
+                           placeholder="Оплата за услуги">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; color: #38bdf8; font-weight: 600;">
+                        <i class="fas fa-chart-line"></i> Тип платежа
+                    </label>
+                    <select id="paymentType" style="width: 100%; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: white;">
+                        <option value="expense" style="background: #1a1a2e;">💰 Расход</option>
+                        <option value="income" style="background: #1a1a2e;">📈 Доход</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+        <div class="action-modal-footer" style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button class="action-modal-close-btn" onclick="closePaymentModal()">Отмена</button>
+            <button class="modal-trigger-btn" onclick="createPaymentFromModal()" style="background: linear-gradient(135deg, #10b981, #059669);">
+                <i class="fas fa-check"></i> Создать платёж
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ========== МОДАЛЬНОЕ ОКНО ДЛЯ ПЛАТЕЖА ==========
+function openPaymentModal() {
+    document.getElementById('paymentModal').style.display = 'flex';
+    // Очищаем форму
+    document.getElementById('paymentRecipient').value = '';
+    document.getElementById('paymentAmount').value = '';
+    document.getElementById('paymentPurpose').value = '';
+    document.getElementById('paymentType').value = 'expense';
+}
+
+function closePaymentModal() {
+    document.getElementById('paymentModal').style.display = 'none';
+}
+
+async function createPaymentFromModal() {
+    const recipient = document.getElementById('paymentRecipient').value.trim();
+    const amount = document.getElementById('paymentAmount').value.trim();
+    const purpose = document.getElementById('paymentPurpose').value.trim();
+    const paymentType = document.getElementById('paymentType').value;
+    
+    if (!recipient) {
+        alert('❌ Укажите получателя платежа');
+        return;
+    }
+    
+    if (!amount) {
+        alert('❌ Укажите сумму платежа');
+        return;
+    }
+    
+    // Формируем сообщение для AI
+    let message = `создай платёж для ${recipient} на сумму ${amount}`;
+    if (purpose) {
+        message += ` ${purpose}`;
+    }
+    
+    closePaymentModal();
+    
+    // Отправляем сообщение в чат
+    const input = document.getElementById('messageInput');
+    if (input) {
+        input.value = message;
+        sendMessage();
+    }
+}
+
+// Добавляем кнопку "Новый платёж" в быстрые действия
+const quickButtonsDiv = document.querySelector('.quick-buttons');
+if (quickButtonsDiv) {
+    const newPaymentBtn = document.createElement('button');
+    newPaymentBtn.className = 'modal-trigger-btn';
+    newPaymentBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+    newPaymentBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Новый платёж';
+    newPaymentBtn.onclick = openPaymentModal;
+    quickButtonsDiv.appendChild(newPaymentBtn);
+}
+
+// Обновляем кнопку "Создать платёж" в FinCore секции
+const fincoreButtons = document.querySelectorAll('.action-modal-btn.fincore');
+for (let btn of fincoreButtons) {
+    if (btn.innerHTML.includes('Создать платёж')) {
+        btn.onclick = () => {
+            closeActionModal();
+            openPaymentModal();
+        };
+    }
+}
+</script>
 </body>
 </html>

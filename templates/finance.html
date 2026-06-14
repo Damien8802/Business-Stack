@@ -2,42 +2,55 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FinCore | Финансовый учёт</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinCore PRO | Финансовый учёт с AI прогнозами</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0a0a2a 0%, #0f0f35 50%, #1a1a4a 100%);
-            min-height: 100vh;
-            color: #ffffff;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: radial-gradient(ellipse at 20% 30%, #0a0f1a, #05080f);
+            min-height: 100vh;
+            color: #eef2ff;
+        }
+
         .navbar {
-            background: rgba(15, 25, 35, 0.95);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            background: rgba(10, 20, 30, 0.92);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(56, 189, 248, 0.2);
             padding: 1rem 2rem;
             position: sticky;
             top: 0;
             z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
         }
+
         .navbar-brand {
             font-size: 1.5rem;
             font-weight: 800;
-            background: linear-gradient(135deg, #fff, #a5b4fc, #c4b5fd);
+            background: linear-gradient(135deg, #fff, #38bdf8, #818cf8);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
             text-decoration: none;
         }
+
         .nav-link {
-            color: rgba(255,255,255,0.7);
+            color: rgba(226, 232, 240, 0.8);
             transition: all 0.3s;
             margin: 0 5px;
             border-radius: 12px;
@@ -46,778 +59,660 @@
             font-size: 13px;
             display: inline-block;
         }
-        .nav-link:hover, .nav-link.active { color: #fff; background: rgba(102,126,234,0.2); }
-        .nav-link i { margin-right: 6px; }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: #ffffff;
+            background: rgba(56, 189, 248, 0.15);
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
+        }
+
+        .nav-link i {
+            margin-right: 6px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
         .header {
-            background: linear-gradient(135deg, rgba(102,126,234,0.2), rgba(118,75,162,0.2));
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(15, 25, 35, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(56, 189, 248, 0.25);
             border-radius: 32px;
             padding: 40px;
             margin-bottom: 40px;
             text-align: center;
         }
+
         .header h1 {
             font-size: 2.5rem;
             font-weight: 800;
-            background: linear-gradient(135deg, #fff, #a5b4fc, #c4b5fd);
+            background: linear-gradient(135deg, #fff, #38bdf8, #a78bfa);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
         }
-        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 32px; }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
         .stat-card {
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 20px;
+            background: rgba(12, 20, 28, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 24px;
             padding: 20px 24px;
             cursor: pointer;
             transition: all 0.3s;
         }
-        .stat-card:hover { background: rgba(102,126,234,0.1); border-color: #667eea; transform: translateY(-4px); }
-        .stat-card-left { display: flex; align-items: center; gap: 16px; }
-        .stat-icon { width: 52px; height: 52px; background: rgba(102,126,234,0.25); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 26px; }
-        .stat-info h3 { font-size: 28px; font-weight: 700; color: #ffffff; }
-        .stat-info p { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 5px; }
+
+        .stat-card:hover {
+            background: rgba(56, 189, 248, 0.1);
+            border-color: #38bdf8;
+            transform: translateY(-4px);
+        }
+
+        .stat-card-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .stat-icon {
+            width: 52px;
+            height: 52px;
+            background: rgba(56, 189, 248, 0.2);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            color: #38bdf8;
+        }
+
+        .stat-info h3 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .stat-info p {
+            font-size: 13px;
+            color: rgba(203, 213, 225, 0.7);
+            margin-top: 5px;
+        }
+
         .card {
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(12, 20, 28, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(56, 189, 248, 0.2);
             border-radius: 24px;
             padding: 24px;
             margin-bottom: 20px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
         }
-        .card h3 { color: #ffffff; font-weight: 600; margin-bottom: 20px; }
-        .card h3 i { margin-right: 10px; color: #667eea; }
-        .table { color: #ffffff; width: 100%; border-collapse: collapse; }
-        .table th { border-bottom: 1px solid rgba(255,255,255,0.1); padding: 15px; text-align: left; }
-        .table td { border-bottom: 1px solid rgba(255,255,255,0.05); padding: 15px; vertical-align: middle; }
-        .table tr:hover { background: rgba(255,255,255,0.03); }
-        .filter-bar { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; }
-        .btn-excel { background: #10b981; border: none; padding: 8px 20px; border-radius: 50px; color: white; cursor: pointer; }
-        .btn-pdf { background: #ef4444; border: none; padding: 8px 20px; border-radius: 50px; color: white; cursor: pointer; }
-        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); border: none; padding: 8px 20px; border-radius: 50px; color: white; cursor: pointer; }
-        .btn-outline { background: transparent; border: 1px solid rgba(255,255,255,0.2); border-radius: 50px; padding: 8px 20px; color: #fff; cursor: pointer; }
-        .btn-sm { padding: 4px 12px; font-size: 12px; margin: 0 2px; }
-        .btn-edit { background: rgba(102,126,234,0.2); border-color: #667eea; }
-        .btn-delete { background: rgba(239,68,68,0.2); border-color: #ef4444; }
-        .form-select, .form-control {
-            color: #ffffff;
-            background: rgba(0,0,0,0.4);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px;
-            padding: 8px 12px;
-        }
-        .nav-tabs {
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+
+        .card h3 {
+            font-weight: 600;
             margin-bottom: 20px;
+            font-size: 18px;
+            color: #f1f5f9;
+        }
+
+        .card h3 i {
+            margin-right: 10px;
+            color: #38bdf8;
+        }
+
+        .table {
+            color: #e2e8f0;
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th {
+            border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+            padding: 12px 15px;
+            text-align: left;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .table td {
+            border-bottom: 1px solid rgba(56, 189, 248, 0.1);
+            padding: 12px 15px;
+            vertical-align: middle;
+        }
+
+        .table tr:hover {
+            background: rgba(56, 189, 248, 0.05);
+        }
+
+        .status-completed {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            padding: 4px 12px;
+            border-radius: 20px;
+            display: inline-block;
+            font-size: 12px;
+        }
+
+        .amount-positive {
+            color: #34d399;
+            font-weight: bold;
+        }
+
+        .ai-forecast-card {
+            background: linear-gradient(135deg, #0a1120, #0d1b2a);
+            border: 1px solid #f59e0b;
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .ai-forecast-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(245,158,11,0.08) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.05); }
+        }
+        
+        .ai-forecast-card h3, .ai-forecast-card > div {
+            position: relative;
+            z-index: 2;
+        }
+
+        .filter-bar {
             display: flex;
-            gap: 10px;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            align-items: center;
         }
-        .nav-tabs .nav-link {
-            background: transparent !important;
-            color: rgba(255,255,255,0.7) !important;
-            border: none !important;
-            padding: 10px 20px;
+
+        .btn-excel {
+            background: #059669;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            color: white;
             cursor: pointer;
+            transition: all 0.2s;
         }
-        .nav-tabs .nav-link.active { color: #fff !important; border-bottom: 2px solid #667eea !important; }
+        .btn-excel:hover {
+            background: #047857;
+            transform: translateY(-1px);
+        }
+
+        .btn-pdf {
+            background: #dc2626;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-pdf:hover {
+            background: #b91c1c;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            border-radius: 40px;
+            padding: 8px 20px;
+            color: #e2e8f0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-outline:hover {
+            background: rgba(56, 189, 248, 0.1);
+            border-color: #38bdf8;
+        }
+
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 11px;
+            margin: 2px;
+            cursor: pointer;
+            border-radius: 8px;
+            border: 1px solid;
+        }
+
+        .btn-edit {
+            background: rgba(56, 189, 248, 0.15);
+            border-color: #38bdf8;
+            color: #7dd3fc;
+        }
+
+        .btn-delete {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: #ef4444;
+            color: #fca5a5;
+        }
+
+        .form-select,
+        .form-control {
+            color: #f1f5f9;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 14px;
+            padding: 8px 14px;
+        }
+        .form-select:focus,
+        .form-control:focus {
+            border-color: #38bdf8;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+        }
+
         .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.85);
-            backdrop-filter: blur(12px);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(16px);
             z-index: 10000;
             display: none;
             align-items: center;
             justify-content: center;
         }
+
         .modal-content {
             max-width: 500px;
             width: 90%;
-            background: linear-gradient(135deg, #1a1a2e, #0f0f23);
+            background: #0f172a;
             border-radius: 28px;
-            border: 1px solid rgba(102,126,234,0.4);
-            padding: 0;
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
         }
+
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 20px 24px;
-            border-bottom: 1px solid rgba(102,126,234,0.3);
+            border-bottom: 1px solid rgba(56, 189, 248, 0.2);
         }
-        .modal-header h3 { color: #fff; margin: 0; }
-        .modal-close { background: none; border: none; color: #fff; font-size: 28px; cursor: pointer; }
-        .modal-body { padding: 20px 24px; }
-        .modal-body label { display: block; margin-bottom: 8px; color: rgba(255,255,255,0.8); font-size: 13px; }
-        .modal-body input, .modal-body select, .modal-body textarea {
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+            color: #f1f5f9;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 28px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .modal-close:hover {
+            color: #ffffff;
+        }
+
+        .modal-body {
+            padding: 20px 24px;
+        }
+
+        .modal-body label {
+            display: block;
+            margin-bottom: 8px;
+            color: #cbd5e1;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .modal-body input,
+        .modal-body select,
+        .modal-body textarea {
             width: 100%;
             padding: 12px;
-            background: rgba(0,0,0,0.4);
-            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(56, 189, 248, 0.3);
             border-radius: 14px;
-            color: #fff;
+            color: #ffffff;
             margin-bottom: 16px;
         }
+
         .modal-footer {
             display: flex;
             gap: 12px;
             padding: 15px 24px 24px;
-            border-top: 1px solid rgba(255,255,255,0.1);
+            border-top: 1px solid rgba(56, 189, 248, 0.2);
         }
-        .modal-footer button { flex: 1; padding: 12px; border-radius: 14px; cursor: pointer; font-weight: 600; }
-        .chart-container { height: 350px; }
-        .status-completed { background: rgba(16,185,129,0.2); color: #10b981; padding: 4px 12px; border-radius: 20px; display: inline-block; }
-        .status-pending { background: rgba(245,158,11,0.2); color: #f59e0b; padding: 4px 12px; border-radius: 20px; display: inline-block; }
-        .amount-positive { color: #10b981; font-weight: bold; }
-        .text-muted { color: rgba(255,255,255,0.6) !important; }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-        .animate { animation: fadeInUp 0.5s ease forwards; }
+
+        .modal-footer button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .pdf-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+        }
+
+        .pdf-toolbar {
+            background: #0f172a;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #38bdf8;
+        }
+
+        .pdf-content {
+            flex: 1;
+            padding: 30px;
+            overflow: auto;
+            background: #ffffff;
+            color: #0f172a;
+        }
+
+        .chart-container {
+            height: 350px;
+            position: relative;
+            width: 100%;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate {
+            animation: fadeInUp 0.5s ease forwards;
+        }
+
+        @media (max-width: 768px) {
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .container {
+                padding: 15px;
+            }
+            .chart-container {
+                height: 250px;
+            }
+        }
+
+        .filter-bar input, .filter-bar select {
+            color: white !important;
+            background: rgba(0, 0, 0, 0.6) !important;
+        }
+
+        .btn-sm {
+            color: white !important;
+        }
+
+        .form-control, .form-select {
+            color: white !important;
+            background: rgba(0, 0, 0, 0.5) !important;
+        }
+
+        .stat-info h3, .stat-info p {
+            color: white !important;
+        }
+
+        .table th, .table td {
+            color: #e2e8f0 !important;
+        }
+
+        #paymentsTable code {
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.1);
+            padding: 2px 6px;
+            border-radius: 6px;
+        }
+
+        #searchInput {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            color: white;
+        }
+
+        #periodFilter {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            color: white;
+        }
+
+        .table, .table * {
+            background: transparent !important;
+        }
+        
+        .table {
+            background: rgba(10, 15, 25, 0.9) !important;
+        }
+        
+        .table thead th {
+            background: rgba(56, 189, 248, 0.2) !important;
+            color: #38bdf8 !important;
+            border-bottom: 1px solid #38bdf8 !important;
+        }
+        
+        .table tbody td {
+            color: #ffffff !important;
+            border-bottom: 1px solid rgba(56, 189, 248, 0.2) !important;
+        }
+        
+        .table tbody tr:hover {
+            background: rgba(56, 189, 248, 0.1) !important;
+        }
+        
+        .amount-positive {
+            color: #34d399 !important;
+            font-weight: bold !important;
+        }
+        
+        #paymentsTable code {
+            color: #38bdf8 !important;
+            background: rgba(56, 189, 248, 0.15) !important;
+        }
     </style>
 </head>
 <body>
 
+<!-- ==================== НАВИГАЦИЯ ==================== -->
 <nav class="navbar">
-    <div class="container-fluid" style="display: flex; justify-content: space-between; align-items: center;">
-        <a class="navbar-brand" href="/">🚀 Business Stack</a>
-        <div class="d-flex flex-wrap gap-2">
-            <a href="/dashboard-improved" class="nav-link"><i class="fas fa-tachometer-alt"></i> Главная</a>
-            <a href="/finance" class="nav-link active"><i class="fas fa-chart-line"></i> Финансы</a>
-            <a href="/reports" class="nav-link"><i class="fas fa-file-alt"></i> Отчёты</a>
-            <a href="/reconciliation-acts" class="nav-link"><i class="fas fa-handshake"></i> Акты сверки</a>
-            <a href="/journal" class="nav-link"><i class="fas fa-book"></i> Журнал</a>
-            <a href="/management" class="nav-link"><i class="fas fa-tags"></i> Управленка</a>
-            <a href="/bank" class="nav-link"><i class="fas fa-university"></i> Банк</a>
-            <a href="/payroll" class="nav-link"><i class="fas fa-money-bill-wave"></i> Зарплата</a>
-            <a href="/tax-reports" class="nav-link"><i class="fas fa-calculator"></i> Налоги</a>
-            <a href="/import-excel" class="nav-link"><i class="fas fa-upload"></i> Импорт</a>
-            <a href="/month-end" class="nav-link"><i class="fas fa-calendar-check"></i> Закрытие</a>
-            <a href="/client-data" class="nav-link"><i class="fas fa-database"></i> Мои данные</a>
-        </div>
+    <a class="navbar-brand" href="/">🚀 Business Stack</a>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="/dashboard-improved" class="nav-link"><i class="fas fa-tachometer-alt"></i> Главная</a>
+        <a href="/finance" class="nav-link active"><i class="fas fa-chart-line"></i> Финансы</a>
+        <a href="/reports" class="nav-link"><i class="fas fa-file-alt"></i> Отчёты</a>
+        <a href="/reconciliation-acts" class="nav-link"><i class="fas fa-handshake"></i> Акты сверки</a>
+        <a href="/journal" class="nav-link"><i class="fas fa-book"></i> Журнал</a>
+        <a href="/management" class="nav-link"><i class="fas fa-tags"></i> Управленка</a>
+        <a href="/bank" class="nav-link"><i class="fas fa-university"></i> Банк</a>
+        <a href="/payroll" class="nav-link"><i class="fas fa-money-bill-wave"></i> Зарплата</a>
+        <a href="/tax-reports" class="nav-link"><i class="fas fa-calculator"></i> Налоги</a>
+        <a href="/import-excel" class="nav-link"><i class="fas fa-upload"></i> Импорт</a>
+        <a href="/month-end" class="nav-link"><i class="fas fa-calendar-check"></i> Закрытие</a>
+        <a href="/client-data" class="nav-link"><i class="fas fa-database"></i> Мои данные</a>
     </div>
 </nav>
 
+<!-- ==================== ОСНОВНОЙ КОНТЕЙНЕР ==================== -->
 <div class="container">
     <div class="header animate">
-        <h1><i class="fas fa-chart-line"></i> FinCore</h1>
-        <p>Управление финансами и отчётами в реальном времени</p>
+        <h1><i class="fas fa-brain"></i> FinCore AI</h1>
+        <p style="color: #cbd5e1;">Управление финансами в реальном времени</p>
     </div>
 
     <div class="stats-row">
-        <div class="stat-card" onclick="showDetailModal('income')">
-            <div class="stat-card-left"><div class="stat-icon">💰</div><div class="stat-info"><h3 id="totalIncome">0 ₽</h3><p>Доход</p></div></div>
+        <div class="stat-card">
+            <div class="stat-card-left">
+                <div class="stat-icon">💰</div>
+                <div class="stat-info">
+                    <h3 id="totalIncome">0 ₽</h3>
+                    <p>Доход</p>
+                </div>
+            </div>
         </div>
-        <div class="stat-card" onclick="showDetailModal('expense')">
-            <div class="stat-card-left"><div class="stat-icon">📤</div><div class="stat-info"><h3 id="totalExpenses">0 ₽</h3><p>Расходы</p></div></div>
+        <div class="stat-card">
+            <div class="stat-card-left">
+                <div class="stat-icon">📤</div>
+                <div class="stat-info">
+                    <h3 id="totalExpenses">0 ₽</h3>
+                    <p>Расходы</p>
+                </div>
+            </div>
         </div>
-        <div class="stat-card" onclick="showDetailModal('profit')">
-            <div class="stat-card-left"><div class="stat-icon">📈</div><div class="stat-info"><h3 id="totalProfit">0 ₽</h3><p>Прибыль</p></div></div>
+        <div class="stat-card">
+            <div class="stat-card-left">
+                <div class="stat-icon">📈</div>
+                <div class="stat-info">
+                    <h3 id="totalProfit">0 ₽</h3>
+                    <p>Прибыль</p>
+                </div>
+            </div>
         </div>
-        <div class="stat-card" onclick="showDetailModal('payments')">
-            <div class="stat-card-left"><div class="stat-icon">💳</div><div class="stat-info"><h3 id="totalPayments">0</h3><p>Платежей</p></div></div>
+        <div class="stat-card">
+            <div class="stat-card-left">
+                <div class="stat-icon">💳</div>
+                <div class="stat-info">
+                    <h3 id="totalPayments">0</h3>
+                    <p>Платежей</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-left">
+                <div class="stat-icon">📊</div>
+                <div class="stat-info">
+                    <h3 id="receivables">0 ₽</h3>
+                    <p>Дебиторская задолженность</p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-left">
+                <div class="stat-icon">⚠️</div>
+                <div class="stat-info">
+                    <h3 id="payables">0 ₽</h3>
+                    <p>Кредиторская задолженность</p>
+                </div>
+            </div>
         </div>
     </div>
 
     <div class="row mb-4">
-        <div class="col-md-6">
+        <div class="col-md-12">
             <div class="filter-bar">
                 <select id="periodFilter" class="form-select" style="width: 150px;">
+                    <option value="7">За неделю</option>
                     <option value="30" selected>За месяц</option>
                     <option value="90">За квартал</option>
                     <option value="365">За год</option>
                 </select>
-                <button class="btn-excel" onclick="exportToExcel()"><i class="fas fa-file-excel"></i> Экспорт Excel</button>
-                <button class="btn-pdf" onclick="exportToPDF()"><i class="fas fa-file-pdf"></i> Экспорт PDF</button>
-                <button class="btn-primary" onclick="showQuickPostingModal()"><i class="fas fa-bolt"></i> Быстрая проводка</button>
-                <button class="btn-outline" onclick="showCloseMonthModal()"><i class="fas fa-calendar-close"></i> Закрыть месяц</button>
+                
+                <button class="btn-outline btn-sm" onclick="setQuickFilter('today')">Сегодня</button>
+                <button class="btn-outline btn-sm" onclick="setQuickFilter('week')">Неделя</button>
+                <button class="btn-outline btn-sm" onclick="setQuickFilter('month')">Месяц</button>
+                <button class="btn-outline btn-sm" onclick="setQuickFilter('quarter')">Квартал</button>
+                <button class="btn-outline btn-sm" onclick="setQuickFilter('year')">Год</button>
+                
+                <input type="text" id="searchInput" placeholder="🔍 Поиск по платежам..." 
+                       class="form-control" style="width: 250px;" onkeyup="searchPayments()">
+                
+                <button class="btn-excel" onclick="exportAllToExcel()">
+                    <i class="fas fa-file-excel"></i> Экспорт Excel
+                </button>
+                <button class="btn-pdf" onclick="showPdfPreview()">
+                    <i class="fas fa-file-pdf"></i> PDF Отчёт
+                </button>
             </div>
         </div>
-        <div class="col-md-6 text-end"><span class="badge bg-primary" id="lastUpdate"><i class="fas fa-sync-alt"></i> Обновлено только что</span></div>
+        <div class="col-md-12 text-end mt-2">
+            <span class="badge bg-primary" id="lastUpdate" style="background: #2563eb !important;">
+                <i class="fas fa-sync-alt"></i> Обновлено
+            </span>
+        </div>
     </div>
 
     <div class="row mb-4">
         <div class="col-md-8">
             <div class="card">
                 <h3><i class="fas fa-chart-line"></i> Динамика доходов</h3>
-                <div class="chart-container"><canvas id="financeChart"></canvas></div>
+                <div class="chart-container">
+                    <canvas id="financeChart"></canvas>
+                </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card">
-                <h3><i class="fas fa-brain"></i> AI Прогноз</h3>
-                <div id="forecastResult" class="text-center py-3">Загрузка...</div>
+            <div class="card ai-forecast-card">
+                <h3><i class="fas fa-brain" style="color: #fbbf24;"></i> AI Нейроаналитика</h3>
+                <div id="forecastResult" class="text-center">
+                    <div class="mb-3">🤖 Загрузка прогнозной модели...</div>
+                </div>
+                <div class="mt-2 small text-center" style="color: #fbbf24;">
+                    <i class="fas fa-chart-line"></i> Прогноз на основе ML-трендов
+                </div>
             </div>
-        </div>
-    </div>
-
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="nav-tabs">
-                <button class="nav-link active" onclick="switchReportTab('osv')"><i class="fas fa-table"></i> Оборотно-сальдовая ведомость</button>
-                <button class="nav-link" onclick="switchReportTab('balance')"><i class="fas fa-scale-balanced"></i> Бухгалтерский баланс</button>
-                <button class="nav-link" onclick="switchReportTab('cashflow')"><i class="fas fa-money-bill-wave"></i> Отчёт о движении денег</button>
-                <button class="nav-link" onclick="switchReportTab('planfact')"><i class="fas fa-chart-line"></i> План-факт анализ</button>
-                <button class="nav-link" onclick="switchReportTab('accounts')"><i class="fas fa-book"></i> План счетов</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="reportOsv" class="report-container" style="display: block;">
-        <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h3 style="margin: 0;"><i class="fas fa-table"></i> Оборотно-сальдовая ведомость</h3>
-                <button class="btn-primary" onclick="showAddAccountModal()" style="background: linear-gradient(135deg, #10b981, #059669);">
-                    <i class="fas fa-plus"></i> Добавить счёт
-                </button>
-            </div>
-            <div class="filter-bar mb-3">
-                <select id="osvPeriod" class="form-select" style="width: 150px;" onchange="loadOSV()">
-                    <option value="month">Текущий месяц</option>
-                    <option value="quarter">Квартал</option>
-                    <option value="year">Год</option>
-                </select>
-                <button class="btn-excel" onclick="exportOSVToExcel()"><i class="fas fa-file-excel"></i> Экспорт ОСВ</button>
-            </div>
-            <div id="osvTable"><div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Загрузка...</div></div>
-        </div>
-    </div>
-
-    <div id="reportBalance" class="report-container" style="display: none;">
-        <div class="card">
-            <h3><i class="fas fa-scale-balanced"></i> Бухгалтерский баланс</h3>
-            <div class="filter-bar mb-3"><input type="date" id="balanceDate" class="form-control" style="width: 200px;" onchange="loadBalanceSheet()"></div>
-            <div id="balanceSheet">Загрузка...</div>
-        </div>
-    </div>
-
-    <div id="reportCashflow" class="report-container" style="display: none;">
-        <div class="card">
-            <h3><i class="fas fa-money-bill-wave"></i> Отчёт о движении денежных средств</h3>
-            <div class="filter-bar mb-3"><select id="cfPeriod" class="form-select" style="width: 150px;" onchange="loadCashFlow()"><option value="month">Текущий месяц</option><option value="quarter">Квартал</option><option value="year">Год</option></select></div>
-            <div id="cashFlowTable">Загрузка...</div>
-        </div>
-    </div>
-
-    <div id="reportPlanfact" class="report-container" style="display: none;">
-        <div class="card">
-            <h3><i class="fas fa-chart-line"></i> План-факт анализ</h3>
-            <div class="filter-bar mb-3"><select id="pfPeriod" class="form-select" style="width: 150px;" onchange="loadPlanFact()"><option value="month">Текущий месяц</option><option value="quarter">Квартал</option><option value="year">Год</option></select></div>
-            <div id="planFactTable">Загрузка...</div>
-            <div class="mt-3"><canvas id="planFactCanvas" style="height: 300px;"></canvas></div>
-        </div>
-    </div>
-
-    <div id="reportAccounts" class="report-container" style="display: none;">
-        <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h3 style="margin: 0;"><i class="fas fa-book"></i> План счетов</h3>
-                <button class="btn-primary" onclick="showAddAccountModal()" style="background: linear-gradient(135deg, #10b981, #059669);">
-                    <i class="fas fa-plus"></i> Добавить счёт
-                </button>
-            </div>
-            <div id="accountsTable"><div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Загрузка...</div></div>
         </div>
     </div>
 
     <div class="card">
-        <h3><i class="fas fa-clock"></i> Последние платежи</h3>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+            <h3><i class="fas fa-clock"></i> Последние платежи</h3>
+            <button class="btn-primary" onclick="showAddPaymentModal()">
+                <i class="fas fa-plus"></i> Добавить платёж
+            </button>
+        </div>
         <div class="table-responsive">
             <table class="table">
-                <thead><tr><th>ID</th><th>Сумма</th><th>Статус</th><th>Дата</th><th>Тариф</th><th>Клиент</th></tr></thead>
-                <tbody id="paymentsTable"><tr><td colspan="6" class="text-center"><i class="fas fa-spinner fa-spin"></i> Загрузка...<\/tr><\/tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<!-- Модальное окно быстрой проводки -->
-<div id="quickPostingModal" class="modal-overlay">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3><i class="fas fa-bolt"></i> Быстрая проводка</h3>
-            <button class="modal-close" onclick="closeQuickPostingModal()">&times;</button>
-        </div>
-        <div class="modal-body">
-            <label><i class="fas fa-calendar"></i> Дата</label>
-            <input type="date" id="quickDate" value="">
-            <label><i class="fas fa-arrow-right" style="color: #10b981;"></i> Дебет счёт</label>
-            <input type="text" id="quickDebit" placeholder="51 - Расчётный счёт">
-            <label><i class="fas fa-arrow-left" style="color: #ef4444;"></i> Кредит счёт</label>
-            <input type="text" id="quickCredit" placeholder="62 - Расчёты с покупателями">
-            <label><i class="fas fa-ruble-sign" style="color: #f59e0b;"></i> Сумма (₽)</label>
-            <input type="number" id="quickAmount" placeholder="Сумма в рублях">
-            <label><i class="fas fa-align-left" style="color: #667eea;"></i> Описание</label>
-            <textarea id="quickDesc" rows="2" placeholder="Назначение платежа"></textarea>
-            <label><i class="fas fa-copy" style="color: #a5b4fc;"></i> Шаблоны</label>
-            <select id="templateSelect" onchange="applyTemplate()">
-                <option value="">-- Выберите шаблон --</option>
-                <option value="Оплата от покупателя">💰 Оплата от покупателя (Дт 51 - Кт 62)</option>
-                <option value="Оплата поставщику">📦 Оплата поставщику (Дт 60 - Кт 51)</option>
-                <option value="Зарплата">💼 Выплата зарплаты (Дт 70 - Кт 51)</option>
-                <option value="Налоги">🏛️ Уплата налогов (Дт 68 - Кт 51)</option>
-            </select>
-        </div>
-        <div class="modal-footer">
-            <button class="btn-outline" onclick="closeQuickPostingModal()">Отмена</button>
-            <button class="btn-primary" onclick="createQuickPosting()">Создать проводку</button>
-        </div>
-    </div>
-</div>
-
-<!-- Модальное окно добавления счёта -->
-<div id="addAccountModal" class="modal-overlay">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3><i class="fas fa-book"></i> Добавить счёт</h3>
-            <button class="modal-close" onclick="closeAddAccountModal()">&times;</button>
-        </div>
-        <div class="modal-body">
-            <label><i class="fas fa-hashtag"></i> Код счёта</label>
-            <input type="text" id="accountCode" placeholder="51">
-            <label><i class="fas fa-font"></i> Наименование</label>
-            <input type="text" id="accountName" placeholder="Расчётный счёт">
-            <label><i class="fas fa-chart-pie"></i> Тип счёта</label>
-            <select id="accountType">
-                <option value="asset">Актив (что у вас есть)</option>
-                <option value="liability">Пассив (что вы должны)</option>
-                <option value="income">Доходы</option>
-                <option value="expense">Расходы</option>
-            </select>
-            <label><i class="fas fa-ruble-sign"></i> Начальное сальдо (дебет)</label>
-            <input type="number" id="accountDebitBalance" placeholder="0" value="0">
-            <label><i class="fas fa-ruble-sign"></i> Начальное сальдо (кредит)</label>
-            <input type="number" id="accountCreditBalance" placeholder="0" value="0">
-        </div>
-        <div class="modal-footer">
-            <button class="btn-outline" onclick="closeAddAccountModal()">Отмена</button>
-            <button class="btn-primary" onclick="createAccount()">Создать счёт</button>
-        </div>
-    </div>
-</div>
-
-<!-- Модальное окно редактирования проводки -->
-<div id="editPostingModal" class="modal-overlay">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3><i class="fas fa-edit"></i> Редактировать проводку</h3>
-            <button class="modal-close" onclick="closeEditPostingModal()">&times;</button>
-        </div>
-        <div class="modal-body">
-            <input type="hidden" id="editId">
-            <label><i class="fas fa-arrow-right" style="color: #10b981;"></i> Дебет счёт</label>
-            <input type="text" id="editDebit" placeholder="Дебет счёт">
-            <label><i class="fas fa-arrow-left" style="color: #ef4444;"></i> Кредит счёт</label>
-            <input type="text" id="editCredit" placeholder="Кредит счёт">
-            <label><i class="fas fa-ruble-sign" style="color: #f59e0b;"></i> Сумма (₽)</label>
-            <input type="number" id="editAmount" placeholder="Сумма">
-            <label><i class="fas fa-align-left" style="color: #667eea;"></i> Описание</label>
-            <textarea id="editDesc" rows="2" placeholder="Описание"></textarea>
-        </div>
-        <div class="modal-footer">
-            <button class="btn-outline" onclick="closeEditPostingModal()">Отмена</button>
-            <button class="btn-primary" onclick="updatePosting()">Сохранить изменения</button>
-        </div>
-    </div>
-</div>
-
-<!-- Модальное окно бюджета -->
-<div id="budgetModal" class="modal-overlay">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3><i class="fas fa-chart-line"></i> Редактирование бюджета</h3>
-            <button class="modal-close" onclick="closeBudgetModal()">&times;</button>
-        </div>
-        <div class="modal-body">
-            <label><i class="fas fa-chart-line" style="color: #10b981;"></i> Плановый доход (₽)</label>
-            <input type="number" id="planIncome" placeholder="План по доходам">
-            <label><i class="fas fa-chart-line" style="color: #ef4444;"></i> Плановые расходы (₽)</label>
-            <input type="number" id="planExpense" placeholder="План по расходам">
-        </div>
-        <div class="modal-footer">
-            <button class="btn-outline" onclick="closeBudgetModal()">Отмена</button>
-            <button class="btn-primary" onclick="saveBudget()">Сохранить бюджет</button>
-        </div>
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-const token = localStorage.getItem('token');
-let financeChart = null;
-let allPayments = [];
-let currentEditId = null;
-
-// ========== ОСНОВНЫЕ ФУНКЦИИ ==========
-async function refreshFinanceData() {
-    try {
-        const res = await fetch('/api/admin/payment-stats', { headers: { 'Authorization': 'Bearer ' + token } });
-        if (!res.ok) return;
-        const d = await res.json();
-        document.getElementById('totalIncome').innerHTML = (d.total_amount || 0).toLocaleString() + ' ₽';
-        document.getElementById('totalPayments').innerHTML = d.payments_count || 0;
-        document.getElementById('totalProfit').innerHTML = (d.total_amount || 0).toLocaleString() + ' ₽';
-        document.getElementById('lastUpdate').innerHTML = '<i class="fas fa-sync-alt"></i> Обновлено ' + new Date().toLocaleTimeString();
-    } catch(e) { console.error(e); }
-}
-
-async function loadAllPayments() {
-    try {
-        const res = await fetch('/api/admin/payments/recent?limit=100', { headers: { 'Authorization': 'Bearer ' + token } });
-        if (!res.ok) return;
-        const data = await res.json();
-        allPayments = data.payments || [];
-        const tbody = document.getElementById('paymentsTable');
-        if (allPayments.length > 0) {
-            tbody.innerHTML = allPayments.slice(0,10).map(p => `
-                <tr>
-                    <td><code>${p.id?.slice(0,8) || '—'}</code>
-                    <td class="amount-positive">${(p.amount || 0).toLocaleString()} ₽
-                    <td><span class="status-completed">✅ Оплачен</span>
-                    <td>${p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}
-                    <td>${p.plan_name || '—'}
-                    <td>${p.user_name || '—'}
-                </tr>
-            `).join('');
-        }
-    } catch(e) { console.error(e); }
-}
-
-async function loadChart() {
-    try {
-        const res = await fetch('/api/admin/payments/recent?limit=30', { headers: { 'Authorization': 'Bearer ' + token } });
-        const data = await res.json();
-        const payments = data.payments || [];
-        const amounts = payments.slice(0,30).reverse().map(p => p.amount || 0);
-        const labels = payments.slice(0,30).reverse().map(p => p.created_at ? new Date(p.created_at).toLocaleDateString() : '-');
-        const ctx = document.getElementById('financeChart').getContext('2d');
-        if (financeChart) financeChart.destroy();
-        financeChart = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Поступления (₽)', data: amounts, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false } });
-        const total = amounts.reduce((a,b)=>a+b,0);
-        const nextMonth = Math.round((total / (amounts.length || 1)) * 30);
-        document.getElementById('forecastResult').innerHTML = `<div style="font-size:32px;color:#10b981">${nextMonth.toLocaleString()} ₽</div><div>Прогноз на месяц</div>`;
-    } catch(e) { console.error(e); }
-}
-
-// ========== ОСВ ==========
-async function loadOSV() {
-    const osvTable = document.getElementById('osvTable');
-    osvTable.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Загрузка...</div>';
-    try {
-        const res = await fetch('/api/journal-entries', { headers: { 'Authorization': 'Bearer ' + token } });
-        const data = await res.json();
-        const entries = data.entries || data;
-        if (entries && entries.length > 0) {
-            let html = `<div class="table-responsive"><table class="table"><thead><th>Дата</th><th>Дебет счёт</th><th>Кредит счёт</th><th>Сумма</th><th>Описание</th><th style="width:100px">Действия</th></tr></thead><tbody>`;
-            for (const row of entries) {
-                const amount = (row.debit_amount || 0) + (row.credit_amount || 0);
-                const date = row.operation_date ? row.operation_date.split('T')[0] : (row.created_at ? row.created_at.split('T')[0] : '—');
-                html += `<tr>
-                    <td>${date}
-                    <td><code>${row.debit_account || '—'}</code>
-                    <td><code>${row.credit_account || '—'}</code>
-                    <td class="amount-positive">${amount.toLocaleString()} ₽
-                    <td>${row.description || ''}
-                    <td>
-                        <button class="btn-outline btn-sm btn-edit" onclick='editPosting("${row.id}", "${row.debit_account || ""}", "${row.credit_account || ""}", ${amount}, "${(row.description || "").replace(/'/g, "\\'")}")'><i class="fas fa-edit"></i></button>
-                        <button class="btn-outline btn-sm btn-delete" onclick='deletePosting("${row.id}")'><i class="fas fa-trash"></i></button>
-                    
-                </tr>`;
-            }
-            html += `</tbody></table></div><div class="text-muted text-center mt-3">📊 Всего проводок: ${entries.length}</div>`;
-            osvTable.innerHTML = html;
-        } else {
-            osvTable.innerHTML = `<div class="alert alert-info text-center py-5"><i class="fas fa-info-circle fa-3x mb-3"></i><h4>Нет проводок</h4><p>Создайте первую проводку через <strong>⚡ Быстрая проводка</strong></p></div>`;
-        }
-    } catch(e) { console.error(e); osvTable.innerHTML = `<div class="alert alert-danger">❌ Ошибка: ${e.message}</div>`; }
-}
-
-// ========== ПЛАН СЧЕТОВ ==========
-async function loadAccounts() {
-    const accountsDiv = document.getElementById('accountsTable');
-    accountsDiv.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Загрузка...</div>';
-    try {
-        const res = await fetch('/api/chart-of-accounts', { headers: { 'Authorization': 'Bearer ' + token } });
-        const data = await res.json();
-        if (data.success && data.accounts && data.accounts.length > 0) {
-            let html = `<div class="table-responsive"><table class="table"><thead><th>Код</th><th>Наименование</th><th>Тип</th><th>Статус</th></tr></thead><tbody>`;
-            for (const acc of data.accounts) {
-                const typeMap = { 'asset': 'Актив', 'liability': 'Пассив', 'income': 'Доход', 'expense': 'Расход' };
-                html += `<tr>
-                    <td><code>${acc.code}</code>
-                    <td>${acc.name}
-                    <td>${typeMap[acc.account_type] || acc.account_type}
-                    <td><span class="status-completed">Активен</span>
-                </tr>`;
-            }
-            html += `</tbody></table></div><div class="text-muted text-center mt-3">📊 Всего счетов: ${data.accounts.length}</div>`;
-            accountsDiv.innerHTML = html;
-        } else {
-            accountsDiv.innerHTML = `<div class="alert alert-info text-center py-5"><i class="fas fa-info-circle fa-3x mb-3"></i><h4>Нет счетов</h4><p>Создайте первый счёт через кнопку <strong>"Добавить счёт"</strong></p></div>`;
-        }
-    } catch(e) {
-        console.error(e);
-        accountsDiv.innerHTML = '<div class="alert alert-danger">Ошибка загрузки счетов</div>';
-    }
-}
-
-// ========== СОЗДАНИЕ ПРОВОДКИ ==========
-function showQuickPostingModal() {
-    document.getElementById('quickDate').value = new Date().toISOString().split('T')[0];
-    document.getElementById('quickPostingModal').style.display = 'flex';
-}
-function closeQuickPostingModal() { document.getElementById('quickPostingModal').style.display = 'none'; }
-
-function applyTemplate() {
-    const template = document.getElementById('templateSelect').value;
-    const templates = {
-        'Оплата от покупателя': { debit: '51', credit: '62', desc: 'Поступление оплаты от покупателя' },
-        'Оплата поставщику': { debit: '60', credit: '51', desc: 'Оплата поставщику' },
-        'Зарплата': { debit: '70', credit: '51', desc: 'Выплата заработной платы' },
-        'Налоги': { debit: '68', credit: '51', desc: 'Уплата налогов' }
-    };
-    if (templates[template]) {
-        document.getElementById('quickDebit').value = templates[template].debit;
-        document.getElementById('quickCredit').value = templates[template].credit;
-        document.getElementById('quickDesc').value = templates[template].desc;
-    }
-}
-
-async function createQuickPosting() {
-    const debit = document.getElementById('quickDebit').value.trim();
-    const credit = document.getElementById('quickCredit').value.trim();
-    const amount = parseFloat(document.getElementById('quickAmount').value);
-    const description = document.getElementById('quickDesc').value.trim() || 'Быстрая проводка';
-    const operation_date = document.getElementById('quickDate').value;
-    if (!debit || !credit) { showNotification('❌ Укажите дебет и кредит счета', 'error'); return; }
-    if (!amount || isNaN(amount) || amount <= 0) { showNotification('❌ Укажите корректную сумму', 'error'); return; }
-    const entry = { operation_date, debit_amount: amount, credit_amount: 0, description, debit_account: debit, credit_account: credit };
-    try {
-        const res = await fetch('/api/journal-entries', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify(entry) });
-        if (res.ok) {
-            showNotification('✅ Проводка создана!', 'success');
-            closeQuickPostingModal();
-            document.getElementById('quickDebit').value = '';
-            document.getElementById('quickCredit').value = '';
-            document.getElementById('quickAmount').value = '';
-            document.getElementById('quickDesc').value = '';
-            loadOSV();
-        } else { const error = await res.json(); showNotification(`❌ ${error.error || 'Ошибка'}`, 'error'); }
-    } catch(e) { showNotification('❌ Ошибка соединения', 'error'); }
-}
-
-// ========== РЕДАКТИРОВАНИЕ ==========
-function editPosting(id, debit, credit, amount, description) {
-    currentEditId = id;
-    document.getElementById('editDebit').value = debit;
-    document.getElementById('editCredit').value = credit;
-    document.getElementById('editAmount').value = amount;
-    document.getElementById('editDesc').value = description;
-    document.getElementById('editPostingModal').style.display = 'flex';
-}
-function closeEditPostingModal() { document.getElementById('editPostingModal').style.display = 'none'; currentEditId = null; }
-
-async function updatePosting() {
-    const debit = document.getElementById('editDebit').value.trim();
-    const credit = document.getElementById('editCredit').value.trim();
-    const amount = parseFloat(document.getElementById('editAmount').value);
-    const description = document.getElementById('editDesc').value.trim();
-    if (!debit || !credit || !amount || isNaN(amount)) { showNotification('❌ Заполните все поля', 'error'); return; }
-    const today = new Date().toISOString().split('T')[0];
-    const data = { operation_date: today, debit_amount: amount, credit_amount: 0, description, debit_account: debit, credit_account: credit };
-    try {
-        const res = await fetch(`/api/journal-entries/${currentEditId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify(data) });
-        if (res.ok) { showNotification('✅ Проводка обновлена!', 'success'); closeEditPostingModal(); loadOSV(); }
-        else { const error = await res.json(); showNotification(`❌ ${error.error || 'Ошибка'}`, 'error'); }
-    } catch(e) { showNotification('❌ Ошибка соединения', 'error'); }
-}
-
-// ========== УДАЛЕНИЕ ==========
-async function deletePosting(id) {
-    if (!confirm('⚠️ Удалить проводку? Действие нельзя отменить!')) return;
-    try {
-        const res = await fetch(`/api/journal-entries/${id}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
-        if (res.ok) { showNotification('✅ Проводка удалена!', 'success'); loadOSV(); }
-        else { showNotification('❌ Ошибка удаления', 'error'); }
-    } catch(e) { showNotification('❌ Ошибка соединения', 'error'); }
-}
-
-// ========== ДОБАВЛЕНИЕ СЧЁТА ==========
-function showAddAccountModal() { document.getElementById('addAccountModal').style.display = 'flex'; }
-function closeAddAccountModal() { document.getElementById('addAccountModal').style.display = 'none'; }
-
-async function createAccount() {
-    const code = document.getElementById('accountCode').value.trim();
-    const name = document.getElementById('accountName').value.trim();
-    const type = document.getElementById('accountType').value;
-    if (!code || !name) { showNotification('❌ Заполните код и наименование счёта', 'error'); return; }
-    try {
-        const res = await fetch('/api/chart-of-accounts', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ code, name, account_type: type, is_active: true }) });
-        if (res.ok) {
-            showNotification('✅ Счёт создан!', 'success');
-            closeAddAccountModal();
-            document.getElementById('accountCode').value = '';
-            document.getElementById('accountName').value = '';
-            loadOSV();
-            loadAccounts();
-        } else { const error = await res.json(); showNotification(`❌ ${error.error || 'Ошибка'}`, 'error'); }
-    } catch(e) { showNotification('❌ Ошибка соединения', 'error'); }
-}
-
-// ========== БАЛАНС ==========
-async function loadBalanceSheet() {
-    const date = document.getElementById('balanceDate')?.value || new Date().toISOString().split('T')[0];
-    try {
-        const res = await fetch(`/api/reports/balance-sheet?as_of_date=${date}`, {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
-        const data = await res.json();
-        
-        const assets = (data.assets || 0).toLocaleString();
-        const liabilities = (data.liabilities_and_equity || 0).toLocaleString();
-        
-        document.getElementById('balanceSheet').innerHTML = `
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="card text-center" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3);">
-                        <h4 style="color: #fff;"><i class="fas fa-building"></i> АКТИВ</h4>
-                        <div style="font-size: 36px; color: #10b981;">${assets} ₽</div>
-                        <small style="color: rgba(255,255,255,0.7);">Что у вас есть</small>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card text-center" style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3);">
-                        <h4 style="color: #fff;"><i class="fas fa-chart-pie"></i> ПАССИВ</h4>
-                        <div style="font-size: 36px; color: #ef4444;">${liabilities} ₽</div>
-                        <small style="color: rgba(255,255,255,0.7);">Откуда взялось</small>
-                    </div>
-                </div>
-            </div>
-        `;
-    } catch(e) {
-        console.error(e);
-        document.getElementById('balanceSheet').innerHTML = '<div class="alert alert-danger">Ошибка загрузки</div>';
-    }
-}
-// ========== ОТЧЁТ О ДВИЖЕНИИ ДЕНЕГ ==========
-async function loadCashFlow() {
-    const period = document.getElementById('cfPeriod')?.value || 'month';
-    try {
-        const res = await fetch(`/api/reports/cash-flow?period=${period}`, { headers: { 'Authorization': 'Bearer ' + token } });
-        const data = await res.json();
-        document.getElementById('cashFlowTable').innerHTML = `<table class="table"><thead><tr><th>Показатель</th><th>Приток</th><th>Отток</th><th>Нетто</th></tr></thead><tbody><tr><td>Операционная деятельность<td class="text-success">${(data.operating?.inflow || 0).toLocaleString()} ₽<td class="text-danger">${(data.operating?.outflow || 0).toLocaleString()} ₽<td class="amount-positive">${(data.operating?.net || 0).toLocaleString()} ₽</tbody><tfoot><tr><td><strong>ИТОГО</strong></td><td colspan="2"><td class="amount-positive">${(data.total_net || 0).toLocaleString()} ₽</tfoot></table>`;
-    } catch(e) { document.getElementById('cashFlowTable').innerHTML = '<div class="alert alert-danger">Ошибка</div>'; }
-}
-
-// ========== ПЛАН-ФАКТ (ИСПРАВЛЕН - БЕЗ 500 ОШИБКИ) ==========
-async function loadPlanFact() {
-    try {
-        const res = await fetch('/api/reports/profit-loss', { headers: { 'Authorization': 'Bearer ' + token } });
-        const data = await res.json();
-        let planIncome = localStorage.getItem('plan_income') || 100000;
-        let planExpense = localStorage.getItem('plan_expense') || 50000;
-        planIncome = parseFloat(planIncome);
-        planExpense = parseFloat(planExpense);
-        const actualIncome = data.total_revenue || 0;
-        const actualExpense = data.total_expenses || 0;
-        const incomeDiff = ((actualIncome - planIncome) / planIncome * 100).toFixed(1);
-        const expenseDiff = ((actualExpense - planExpense) / planExpense * 100).toFixed(1);
-        document.getElementById('planFactTable').innerHTML = `
-            <table class="table">
-                <thead><tr><th>Показатель</th><th>План</th><th>Факт</th><th>Отклонение</th></tr></thead>
-                <tbody>
-                    <tr><td>💰 Доходы</td><td>${planIncome.toLocaleString()} ₽</td><td class="text-success">${actualIncome.toLocaleString()} ₽</td><td class="${actualIncome >= planIncome ? 'text-success' : 'text-danger'}">${incomeDiff}%</td>
-                    <tr><td>📤 Расходы</td><td>${planExpense.toLocaleString()} ₽</td><td class="text-danger">${actualExpense.toLocaleString()} ₽</td><td class="${actualExpense <= planExpense ? 'text-success' : 'text-danger'}">${expenseDiff}%</td>
-                    <tr><td>📈 Прибыль</td><td>${(planIncome - planExpense).toLocaleString()} ₽</td><td class="text-success">${(actualIncome - actualExpense).toLocaleString()} ₽</td><td class="${(actualIncome - actualExpense) >= (planIncome - planExpense) ? 'text-success' : 'text-danger'}">${(((actualIncome - actualExpense) - (planIncome - planExpense)) / (planIncome - planExpense) * 100).toFixed(1)}%</td>
-                </tbody>
-            </table>
-        `;
-    } catch(e) {
-        console.error(e);
-        document.getElementById('planFactTable').innerHTML = '<div class="alert alert-info text-center py-5">📊 Данные для план-факт анализа загрузятся после создания проводок</div>';
-    }
-}
-
-// ========== БЮДЖЕТ ==========
-function showBudgetModal() {
-    document.getElementById('planIncome').value = localStorage.getItem('plan_income') || '';
-    document.getElementById('planExpense').value = localStorage.getItem('plan_expense') || '';
-    document.getElementById('budgetModal').style.display = 'flex';
-}
-function closeBudgetModal() { document.getElementById('budgetModal').style.display = 'none'; }
-function saveBudget() {
-    const planIncome = parseFloat(document.getElementById('planIncome').value);
-    const planExpense = parseFloat(document.getElementById('planExpense').value);
-    if (planIncome && planExpense) {
-        localStorage.setItem('plan_income', planIncome);
-        localStorage.setItem('plan_expense', planExpense);
-        showNotification('✅ Бюджет сохранён!', 'success');
-        closeBudgetModal();
-        loadPlanFact();
-    } else { showNotification('❌ Введите план по доходам и расходам', 'error'); }
-}
-
-// ========== ЗАКРЫТИЕ МЕСЯЦА ==========
-function showCloseMonthModal() { if (confirm('⚠️ Закрытие месяца создаст финальные проводки. Действие нельзя отменить! Продолжить?')) closeMonth(); }
-async function closeMonth() {
-    const now = new Date();
-    const month = now.getMonth() + 1;
-    const year = now.getFullYear();
-    try {
-        const res = await fetch('/api/fincore/close-month', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ month, year }) });
-        const result = await res.json();
-        if (result.success) { showNotification(`✅ ${result.message}`, 'success'); loadOSV(); }
-        else { showNotification(`❌ ${result.error}`, 'error'); }
-    } catch(e) { showNotification('❌ Ошибка закрытия месяца', 'error'); }
-}
-
-// ========== ЭКСПОРТЫ ==========
-function exportOSVToExcel() {
-    const osvTable = document.getElementById('osvTable');
-    const table = osvTable?.querySelector('table');
-    if (!table) { showNotification('❌ Нет данных для экспорта', 'error'); return; }
-    const rows = [];
-    const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.innerText.trim());
-    rows.push(headers);
-    Array.from(table.querySelectorAll('tbody tr')).forEach(tr => {
-        const row = Array.from(tr.querySelectorAll('td')).map(td => td.innerText.trim());
-        if (row.length > 0) rows.push(row);
-    });
-    const csv = rows.map(row => row.join(';')).join('\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `osv_${new Date().toISOString().slice(0,10)}.csv`;
-    link.click();
-    showNotification('📊 Экспорт ОСВ завершён', 'success');
-}
-
-function exportToExcel() {
-    if (allPayments.length === 0) {
-        showNotification('❌ Нет данных для экспорта', 'error');
-        return;
-    }
-    
-    // Создаем HTML таблицу для Excel
-    let html = `
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <title>Финансовый отчет</title>
-            <style>
-                th { background: #4472C4; color: white; }
-                td, th { border: 1px solid #ddd; padding: 8px; }
-                table { border-collapse: collapse; width: 100%; }
-            </style>
-        </head>
-        <body>
-            <h2>Финансовый отчет</h2>
-            <p>Дата формирования: ${new Date().toLocaleString()}</p>
-            <table>
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -826,203 +721,657 @@ function exportToExcel() {
                         <th>Дата</th>
                         <th>Тариф</th>
                         <th>Клиент</th>
+                        <th>Действия</th>
                     </tr>
                 </thead>
-                <tbody>
-    `;
+                <tbody id="paymentsTable">
+                    <tr><td colspan="7" class="text-center">Загрузка...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Модальные окна -->
+<div id="addPaymentModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-credit-card"></i> Добавить платёж</h3>
+            <button class="modal-close" onclick="closeAddPaymentModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <label>Сумма (₽)</label>
+            <input type="number" id="paymentAmount">
+            <label>Дата</label>
+            <input type="date" id="paymentDate">
+            <label>Тариф</label>
+            <input type="text" id="paymentPlan">
+            <label>Клиент</label>
+            <input type="text" id="paymentCustomer">
+            <label>Статус</label>
+            <select id="paymentStatus">
+                <option value="completed">Оплачен</option>
+                <option value="pending">Ожидание</option>
+            </select>
+            <label>Описание</label>
+            <textarea id="paymentDesc" rows="2"></textarea>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-outline" onclick="closeAddPaymentModal()">Отмена</button>
+            <button class="btn-primary" onclick="createPayment()">Создать</button>
+        </div>
+    </div>
+</div>
+
+<div id="pdfPreviewModal" class="pdf-modal">
+    <div class="pdf-toolbar">
+        <h5 class="m-0" style="color: #ffffff;">
+            <i class="fas fa-file-pdf"></i> Финансовый отчёт
+        </h5>
+        <div>
+            <button class="btn-primary me-2" onclick="printPdf()">
+                <i class="fas fa-print"></i> Печать
+            </button>
+            <button class="btn-outline" onclick="closePdfPreview()">
+                <i class="fas fa-times"></i> Закрыть
+            </button>
+        </div>
+    </div>
+    <div id="pdfContentContainer" class="pdf-content"></div>
+</div>
+
+<script>
+// ==================== ТОКЕН ====================
+const token = localStorage.getItem('token');
+if (!token) {
+    window.location.href = '/login';
+}
+
+// ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
+let financeChart = null;
+let allPayments = [];
+
+// ==================== ЗАГРУЗКА ПЛАТЕЖЕЙ ====================
+async function loadAllPayments() {
+    try {
+        const res = await fetch('/api/payments?limit=200', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        
+        if (!res.ok) {
+            showEmptyPayments();
+            return [];
+        }
+        
+        const data = await res.json();
+        allPayments = data.payments || data || [];
+        
+        updatePaymentsTable();
+        refreshFinanceData();
+        loadChart();
+        loadDebts();
+        
+        return allPayments;
+    } catch (e) {
+        console.error(e);
+        showEmptyPayments();
+        return [];
+    }
+}
+
+function updatePaymentsTable() {
+    const tbody = document.getElementById('paymentsTable');
+    if (!tbody) return;
     
-    allPayments.forEach(p => {
-        html += `
+    let filtered = [...allPayments];
+    const searchText = document.getElementById('searchInput')?.value.toLowerCase() || '';
+    
+    if (searchText) {
+        filtered = filtered.filter(p => 
+            (p.user_name || '').toLowerCase().includes(searchText) ||
+            (p.plan_name || '').toLowerCase().includes(searchText) ||
+            (p.purpose || '').toLowerCase().includes(searchText)
+        );
+    }
+    
+    if (filtered.length > 0) {
+        tbody.innerHTML = filtered.slice(0, 10).map(p => `
             <tr>
-                <td>${p.id?.slice(0,8) || '—'}</td>
-                <td align="right">${(p.amount || 0).toLocaleString()} ₽</td>
-                <td>${p.status === 'completed' ? 'Оплачен' : 'Ожидание'}</td>
+                <td><code>${p.id?.slice(0, 8) || '—'}</code></td>
+                <td class="amount-positive">${(parseFloat(p.amount) || 0).toLocaleString()} ₽</td>
+                <td>
+                    <span class="status-completed">
+                        ${p.status === 'completed' ? '✅ Оплачен' : '⏳ Ожидание'}
+                    </span>
+                </td>
                 <td>${p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}</td>
                 <td>${p.plan_name || '—'}</td>
                 <td>${p.user_name || '—'}</td>
+                <td>
+                    <button class="btn-sm btn-edit" onclick='editPayment("${p.id}")'>
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-sm btn-delete" onclick='deletePayment("${p.id}")'>
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
             </tr>
-        `;
-    });
-    
-    html += `
-                </tbody>
-            </table>
-            <p>© Business Stack ERP</p>
-        </body>
-        </html>
-    `;
-    
-    const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `finance_report_${new Date().toISOString().slice(0,10)}.xls`;
-    link.click();
-    showNotification('✅ Экспорт Excel завершён', 'success');
+        `).join('');
+    } else {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">📭 Нет данных</td></tr>';
+    }
 }
 
-function exportToPDF() {
-    showNotification('📄 Подготовка PDF отчёта...', 'info');
-    
-    const totalIncome = document.getElementById('totalIncome')?.innerText || '0 ₽';
-    const totalPayments = document.getElementById('totalPayments')?.innerText || '0';
-    const reportDate = new Date().toLocaleDateString('ru-RU', { year: 'numeric', month: 'long', day: 'numeric' });
-    const reportTime = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-    
-    let paymentsHtml = '';
-    if (allPayments && allPayments.length > 0) {
-        const totalSum = allPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-        paymentsHtml = `
-            <h3 style="margin-top: 30px; color: #333; border-left: 4px solid #667eea; padding-left: 15px;">💳 Последние платежи</h3>
-            <table class="report-table">
-                <thead><tr><th>ID</th><th>Сумма</th><th>Статус</th><th>Дата</th><th>Клиент</th></tr></thead>
-                <tbody>
-                    ${allPayments.slice(0, 20).map(p => `
-                        <tr>
-                            <td>${p.id?.slice(0,8) || '—'}</td>
-                            <td>${(p.amount || 0).toLocaleString()} ₽</td>
-                            <td>${p.status === 'completed' ? '<span style="color:#10b981;">✅ Оплачен</span>' : '<span style="color:#f59e0b;">⏳ Ожидание</span>'}</td>
-                            <td>${p.created_at ? new Date(p.created_at).toLocaleDateString() : '—'}</td>
-                            <td>${p.user_name || '—'}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-                <tfoot><tr>
-                    <td><strong>ИТОГО:</strong></td>
-                    <td><strong>${totalSum.toLocaleString()} ₽</strong></td>
-                    <td colspan="3"></td>
-                </tr></tfoot>
-            </table>
-        `;
+function searchPayments() {
+    updatePaymentsTable();
+}
+
+function showEmptyPayments() {
+    const tbody = document.getElementById('paymentsTable');
+    if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">📭 Нет данных</td></tr>';
     }
+}
+
+function refreshFinanceData() {
+    const totalIncome = allPayments
+        .filter(p => p.status === 'completed')
+        .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
     
-    let osvHtml = '';
-    const osvTable = document.getElementById('osvTable');
-    if (osvTable && osvTable.querySelector('table')) {
-        const osvRows = osvTable.querySelectorAll('tbody tr');
-        if (osvRows.length > 0) {
-            osvHtml = `
-                <h3 style="margin-top: 30px; color: #333; border-left: 4px solid #667eea; padding-left: 15px;">📊 Оборотно-сальдовая ведомость</h3>
-                <table class="report-table">
-                    <thead><tr><th>Счёт</th><th>Наименование</th><th>Оборот Дт</th><th>Оборот Кт</th><th>Сальдо</th></tr></thead>
-                    <tbody>
-                        ${Array.from(osvRows).map(row => {
-                            const cells = row.querySelectorAll('td');
-                            if (cells.length >= 5) {
-                                return `<tr>
-                                    <td>${cells[0]?.innerText || ''}</td>
-                                    <td>${cells[1]?.innerText || ''}</td>
-                                    <td>${cells[2]?.innerHTML || '0 ₽'}</td>
-                                    <td>${cells[3]?.innerHTML || '0 ₽'}</td>
-                                    <td>${cells[4]?.innerHTML || '0 ₽'}</td>
-                                </tr>`;
-                            }
-                            return '';
-                        }).join('')}
-                    </tbody>
-                </table>
-            `;
+    document.getElementById('totalIncome').innerHTML = totalIncome.toLocaleString() + ' ₽';
+    document.getElementById('totalPayments').innerHTML = allPayments.length;
+    document.getElementById('totalProfit').innerHTML = totalIncome.toLocaleString() + ' ₽';
+    document.getElementById('totalExpenses').innerHTML = '0 ₽';
+    document.getElementById('lastUpdate').innerHTML = '<i class="fas fa-sync-alt"></i> Обновлено ' + new Date().toLocaleTimeString();
+}
+
+// ==================== ГРАФИК ====================
+async function loadChart() {
+    const canvas = document.getElementById('financeChart');
+    if (!canvas) return;
+    
+    try {
+        const dailyIncome = {};
+        
+        allPayments.filter(p => p.status === 'completed').forEach(p => {
+            const date = p.created_at 
+                ? new Date(p.created_at).toISOString().split('T')[0] 
+                : new Date().toISOString().split('T')[0];
+            dailyIncome[date] = (dailyIncome[date] || 0) + (parseFloat(p.amount) || 0);
+        });
+        
+        const labels = [];
+        const incomeData = [];
+        const today = new Date();
+        
+        for (let i = 29; i >= 0; i--) {
+            const date = new Date(today);
+            date.setDate(today.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0];
+            labels.push(dateStr.slice(5));
+            incomeData.push(dailyIncome[dateStr] || 0);
         }
-    }
-    
-    const printHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <title>FinCore Отчёт</title>
-            <style>
-                * { margin: 0; padding: 0; box-sizing: border-box; }
-                body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; background: #f0f2f5; color: #1a1a2e; }
-                .report-container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); overflow: hidden; }
-                .report-header { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 40px; text-align: center; }
-                .report-header h1 { font-size: 32px; margin-bottom: 10px; }
-                .report-date { margin-top: 15px; font-size: 12px; opacity: 0.8; }
-                .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; padding: 30px; background: white; }
-                .stat-card-pdf { background: linear-gradient(135deg, #667eea10, #764ba210); border: 1px solid #667eea30; border-radius: 16px; padding: 20px; text-align: center; }
-                .stat-card-pdf .stat-icon { font-size: 32px; margin-bottom: 10px; }
-                .stat-card-pdf .stat-value { font-size: 28px; font-weight: 800; color: #667eea; }
-                .stat-card-pdf .stat-label { font-size: 13px; color: #666; margin-top: 5px; }
-                .report-content { padding: 0 30px 30px 30px; }
-                .report-table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13px; }
-                .report-table th { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 12px; text-align: left; }
-                .report-table td { padding: 10px 12px; border-bottom: 1px solid #e0e0e0; }
-                .report-table tbody tr:nth-child(even) { background: #f9f9f9; }
-                .report-table tfoot td { background: #f8f9fa; padding: 12px; border-top: 2px solid #667eea; font-weight: bold; }
-                .toolbar { position: sticky; top: 0; background: white; padding: 15px 30px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: flex-end; gap: 12px; z-index: 100; }
-                .toolbar button { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s; }
-                .btn-print { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
-                .btn-close { background: #ef4444; color: white; }
-                .report-footer { background: #f8f9fa; padding: 20px 30px; text-align: center; font-size: 11px; color: #999; border-top: 1px solid #e0e0e0; }
-                .watermark { position: fixed; bottom: 30px; right: 30px; opacity: 0.03; font-size: 80px; color: #667eea; transform: rotate(-15deg); }
-                @media print { .toolbar { display: none; } body { padding: 0; } .report-header { -webkit-print-color-adjust: exact; } .report-table th { -webkit-print-color-adjust: exact; } }
-            </style>
-        </head>
-        <body>
-            <div class="watermark">FinCore</div>
-            <div class="report-container">
-                <div class="toolbar">
-                    <button class="btn-print" onclick="window.print(); setTimeout(function(){ window.close(); }, 1000);"><i class="fas fa-print"></i> Печать</button>
-                    <button class="btn-close" onclick="window.close();"><i class="fas fa-times"></i> Закрыть</button>
+        
+        const ctx = canvas.getContext('2d');
+        if (financeChart) financeChart.destroy();
+        
+        financeChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Доходы (₽)',
+                    data: incomeData,
+                    borderColor: '#38bdf8',
+                    backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointBackgroundColor: '#fbbf24',
+                    pointBorderColor: '#ffffff',
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: '#cbd5e1' } },
+                    tooltip: { backgroundColor: '#0f172a', titleColor: '#ffffff', bodyColor: '#cbd5e1' }
+                },
+                scales: {
+                    y: { 
+                        ticks: { color: '#94a3b8' },
+                        grid: { color: 'rgba(56, 189, 248, 0.1)' }
+                    },
+                    x: { 
+                        ticks: { color: '#94a3b8', rotation: 45 },
+                        grid: { color: 'rgba(56, 189, 248, 0.1)' }
+                    }
+                }
+            }
+        });
+        
+        const total = incomeData.reduce((a, b) => a + b, 0);
+        const avgDaily = total / 30;
+        const lastWeek = incomeData.slice(-7).reduce((a, b) => a + b, 0) / 7;
+        const prevWeek = incomeData.slice(-14, -7).reduce((a, b) => a + b, 0) / 7;
+        
+        let forecastNextMonth = Math.round(avgDaily * 30);
+        let trendText = 'стабильный';
+        let trendIcon = '➡️';
+        let recommendation = 'Поддерживайте текущую стратегию. Рекомендуем диверсификацию.';
+        
+        if (lastWeek > prevWeek && prevWeek > 0) {
+            forecastNextMonth = Math.round(lastWeek * 30 * 1.12);
+            trendText = 'растёт';
+            trendIcon = '📈';
+            recommendation = 'Отличная динамика! Увеличьте маркетинговый бюджет на 15-20% для масштабирования.';
+        } else if (lastWeek < prevWeek && prevWeek > 0) {
+            forecastNextMonth = Math.round(lastWeek * 30 * 0.88);
+            trendText = 'снижается';
+            trendIcon = '📉';
+            recommendation = 'Требуется анализ. Проверьте активных клиентов и оптимизируйте рекламные кампании.';
+        }
+        
+        document.getElementById('forecastResult').innerHTML = `
+            <div style="font-size: 38px; font-weight: 800; color: #fbbf24; text-shadow: 0 0 10px rgba(245,158,11,0.3);">
+                ${forecastNextMonth.toLocaleString()} ₽
+            </div>
+            <div style="font-size: 12px; margin-bottom: 15px; color: #94a3b8;">
+                прогноз дохода на месяц
+            </div>
+            <div style="background: rgba(0,0,0,0.4); border-radius: 16px; padding: 12px; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #94a3b8;">
+                        <i class="fas fa-chart-line"></i> Тренд:
+                    </span>
+                    <span style="color: #fbbf24;">
+                        ${trendIcon} ${trendText}
+                    </span>
                 </div>
-                <div class="report-header">
-                    <h1>🚀 FinCore - Финансовый отчёт</h1>
-                    <div class="report-date">Дата формирования: ${reportDate} в ${reportTime}</div>
-                </div>
-                <div class="stats-grid">
-                    <div class="stat-card-pdf"><div class="stat-icon">💰</div><div class="stat-value">${totalIncome}</div><div class="stat-label">Общий доход</div></div>
-                    <div class="stat-card-pdf"><div class="stat-icon">📤</div><div class="stat-value">0 ₽</div><div class="stat-label">Расходы</div></div>
-                    <div class="stat-card-pdf"><div class="stat-icon">📈</div><div class="stat-value">${totalIncome}</div><div class="stat-label">Прибыль</div></div>
-                    <div class="stat-card-pdf"><div class="stat-icon">💳</div><div class="stat-value">${totalPayments}</div><div class="stat-label">Платежей</div></div>
-                </div>
-                <div class="report-content">
-                    ${osvHtml}
-                    ${paymentsHtml}
-                </div>
-                <div class="report-footer">
-                    <p>© ${new Date().getFullYear()} FinCore - Финансовый учёт и аналитика</p>
+                <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+                    <span style="color: #94a3b8;">
+                        <i class="fas fa-calculator"></i> Средний чек:
+                    </span>
+                    <span style="color: #e2e8f0;">
+                        ${allPayments.length > 0 ? Math.round(total / allPayments.length).toLocaleString() : 0} ₽
+                    </span>
                 </div>
             </div>
-        </body>
-        </html>
+            <div style="background: rgba(0,0,0,0.4); border-radius: 16px; padding: 12px; border-left: 3px solid #fbbf24;">
+                <i class="fas fa-lightbulb" style="color: #fbbf24;"></i>
+                <strong style="color: #f1f5f9;">AI Рекомендация</strong>
+                <br>
+                <small style="color: #cbd5e1;">${recommendation}</small>
+            </div>
+        `;
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+// ==================== ЗАДОЛЖЕННОСТИ ====================
+async function loadDebts() {
+    try {
+        const res = await fetch('/api/journal-entries', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        const entries = data.entries || [];
+        
+        const receivables = entries
+            .filter(e => e.status !== 'posted')
+            .reduce((sum, e) => sum + (parseFloat(e.debit_amount) || 0), 0);
+        
+        const payables = entries
+            .filter(e => e.status !== 'posted')
+            .reduce((sum, e) => sum + (parseFloat(e.credit_amount) || 0), 0);
+        
+        document.getElementById('receivables').innerHTML = receivables.toLocaleString() + ' ₽';
+        document.getElementById('payables').innerHTML = payables.toLocaleString() + ' ₽';
+    } catch(e) {
+        console.error('Debts error:', e);
+    }
+}
+
+// ==================== ФИЛЬТРЫ ====================
+function setQuickFilter(period) {
+    const now = new Date();
+    let days = 30;
+    
+    switch(period) {
+        case 'today':
+            days = 1;
+            break;
+        case 'week':
+            days = 7;
+            break;
+        case 'month':
+            days = 30;
+            break;
+        case 'quarter':
+            days = 90;
+            break;
+        case 'year':
+            days = 365;
+            break;
+    }
+    
+    document.getElementById('periodFilter').value = days;
+    refreshFinanceData();
+    loadChart();
+}
+
+// ==================== ЭКСПОРТ EXCEL ====================
+function exportAllToExcel() {
+    if (!allPayments || allPayments.length === 0) {
+        showNotification('Нет данных для экспорта', 'error');
+        return;
+    }
+    
+    try {
+        const exportData = allPayments.map(p => ({
+            'ID': p.id?.slice(0, 8) || '—',
+            'Сумма': (parseFloat(p.amount) || 0).toLocaleString() + ' ₽',
+            'Статус': p.status === 'completed' ? 'Оплачен' : 'Ожидание',
+            'Дата': p.created_at ? new Date(p.created_at).toLocaleDateString('ru-RU') : '—',
+            'Тариф': p.plan_name || '—',
+            'Клиент': p.user_name || '—',
+            'Назначение': p.purpose || '—'
+        }));
+        
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Платежи');
+        XLSX.writeFile(wb, `payments_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        showNotification('✅ Excel файл скачан', 'success');
+    } catch (error) {
+        console.error('Excel export error:', error);
+        showNotification('Ошибка экспорта Excel: ' + error.message, 'error');
+    }
+}
+
+// ==================== PDF ГЕНЕРАЦИЯ ====================
+function showPdfPreview() {
+    if (!allPayments || allPayments.length === 0) {
+        showNotification('Нет данных для генерации PDF', 'error');
+        return;
+    }
+    
+    const modal = document.getElementById('pdfPreviewModal');
+    const content = document.getElementById('pdfContentContainer');
+    
+    const totalIncome = allPayments
+        .filter(p => p.status === 'completed')
+        .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+    
+    const paymentsCount = allPayments.length;
+    const averageCheck = paymentsCount > 0 ? Math.round(totalIncome / paymentsCount) : 0;
+    
+    content.innerHTML = `
+        <div style="max-width: 1200px; margin: 0 auto; font-family: 'Segoe UI', Arial, sans-serif;">
+            <!-- ШАПКА ОТЧЁТА -->
+            <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white; padding: 40px; border-radius: 16px; margin-bottom: 30px; text-align: center;">
+                <h1 style="margin: 0 0 10px 0; font-size: 32px;">🏦 FinCore PRO</h1>
+                <p style="margin: 0; opacity: 0.9; font-size: 16px;">Финансовый отчёт</p>
+                <p style="margin: 10px 0 0 0; font-size: 12px; opacity: 0.7;">
+                    Дата формирования: ${new Date().toLocaleString('ru-RU')}
+                </p>
+            </div>
+            
+            <!-- КЛЮЧЕВЫЕ ПОКАЗАТЕЛИ -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+                <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 25px; border-radius: 16px; text-align: center;">
+                    <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">💰 Общий доход</div>
+                    <div style="font-size: 28px; font-weight: bold;">${totalIncome.toLocaleString()} ₽</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 25px; border-radius: 16px; text-align: center;">
+                    <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">📊 Всего платежей</div>
+                    <div style="font-size: 28px; font-weight: bold;">${paymentsCount}</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 25px; border-radius: 16px; text-align: center;">
+                    <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">💳 Средний чек</div>
+                    <div style="font-size: 28px; font-weight: bold;">${averageCheck.toLocaleString()} ₽</div>
+                </div>
+            </div>
+            
+            <!-- ТАБЛИЦА ПЛАТЕЖЕЙ -->
+            <div style="background: #f8fafc; border-radius: 16px; padding: 20px; margin-bottom: 30px;">
+                <h2 style="margin: 0 0 20px 0; font-size: 20px; color: #1e293b;">📋 Детализация платежей</h2>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="background: #e2e8f0;">
+                            <th style="padding: 12px; text-align: left;">Сумма</th>
+                            <th style="padding: 12px; text-align: left;">Статус</th>
+                            <th style="padding: 12px; text-align: left;">Дата</th>
+                            <th style="padding: 12px; text-align: left;">Тариф</th>
+                            <th style="padding: 12px; text-align: left;">Клиент</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${allPayments.slice(0, 50).map(p => `
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 10px; font-weight: bold; color: #059669;">
+                                    ${(parseFloat(p.amount) || 0).toLocaleString()} ₽
+                                </td>
+                                <td style="padding: 10px;">
+                                    <span style="background: ${p.status === 'completed' ? '#d1fae5' : '#fed7aa'}; color: ${p.status === 'completed' ? '#065f46' : '#92400e'}; padding: 4px 12px; border-radius: 20px; font-size: 11px;">
+                                        ${p.status === 'completed' ? '✅ Оплачен' : '⏳ Ожидание'}
+                                    </span>
+                                </td>
+                                <td style="padding: 10px;">
+                                    ${p.created_at ? new Date(p.created_at).toLocaleDateString('ru-RU') : '-'}
+                                </td>
+                                <td style="padding: 10px;">${p.plan_name || '-'}</td>
+                                <td style="padding: 10px;">${p.user_name || '-'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                ${allPayments.length > 50 ? `<p style="margin-top: 15px; text-align: center; color: #64748b; font-size: 12px;">* Показано первых 50 платежей из ${allPayments.length}</p>` : ''}
+            </div>
+            
+            <!-- ПОДВАЛ -->
+            <div style="text-align: center; padding: 20px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8;">
+                <p>Отчёт сгенерирован автоматически в системе FinCore PRO</p>
+                <p>${new Date().toLocaleString('ru-RU')}</p>
+            </div>
+        </div>
     `;
     
-    const previewWindow = window.open('', '_blank');
-    previewWindow.document.write(printHtml);
-    previewWindow.document.close();
-    showNotification('📄 Отчёт открыт', 'success');
-}
-function switchReportTab(tab) {
-    document.querySelectorAll('.report-container').forEach(el => el.style.display = 'none');
-    document.querySelectorAll('.nav-link').forEach(btn => btn.classList.remove('active'));
-    if (tab === 'osv') { document.getElementById('reportOsv').style.display = 'block'; loadOSV(); }
-    else if (tab === 'balance') { document.getElementById('reportBalance').style.display = 'block'; loadBalanceSheet(); }
-    else if (tab === 'cashflow') { document.getElementById('reportCashflow').style.display = 'block'; loadCashFlow(); }
-    else if (tab === 'planfact') { document.getElementById('reportPlanfact').style.display = 'block'; loadPlanFact(); }
-    else if (tab === 'accounts') { document.getElementById('reportAccounts').style.display = 'block'; loadAccounts(); }
-    if (event && event.target) event.target.classList.add('active');
+    modal.style.display = 'flex';
 }
 
-function showDetailModal(type) {
-    const totalIncome = parseFloat(document.getElementById('totalIncome')?.innerText || 0);
-    const totalPayments = parseInt(document.getElementById('totalPayments')?.innerText || 0);
-    alert(`📊 Детальная статистика\n\n💰 Доход: ${totalIncome.toLocaleString()} ₽\n💳 Платежей: ${totalPayments}\n📈 Прибыль: ${totalIncome.toLocaleString()} ₽`);
+function closePdfPreview() {
+    const modal = document.getElementById('pdfPreviewModal');
+    if (modal) modal.style.display = 'none';
 }
 
+function printPdf() {
+    const content = document.getElementById('pdfContentContainer');
+    if (!content) return;
+    
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>FinCore PRO - Финансовый отчёт</title>
+                <style>
+                    body {
+                        font-family: 'Segoe UI', Arial, sans-serif;
+                        padding: 20px;
+                        background: white;
+                        color: black;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin-top: 20px;
+                    }
+                    th {
+                        background: #e2e8f0;
+                        padding: 12px;
+                        border: 1px solid #cbd5e1;
+                        text-align: left;
+                        font-weight: bold;
+                    }
+                    td {
+                        padding: 10px;
+                        border: 1px solid #cbd5e1;
+                    }
+                    @media print {
+                        body { padding: 0; }
+                    }
+                </style>
+            </head>
+            <body>
+                ${content.innerHTML}
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    }
+}
+
+// ==================== ПЛАТЕЖИ CRUD ====================
+function showAddPaymentModal() {
+    document.getElementById('paymentDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('addPaymentModal').style.display = 'flex';
+}
+
+function closeAddPaymentModal() {
+    document.getElementById('addPaymentModal').style.display = 'none';
+}
+
+async function createPayment() {
+    const amount = parseFloat(document.getElementById('paymentAmount').value);
+    
+    if (!amount || amount <= 0) {
+        showNotification('Введите корректную сумму', 'error');
+        return;
+    }
+    
+    try {
+        const res = await fetch('/api/payments', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({
+                amount: amount,
+                payment_date: document.getElementById('paymentDate').value,
+                plan_name: document.getElementById('paymentPlan').value.trim() || 'Не указан',
+                user_name: document.getElementById('paymentCustomer').value.trim() || 'Клиент',
+                purpose: document.getElementById('paymentDesc').value.trim() || 'Платёж',
+                status: document.getElementById('paymentStatus').value,
+                currency: 'RUB',
+                method: 'bank_transfer'
+            })
+        });
+        
+        if (res.ok) {
+            showNotification('✅ Платёж добавлен', 'success');
+            closeAddPaymentModal();
+            await loadAllPayments();
+        } else {
+            showNotification('Ошибка', 'error');
+        }
+    } catch (e) {
+        showNotification('Ошибка', 'error');
+    }
+}
+
+async function editPayment(id) {
+    const payment = allPayments.find(p => p.id === id);
+    if (!payment) return;
+    
+    const newAmount = prompt('Введите новую сумму:', payment.amount);
+    if (newAmount && !isNaN(parseFloat(newAmount))) {
+        try {
+            const res = await fetch(`/api/payments/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({ amount: parseFloat(newAmount) })
+            });
+            
+            if (res.ok) {
+                showNotification('✅ Платёж обновлён', 'success');
+                await loadAllPayments();
+            } else {
+                showNotification('Ошибка', 'error');
+            }
+        } catch (e) {
+            showNotification('Ошибка', 'error');
+        }
+    }
+}
+
+async function deletePayment(id) {
+    if (!confirm('Удалить платёж?')) return;
+    
+    try {
+        const res = await fetch(`/api/payments/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        
+        if (res.ok) {
+            showNotification('✅ Платёж удалён', 'success');
+            await loadAllPayments();
+        } else {
+            showNotification('Ошибка', 'error');
+        }
+    } catch (e) {
+        showNotification('Ошибка', 'error');
+    }
+}
+
+// ==================== УВЕДОМЛЕНИЯ ====================
 function showNotification(msg, type) {
     const div = document.createElement('div');
-    div.style.cssText = `position:fixed; bottom:20px; right:20px; background:${type === 'success' ? '#10b981' : '#ef4444'}; color:white; padding:12px 24px; border-radius:12px; z-index:10001; box-shadow:0 4px 15px rgba(0,0,0,0.3);`;
+    div.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: ${type === 'success' ? '#059669' : '#dc2626'};
+        color: white;
+        padding: 12px 24px;
+        border-radius: 12px;
+        z-index: 10001;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        font-size: 14px;
+        font-weight: 500;
+    `;
     div.innerHTML = msg;
     document.body.appendChild(div);
     setTimeout(() => div.remove(), 3000);
 }
 
+// ==================== ИНИЦИАЛИЗАЦИЯ ====================
 document.addEventListener('DOMContentLoaded', async () => {
-    await refreshFinanceData();
     await loadAllPayments();
-    await loadChart();
-    await loadOSV();
-    if (document.getElementById('balanceDate')) document.getElementById('balanceDate').value = new Date().toISOString().split('T')[0];
-    setInterval(() => { refreshFinanceData(); loadAllPayments(); }, 60000);
+    
+    document.getElementById('periodFilter')?.addEventListener('change', () => {
+        refreshFinanceData();
+        loadChart();
+    });
+    
+    setInterval(() => loadAllPayments(), 60000);
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+    if (e.reason?.status === 401) {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+    }
 });
 </script>
 </body>

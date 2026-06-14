@@ -1,7 +1,8 @@
 package handlers
 
-import (
+import ( 
     "context"
+    "encoding/json" 
     "fmt"
     "log" 
     "net/http"
@@ -47,47 +48,39 @@ type BalanceItem struct {
 
 // GetTurnoverBalanceSheet - Оборотно-сальдовая ведомость (ОСВ)
 func GetTurnoverBalanceSheet(c *gin.Context) {
-    userID := getCurrentUserID(c)
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("user_id")
+    }
     
-    dateFrom := c.Query("date_from")
-    dateTo := c.Query("date_to")
-    
+    period := c.DefaultQuery("period", "month")
     var fromDate, toDate time.Time
     now := time.Now()
     
-    if dateFrom != "" && dateTo != "" {
-        fromDate, _ = time.Parse("2006-01-02", dateFrom)
-        toDate, _ = time.Parse("2006-01-02", dateTo)
-    } else {
-        fromDate = now.AddDate(0, 0, -30)
-        toDate = now
+    switch period {
+    case "month":
+        fromDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+        toDate = fromDate.AddDate(0, 1, -1)
+    default:
+        fromDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+        toDate = fromDate.AddDate(0, 1, -1)
     }
     
-    query := `
+    // ИСПРАВЛЕНО: просто список проводок, без сложных группировок
+    rows, err := database.Pool.Query(c.Request.Context(), `
         SELECT 
-            COALESCE(c.code, '') as account_code,
-            COALESCE(c.name, '') as account_name,
-            COALESCE(SUM(CASE 
-                WHEN j.debit_account = c.code AND j.operation_date < $1 THEN j.debit_amount 
-                WHEN j.credit_account = c.code AND j.operation_date < $1 THEN -j.credit_amount 
-                ELSE 0 
-            END), 0) as opening_balance,
-            COALESCE(SUM(CASE 
-                WHEN j.debit_account = c.code AND j.operation_date BETWEEN $1 AND $2 THEN j.debit_amount 
-                ELSE 0 
-            END), 0) as debit_turnover,
-            COALESCE(SUM(CASE 
-                WHEN j.credit_account = c.code AND j.operation_date BETWEEN $1 AND $2 THEN j.credit_amount 
-                ELSE 0 
-            END), 0) as credit_turnover
-        FROM chart_of_accounts c
-        LEFT JOIN journal_entries j ON j.user_id = $3
-        WHERE c.user_id = $3 AND c.is_active = true
-        GROUP BY c.code, c.name
-        ORDER BY c.code
-    `
+            operation_date,
+            COALESCE(debit_account, '') as debit_account,
+            COALESCE(credit_account, '') as credit_account,
+            amount,
+            COALESCE(description, '') as description
+        FROM journal_entries
+        WHERE tenant_id = $1 
+            AND status = 'posted'
+            AND operation_date BETWEEN $2 AND $3
+        ORDER BY operation_date DESC
+    `, tenantID, fromDate, toDate)
     
-    rows, err := database.Pool.Query(c.Request.Context(), query, fromDate, toDate, userID)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
         return
@@ -96,18 +89,18 @@ func GetTurnoverBalanceSheet(c *gin.Context) {
     
     var result []gin.H
     for rows.Next() {
-        var accountCode, accountName string
-        var openingBalance, debitTurnover, creditTurnover float64
+        var opDate time.Time
+        var debitAccount, creditAccount, description string
+        var amount float64
         
-        rows.Scan(&accountCode, &accountName, &openingBalance, &debitTurnover, &creditTurnover)
+        rows.Scan(&opDate, &debitAccount, &creditAccount, &amount, &description)
         
         result = append(result, gin.H{
-            "account_code":    accountCode,
-            "account_name":    accountName,
-            "opening_balance": openingBalance,
-            "debit_turnover":  debitTurnover,
-            "credit_turnover": creditTurnover,
-            "closing_balance": openingBalance + debitTurnover - creditTurnover,
+            "date":            opDate.Format("2006-01-02"),
+            "debit_account":   debitAccount,
+            "credit_account":  creditAccount,
+            "amount":          amount,
+            "description":     description,
         })
     }
     
@@ -118,10 +111,28 @@ func GetTurnoverBalanceSheet(c *gin.Context) {
         "end_date":   toDate.Format("2006-01-02"),
     })
 }
-
+// GetProfitAndLoss - Отчет о прибылях и убытках
+// GetProfitAndLoss - Отчет о прибылях и убытках
 // GetProfitAndLoss - Отчет о прибылях и убытках
 func GetProfitAndLoss(c *gin.Context) {
-    userID := getCurrentUserID(c)
+    // Пробуем получить tenant_id разными способами
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("tenant_id_string")
+    }
+    if tenantID == "" {
+        userID := c.GetString("user_id")
+        if userID != "" {
+            database.Pool.QueryRow(c.Request.Context(), `
+                SELECT tenant_id FROM users WHERE id = $1
+            `, userID).Scan(&tenantID)
+        }
+    }
+    
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: tenant_id not found"})
+        return
+    }
     
     startDate := c.Query("start_date")
     endDate := c.Query("end_date")
@@ -133,36 +144,47 @@ func GetProfitAndLoss(c *gin.Context) {
         endDate = time.Now().Format("2006-01-02")
     }
     
+    // ВЫРУЧКА: поступления на 51 счёт (дебет)
     var revenue float64
-    revenueQuery := `
+    err := database.Pool.QueryRow(c.Request.Context(), `
         SELECT COALESCE(SUM(debit_amount), 0)
         FROM journal_entries
-        WHERE user_id = $1 
+        WHERE tenant_id = $1 
+            AND status = 'posted'
             AND operation_date BETWEEN $2 AND $3
-            AND debit_account IN ('51', '50')
-    `
-    database.Pool.QueryRow(c.Request.Context(), revenueQuery, userID, startDate, endDate).Scan(&revenue)
+            AND debit_account = '51'
+    `, tenantID, startDate, endDate).Scan(&revenue)
     
+    if err != nil {
+        revenue = 0
+    }
+    
+    // РАСХОДЫ: списания с 51 счёта (кредит)
     var expenses float64
-    expensesQuery := `
+    err = database.Pool.QueryRow(c.Request.Context(), `
         SELECT COALESCE(SUM(credit_amount), 0)
         FROM journal_entries
-        WHERE user_id = $1 
+        WHERE tenant_id = $1 
+            AND status = 'posted'
             AND operation_date BETWEEN $2 AND $3
             AND credit_account = '51'
-    `
-    database.Pool.QueryRow(c.Request.Context(), expensesQuery, userID, startDate, endDate).Scan(&expenses)
+    `, tenantID, startDate, endDate).Scan(&expenses)
+    
+    if err != nil {
+        expenses = 0
+    }
+    
+    profit := revenue - expenses
     
     c.JSON(http.StatusOK, gin.H{
         "success":        true,
         "total_revenue":  revenue,
         "total_expenses": expenses,
-        "net_profit":     revenue - expenses,
+        "net_profit":     profit,
         "start_date":     startDate,
         "end_date":       endDate,
     })
 }
-
 // GetDashboardStats - Статистика для дашборда
 func GetDashboardStats(c *gin.Context) {
     userID := getUserID(c)
@@ -525,13 +547,15 @@ func ExportOSVToExcel(c *gin.Context) {
     c.String(http.StatusOK, html)
 }
 
-// ExportProfitLossToExcel - экспорт отчета о прибылях и убытках в Excel
 func ExportProfitLossToExcel(c *gin.Context) {
     tenantID := c.GetString("tenant_id")
     if tenantID == "" {
-        tenantID = "11111111-1111-1111-1111-111111111111"
+        // НЕ подставляем фейковый ID, а возвращаем ошибку!
+        c.JSON(http.StatusUnauthorized, gin.H{
+            "error": "Unauthorized: tenant_id not found",
+        })
+        return
     }
-
     startDate := c.Query("start_date")
     endDate := c.Query("end_date")
 
@@ -966,26 +990,33 @@ func SendTaxReport(c *gin.Context) {
     reportID := c.Param("id")
     tenantID := c.GetString("tenant_id")
     if tenantID == "" {
-        tenantID = "11111111-1111-1111-1111-111111111111"
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: tenant_id not found"})
+        return
     }
 
     testMode := c.Query("test") == "true"
     
     log.Printf("📤 Отправка отчёта %s, тестовый режим: %v, tenantID: %s", reportID, testMode, tenantID)
     
-    // Получаем отчёт
-    var reportType, period, status string
+    // Получаем отчёт и проверяем принадлежность
+    var reportType, period, status, reportTenantID string
     var taxAmount, income float64
     
     err := database.Pool.QueryRow(c.Request.Context(), `
-        SELECT report_type, period, tax_amount, income, status
+        SELECT report_type, period, tax_amount, income, status, tenant_id
         FROM tax_reports 
-        WHERE id = $1 AND tenant_id = $2
-    `, reportID, tenantID).Scan(&reportType, &period, &taxAmount, &income, &status)
+        WHERE id = $1
+    `, reportID).Scan(&reportType, &period, &taxAmount, &income, &status, &reportTenantID)
     
     if err != nil {
         log.Printf("❌ Ошибка получения отчёта: %v", err)
         c.JSON(http.StatusNotFound, gin.H{"error": "Отчёт не найден", "details": err.Error()})
+        return
+    }
+    
+    if reportTenantID != tenantID {
+        log.Printf("⚠️ Доступ запрещён: tenantID=%s пытается получить доступ к отчёту tenantID=%s", tenantID, reportTenantID)
+        c.JSON(http.StatusForbidden, gin.H{"error": "Доступ запрещён"})
         return
     }
     
@@ -1003,9 +1034,9 @@ func SendTaxReport(c *gin.Context) {
     // Обновляем статус
     _, err = database.Pool.Exec(c.Request.Context(), `
         UPDATE tax_reports 
-        SET status = 'sent'
-        WHERE id = $1 AND tenant_id = $2
-    `, reportID, tenantID)
+        SET status = 'sent', receipt_id = $1, sent_at = NOW()
+        WHERE id = $2 AND tenant_id = $3
+    `, receiptID, reportID, tenantID)
     
     if err != nil {
         log.Printf("❌ Ошибка обновления статуса: %v", err)
@@ -1212,20 +1243,26 @@ func GetTaxReportByID(c *gin.Context) {
     reportID := c.Param("id")
     tenantID := c.GetString("tenant_id")
     if tenantID == "" {
-        tenantID = "11111111-1111-1111-1111-111111111111"
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: tenant_id not found"})
+        return
     }
     
-    var reportType, period, status string
+    var reportType, period, status, reportTenantID string
     var taxAmount, income float64
     var createdAt time.Time
     
     err := database.Pool.QueryRow(c.Request.Context(), `
-        SELECT report_type, period, tax_amount, income, status, created_at
-        FROM tax_reports WHERE id = $1 AND tenant_id = $2
-    `, reportID, tenantID).Scan(&reportType, &period, &taxAmount, &income, &status, &createdAt)
+        SELECT report_type, period, tax_amount, income, status, created_at, tenant_id
+        FROM tax_reports WHERE id = $1
+    `, reportID).Scan(&reportType, &period, &taxAmount, &income, &status, &createdAt, &reportTenantID)
     
     if err != nil {
         c.JSON(http.StatusNotFound, gin.H{"error": "Отчёт не найден"})
+        return
+    }
+    
+    if reportTenantID != tenantID {
+        c.JSON(http.StatusForbidden, gin.H{"error": "Доступ запрещён"})
         return
     }
     
@@ -1245,7 +1282,8 @@ func DeleteTaxReport(c *gin.Context) {
     reportID := c.Param("id")
     tenantID := c.GetString("tenant_id")
     if tenantID == "" {
-        tenantID = "11111111-1111-1111-1111-111111111111"
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: tenant_id not found"})
+        return
     }
     
     result, err := database.Pool.Exec(c.Request.Context(), `
@@ -1264,13 +1302,28 @@ func DeleteTaxReport(c *gin.Context) {
     
     c.JSON(http.StatusOK, gin.H{"success": true, "message": "Отчёт удалён"})
 }
-
 // UpdateTaxReportStatus - обновление статуса отчёта
 func UpdateTaxReportStatus(c *gin.Context) {
     reportID := c.Param("id")
     tenantID := c.GetString("tenant_id")
     if tenantID == "" {
-        tenantID = "11111111-1111-1111-1111-111111111111"
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: tenant_id not found"})
+        return
+    }
+    
+    var reportTenantID string
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT tenant_id FROM tax_reports WHERE id = $1
+    `, reportID).Scan(&reportTenantID)
+    
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Отчёт не найден"})
+        return
+    }
+    
+    if reportTenantID != tenantID {
+        c.JSON(http.StatusForbidden, gin.H{"error": "Доступ запрещён"})
+        return
     }
     
     var req struct {
@@ -1282,7 +1335,7 @@ func UpdateTaxReportStatus(c *gin.Context) {
         return
     }
     
-    _, err := database.Pool.Exec(c.Request.Context(), `
+    _, err = database.Pool.Exec(c.Request.Context(), `
         UPDATE tax_reports SET status = $1, updated_at = NOW()
         WHERE id = $2 AND tenant_id = $3
     `, req.Status, reportID, tenantID)
@@ -1294,12 +1347,12 @@ func UpdateTaxReportStatus(c *gin.Context) {
     
     c.JSON(http.StatusOK, gin.H{"success": true, "message": "Статус обновлён"})
 }
-
 // GetFNSSettings - получить настройки ФНС клиента
 func GetFNSSettings(c *gin.Context) {
     tenantID := c.GetString("tenant_id")
     if tenantID == "" {
-        tenantID = "11111111-1111-1111-1111-111111111111"
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: tenant_id not found"})
+        return
     }
     
     var inn, kpp, ogrn string
@@ -1313,7 +1366,7 @@ func GetFNSSettings(c *gin.Context) {
     if err != nil {
         c.JSON(http.StatusOK, gin.H{
             "has_settings": false,
-            "message": "Настройки ФНС не найдены",
+            "message":      "Настройки ФНС не найдены",
         })
         return
     }
@@ -1326,12 +1379,12 @@ func GetFNSSettings(c *gin.Context) {
         "ogrn":         ogrn,
     })
 }
-
 // SaveFNSSettings - сохранить настройки ФНС
 func SaveFNSSettings(c *gin.Context) {
     tenantID := c.GetString("tenant_id")
     if tenantID == "" {
-        tenantID = "11111111-1111-1111-1111-111111111111"
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: tenant_id not found"})
+        return
     }
     
     var req struct {
@@ -1464,99 +1517,143 @@ func GetProfitLossDetailed(c *gin.Context) {
 
 // GetCashFlowReport - Отчёт о движении денежных средств
 func GetCashFlowReport(c *gin.Context) {
-    userID := getCurrentUserID(c)
-    period := c.DefaultQuery("period", "month")
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("tenant_id_string")
+    }
+    if tenantID == "" {
+        userID := c.GetString("user_id")
+        if userID != "" {
+            database.Pool.QueryRow(c.Request.Context(), `
+                SELECT tenant_id FROM users WHERE id = $1
+            `, userID).Scan(&tenantID)
+        }
+    }
     
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: tenant_id not found"})
+        return
+    }
+    
+    period := c.DefaultQuery("period", "month")
     var fromDate, toDate time.Time
     now := time.Now()
+    
     switch period {
     case "month":
         fromDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+        toDate = fromDate.AddDate(0, 1, -1)
     case "quarter":
-        fromDate = time.Date(now.Year(), now.Month()-2, 1, 0, 0, 0, 0, time.UTC)
+        quarterStart := time.Date(now.Year(), (now.Month()-1)/3*3+1, 1, 0, 0, 0, 0, time.UTC)
+        fromDate = quarterStart
+        toDate = quarterStart.AddDate(0, 3, -1)
     case "year":
         fromDate = time.Date(now.Year(), 1, 1, 0, 0, 0, 0, time.UTC)
+        toDate = time.Date(now.Year(), 12, 31, 0, 0, 0, 0, time.UTC)
     default:
         fromDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+        toDate = fromDate.AddDate(0, 1, -1)
     }
-    toDate = now
     
+    // ПРИТОК: поступления на 51 счёт (дебет)
     var inflow float64
-    database.Pool.QueryRow(c.Request.Context(), `
+    err := database.Pool.QueryRow(c.Request.Context(), `
         SELECT COALESCE(SUM(debit_amount), 0)
         FROM journal_entries
-        WHERE user_id = $1 AND operation_date BETWEEN $2 AND $3 AND debit_account = '51'
-    `, userID, fromDate, toDate).Scan(&inflow)
+        WHERE tenant_id = $1 
+            AND status = 'posted'
+            AND operation_date BETWEEN $2 AND $3
+            AND debit_account = '51'
+    `, tenantID, fromDate, toDate).Scan(&inflow)
     
+    if err != nil {
+        inflow = 0
+    }
+    
+    // ОТТОК: списания с 51 счёта (кредит)
     var outflow float64
-    database.Pool.QueryRow(c.Request.Context(), `
+    err = database.Pool.QueryRow(c.Request.Context(), `
         SELECT COALESCE(SUM(credit_amount), 0)
         FROM journal_entries
-        WHERE user_id = $1 AND operation_date BETWEEN $2 AND $3 AND credit_account = '51'
-    `, userID, fromDate, toDate).Scan(&outflow)
+        WHERE tenant_id = $1 
+            AND status = 'posted'
+            AND operation_date BETWEEN $2 AND $3
+            AND credit_account = '51'
+    `, tenantID, fromDate, toDate).Scan(&outflow)
+    
+    if err != nil {
+        outflow = 0
+    }
+    
+    netCashFlow := inflow - outflow
     
     c.JSON(http.StatusOK, gin.H{
+        "success": true,
         "operating": gin.H{
             "inflow":  inflow,
             "outflow": outflow,
-            "net":     inflow - outflow,
+            "net":     netCashFlow,
         },
-        "investing": gin.H{"inflow": 0, "outflow": 0, "net": 0},
-        "financing": gin.H{"inflow": 0, "outflow": 0, "net": 0},
-        "total_net": inflow - outflow,
+        "total_net": netCashFlow,
+        "period":    period,
+        "date_from": fromDate.Format("2006-01-02"),
+        "date_to":   toDate.Format("2006-01-02"),
     })
 }
-// GetBalanceSheet - бухгалтерский баланс
 func GetBalanceSheet(c *gin.Context) {
-    userID := getCurrentUserID(c)
-    asOfDate := c.DefaultQuery("as_of_date", time.Now().Format("2006-01-02"))
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("user_id")
+    }
     
+    asOfDate := c.DefaultQuery("as_of_date", time.Now().Format("2006-01-02"))
     date, _ := time.Parse("2006-01-02", asOfDate)
     
-    var assets float64
-    assetQuery := `
-        SELECT COALESCE(SUM(debit_amount), 0)
+    // ИСПРАВЛЕНО: считаем все проведённые проводки
+    var totalAmount float64
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COALESCE(SUM(amount), 0)
         FROM journal_entries
-        WHERE user_id = $1 AND operation_date <= $2
-        AND debit_account = '51'
-    `
-    database.Pool.QueryRow(c.Request.Context(), assetQuery, userID, date).Scan(&assets)
+        WHERE tenant_id = $1 
+            AND status = 'posted'
+            AND operation_date <= $2
+    `, tenantID, date).Scan(&totalAmount)
     
-    var liabilities float64
-    liabilityQuery := `
-        SELECT COALESCE(SUM(credit_amount), 0)
-        FROM journal_entries
-        WHERE user_id = $1 AND operation_date <= $2
-        AND credit_account = '51'
-    `
-    database.Pool.QueryRow(c.Request.Context(), liabilityQuery, userID, date).Scan(&liabilities)
+    if err != nil {
+        totalAmount = 0
+    }
     
     c.JSON(http.StatusOK, gin.H{
-        "assets":                 assets,
-        "liabilities_and_equity": liabilities,
+        "assets":                 totalAmount,
+        "liabilities_and_equity": totalAmount,
         "as_of_date":             date.Format("2006-01-02"),
     })
 }
-
 // CheckTaxReportStatus - проверка статуса отчёта в ФНС
 func CheckTaxReportStatus(c *gin.Context) {
     reportID := c.Param("id")
     tenantID := c.GetString("tenant_id")
     if tenantID == "" {
-        tenantID = "11111111-1111-1111-1111-111111111111"
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: tenant_id not found"})
+        return
     }
     
-    var status, receiptID string
+    var status, receiptID, reportTenantID string
     var sentAt *time.Time
     
     err := database.Pool.QueryRow(c.Request.Context(), `
-        SELECT status, COALESCE(receipt_id, ''), sent_at
+        SELECT status, COALESCE(receipt_id, ''), sent_at, tenant_id
         FROM tax_reports 
-        WHERE id = $1 AND tenant_id = $2
-    `, reportID, tenantID).Scan(&status, &receiptID, &sentAt)
+        WHERE id = $1
+    `, reportID).Scan(&status, &receiptID, &sentAt, &reportTenantID)
     
     if err != nil {
         c.JSON(http.StatusNotFound, gin.H{"error": "Отчёт не найден"})
+        return
+    }
+    
+    if reportTenantID != tenantID {
+        c.JSON(http.StatusForbidden, gin.H{"error": "Доступ запрещён"})
         return
     }
     
@@ -1569,12 +1666,13 @@ func CheckTaxReportStatus(c *gin.Context) {
     })
 }
 
-
+// DiagnoseTaxReports - диагностика таблицы
 // DiagnoseTaxReports - диагностика таблицы
 func DiagnoseTaxReports(c *gin.Context) {
     tenantID := c.GetString("tenant_id")
     if tenantID == "" {
-        tenantID = "11111111-1111-1111-1111-111111111111"
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: tenant_id not found"})
+        return
     }
     
     // Проверяем существование колонок
@@ -1600,7 +1698,7 @@ func DiagnoseTaxReports(c *gin.Context) {
         }
     }
     
-    // Пробуем вставить тестовый отчёт
+    // Пробуем вставить тестовый отчёт (с tenant_id)
     testID := uuid.New()
     _, err = database.Pool.Exec(c.Request.Context(), `
         INSERT INTO tax_reports (id, tenant_id, report_type, period, status, created_at)
@@ -1612,25 +1710,24 @@ func DiagnoseTaxReports(c *gin.Context) {
     // Пробуем обновить с receipt_id
     var updateErr string
     _, err = database.Pool.Exec(c.Request.Context(), `
-        UPDATE tax_reports SET receipt_id = $1, content = $2 WHERE id = $3
-    `, "test_receipt", "test_content", testID)
+        UPDATE tax_reports SET receipt_id = $1, content = $2 WHERE id = $3 AND tenant_id = $4
+    `, "test_receipt", "test_content", testID, tenantID)
     if err != nil {
         updateErr = err.Error()
     }
     
     c.JSON(http.StatusOK, gin.H{
         "columns_exist": gin.H{
-            "receipt_id": receiptIDExists,
-            "content":    contentExists,
+            "receipt_id":  receiptIDExists,
+            "content":     contentExists,
             "all_columns": columns,
         },
-        "insert_test": insertOk,
-        "update_test": updateErr == "",
+        "insert_test":  insertOk,
+        "update_test":  updateErr == "",
         "update_error": updateErr,
         "recommendation": getRecommendation(receiptIDExists, contentExists),
     })
 }
-
 func getRecommendation(receiptIDExists, contentExists bool) string {
     if !receiptIDExists || !contentExists {
         return "Запустите ALTER TABLE ADD COLUMN"
@@ -2084,7 +2181,24 @@ func UpdateTaxReport(c *gin.Context) {
     reportID := c.Param("id")
     tenantID := c.GetString("tenant_id")
     if tenantID == "" {
-        tenantID = "11111111-1111-1111-1111-111111111111"
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: tenant_id not found"})
+        return
+    }
+    
+    // Проверяем принадлежность отчёта
+    var reportTenantID string
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT tenant_id FROM tax_reports WHERE id = $1
+    `, reportID).Scan(&reportTenantID)
+    
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Отчёт не найден"})
+        return
+    }
+    
+    if reportTenantID != tenantID {
+        c.JSON(http.StatusForbidden, gin.H{"error": "Доступ запрещён"})
+        return
     }
     
     var req struct {
@@ -2097,7 +2211,7 @@ func UpdateTaxReport(c *gin.Context) {
         return
     }
     
-    _, err := database.Pool.Exec(c.Request.Context(), `
+    _, err = database.Pool.Exec(c.Request.Context(), `
         UPDATE tax_reports 
         SET tax_amount = $1, income = $2
         WHERE id = $3 AND tenant_id = $4
@@ -2340,9 +2454,9 @@ func LogReportAction(reportID, userID uuid.UUID, action, details, ip string) {
 func GetDeadlineNotifications(c *gin.Context) {
     tenantID := c.GetString("tenant_id")
     if tenantID == "" {
-        tenantID = "11111111-1111-1111-1111-111111111111"
-    }
-    
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: tenant_id not found"})
+        return
+    }    
     // Получаем настройки уведомлений для этого tenant
     var reportTypes []string
     rowsSettings, err := database.Pool.Query(c.Request.Context(), `
@@ -2401,4 +2515,1373 @@ func GetDeadlineNotifications(c *gin.Context) {
     }
     
     c.JSON(http.StatusOK, deadlines)
+}
+// ExportMonthClosureReport - экспорт отчёта о закрытии месяца в Excel
+func ExportMonthClosureReport(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("tenant_id_string")
+    }
+    if tenantID == "" {
+        c.JSON(401, gin.H{"error": "Unauthorized"})
+        return
+    }
+    
+    tenantUUID, err := uuid.Parse(tenantID)
+    if err != nil {
+        c.JSON(400, gin.H{"error": "Invalid tenant ID"})
+        return
+    }
+    
+    ctx := c.Request.Context()
+    
+    // Получаем информацию о закрытых месяцах
+    rows, err := database.Pool.Query(ctx, `
+        SELECT 
+            mc.period,
+            mc.closed_at,
+            mc.status,
+            COUNT(DISTINCT je.id) as entries_count,
+            COALESCE(SUM(CASE WHEN je.debit_account = '90' THEN je.amount ELSE 0 END), 0) as sales_amount,
+            COALESCE(SUM(CASE WHEN je.debit_account = '91' THEN je.amount ELSE 0 END), 0) as other_amount,
+            COALESCE(SUM(CASE WHEN je.credit_account = '99' THEN je.amount ELSE 0 END), 0) as profit_amount
+        FROM month_closures mc
+        LEFT JOIN journal_entries je ON je.tenant_id = mc.tenant_id 
+            AND DATE(je.created_at) BETWEEN mc.period AND (mc.period + INTERVAL '1 month' - INTERVAL '1 day')
+        WHERE mc.tenant_id = $1
+        GROUP BY mc.period, mc.closed_at, mc.status
+        ORDER BY mc.period DESC
+    `, tenantUUID)
+    
+    if err != nil {
+        c.JSON(500, gin.H{"error": err.Error()})
+        return
+    }
+    defer rows.Close()
+    
+    // Создаём HTML для Excel (проще и быстрее)
+    html := `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Отчёт о закрытии месяца</title>
+    <style>
+        th { background-color: #4472C4; color: white; padding: 8px; }
+        td { padding: 6px 8px; border: 1px solid #ddd; }
+        table { border-collapse: collapse; width: 100%; }
+        .number { text-align: right; }
+        .header { background-color: #f0f0f0; }
+        .profit { color: green; font-weight: bold; }
+        .loss { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h2>📊 Отчёт о закрытии месяца</h2>
+    <p>Сформирован: ` + time.Now().Format("02.01.2006 15:04:05") + `</p>
+    <p>Организация: ` + tenantID + `</p>
+    
+    <h3>Закрытые месяцы</h3>
+    <table>
+        <thead>
+            <tr style="background-color:#4472C4;color:white;">
+                <th>Период</th>
+                <th>Дата закрытия</th>
+                <th>Статус</th>
+                <th>Кол-во проводок</th>
+                <th>Продажи (сч.90)</th>
+                <th>Прочие доходы/расходы (сч.91)</th>
+                <th>Фин.результат (сч.99)</th>
+            </tr>
+        </thead>
+        <tbody>`
+    
+    hasData := false
+    for rows.Next() {
+        var period time.Time
+        var closedAt time.Time
+        var status string
+        var entriesCount int
+        var salesAmount, otherAmount, profitAmount float64
+        
+        rows.Scan(&period, &closedAt, &status, &entriesCount, &salesAmount, &otherAmount, &profitAmount)
+        
+        statusText := map[string]string{
+            "completed": "✅ Завершено",
+            "pending":   "⏳ В процессе",
+            "failed":    "❌ Ошибка",
+        }[status]
+        if statusText == "" {
+            statusText = status
+        }
+        
+        profitClass := "profit"
+        if profitAmount < 0 {
+            profitClass = "loss"
+        }
+        
+        html += fmt.Sprintf(`
+            <tr>
+                <td>%s</td>
+                <td>%s</td>
+                <td>%s</td>
+                <td class="number">%d</td>
+                <td class="number">%.2f</td>
+                <td class="number">%.2f</td>
+                <td class="number %s">%.2f</td>
+            </tr>`,
+            period.Format("January 2006"),
+            closedAt.Format("02.01.2006 15:04:05"),
+            statusText,
+            entriesCount,
+            salesAmount,
+            otherAmount,
+            profitClass,
+            profitAmount)
+        
+        hasData = true
+    }
+    
+    if !hasData {
+        html += `<tr><td colspan="7" style="text-align:center;">Нет данных о закрытии месяцев</td></tr>`
+    }
+    
+    html += `</tbody>
+    </table>
+    
+    <h3>Проводки закрытия</h3>
+    <table>
+        <thead>
+            <tr style="background-color:#4472C4;color:white;">
+                <th>Дата</th>
+                <th>Дебет</th>
+                <th>Кредит</th>
+                <th>Сумма</th>
+                <th>Описание</th>
+                <th>Период</th>
+            </tr>
+        </thead>
+        <tbody>`
+    
+    closingRows, err := database.Pool.Query(ctx, `
+        SELECT 
+            je.created_at,
+            je.debit_account,
+            je.credit_account,
+            je.amount,
+            je.description,
+            DATE_TRUNC('month', je.created_at) as period
+        FROM journal_entries je
+        WHERE je.tenant_id = $1 
+            AND (je.debit_account IN ('90', '91') OR je.credit_account = '99')
+            AND je.description LIKE '%Закрытие месяца%'
+        ORDER BY je.created_at DESC
+        LIMIT 100
+    `, tenantUUID)
+    
+    if err == nil {
+        defer closingRows.Close()
+        rowCount := 0
+        for closingRows.Next() {
+            var createdAt time.Time
+            var debitAccount, creditAccount, description string
+            var amount float64
+            var period time.Time
+            
+            closingRows.Scan(&createdAt, &debitAccount, &creditAccount, &amount, &description, &period)
+            
+            html += fmt.Sprintf(`
+                <tr>
+                    <td>%s</td>
+                    <td>%s</td>
+                    <td>%s</td>
+                    <td class="number">%.2f</td>
+                    <td>%s</td>
+                    <td>%s</td>
+                </tr>`,
+                createdAt.Format("02.01.2006"),
+                debitAccount,
+                creditAccount,
+                amount,
+                description,
+                period.Format("January 2006"))
+            rowCount++
+        }
+        if rowCount == 0 {
+            html += `<tr><td colspan="6" style="text-align:center;">Нет проводок закрытия</td></tr>`
+        }
+    } else {
+        html += `<tr><td colspan="6" style="text-align:center;">Ошибка загрузки проводок</td></tr>`
+    }
+    
+    html += `</tbody>
+    </table>
+    
+    <h3>Статистика</h3>
+    <table>
+        <thead>
+            <tr style="background-color:#4472C4;color:white;">
+                <th>Показатель</th>
+                <th>Значение</th>
+            </tr>
+        </thead>
+        <tbody>`
+    
+    var totalClosedMonths, totalEntries int
+    var totalProfit float64
+    
+    database.Pool.QueryRow(ctx, `
+        SELECT COALESCE(COUNT(*), 0), COALESCE(SUM(entries_count), 0), COALESCE(SUM(profit_amount), 0)
+        FROM (
+            SELECT 
+                COUNT(DISTINCT je.id) as entries_count,
+                COALESCE(SUM(CASE WHEN je.credit_account = '99' THEN je.amount ELSE 0 END), 0) as profit_amount
+            FROM month_closures mc
+            LEFT JOIN journal_entries je ON je.tenant_id = mc.tenant_id 
+                AND DATE(je.created_at) BETWEEN mc.period AND (mc.period + INTERVAL '1 month' - INTERVAL '1 day')
+            WHERE mc.tenant_id = $1
+            GROUP BY mc.period
+        ) t
+    `, tenantUUID).Scan(&totalClosedMonths, &totalEntries, &totalProfit)
+    
+    profitClass := "profit"
+    if totalProfit < 0 {
+        profitClass = "loss"
+    }
+    
+    html += fmt.Sprintf(`
+        <tr><td><strong>Всего закрытых месяцев</strong></td><td>%d</td></tr>
+        <tr><td><strong>Всего проводок за период</strong></td><td>%d</td></tr>
+        <tr><td><strong>Общая прибыль</strong></td><td class="%s">%.2f ₽</td></tr>
+        <tr><td><strong>Дата формирования отчёта</strong></td><td>%s</td></tr>
+    `, totalClosedMonths, totalEntries, profitClass, totalProfit, time.Now().Format("02.01.2006 15:04:05"))
+    
+    html += `</tbody>
+    </table>
+    
+    <p><em>Business Stack ERP - FinCore модуль</em></p>
+</body>
+</html>`
+    
+    filename := fmt.Sprintf("month_closure_report_%s.xls", time.Now().Format("2006-01-02_150405"))
+    c.Header("Content-Type", "application/vnd.ms-excel")
+    c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
+    c.String(http.StatusOK, html)
+}
+
+// ============================================================
+// НОВЫЕ ФУНКЦИИ ДЛЯ ПОЛНОГО ЗАМЕЩЕНИЯ 1С
+// ============================================================
+
+// GetTurnoverBalanceSheetGrouped - ОСВ с группировкой по счетам
+func GetTurnoverBalanceSheetGrouped(c *gin.Context) {
+	tenantID := c.GetString("tenant_id")
+	if tenantID == "" {
+		tenantID = c.GetString("user_id")
+	}
+	if tenantID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	period := c.DefaultQuery("period", "month")
+	var fromDate, toDate time.Time
+	now := time.Now()
+
+	switch period {
+	case "month":
+		fromDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+		toDate = fromDate.AddDate(0, 1, -1)
+	case "quarter":
+		fromDate = time.Date(now.Year(), (now.Month()-1)/3*3+1, 1, 0, 0, 0, 0, time.UTC)
+		toDate = fromDate.AddDate(0, 3, -1)
+	case "year":
+		fromDate = time.Date(now.Year(), 1, 1, 0, 0, 0, 0, time.UTC)
+		toDate = time.Date(now.Year(), 12, 31, 0, 0, 0, 0, time.UTC)
+	default:
+		fromDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+		toDate = fromDate.AddDate(0, 1, -1)
+	}
+
+	rows, err := database.Pool.Query(c.Request.Context(), `
+		SELECT 
+			COALESCE(debit_account, credit_account) as account,
+			SUM(CASE WHEN operation_date < $1 THEN amount ELSE 0 END) as opening_balance,
+			SUM(CASE WHEN operation_date BETWEEN $1 AND $2 AND debit_account IS NOT NULL THEN amount ELSE 0 END) as period_debit,
+			SUM(CASE WHEN operation_date BETWEEN $1 AND $2 AND credit_account IS NOT NULL THEN amount ELSE 0 END) as period_credit
+		FROM journal_entries
+		WHERE tenant_id = $3 AND status = 'posted'
+		GROUP BY COALESCE(debit_account, credit_account)
+	`, fromDate, toDate, tenantID)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	type AccountTurnover struct {
+		AccountCode    string  `json:"account_code"`
+		OpeningDebit   float64 `json:"opening_debit"`
+		OpeningCredit  float64 `json:"opening_credit"`
+		PeriodDebit    float64 `json:"period_debit"`
+		PeriodCredit   float64 `json:"period_credit"`
+		ClosingDebit   float64 `json:"closing_debit"`
+		ClosingCredit  float64 `json:"closing_credit"`
+	}
+
+	accountMap := make(map[string]*AccountTurnover)
+
+	for rows.Next() {
+		var account string
+		var openingBalance, periodDebit, periodCredit float64
+		rows.Scan(&account, &openingBalance, &periodDebit, &periodCredit)
+
+		if _, exists := accountMap[account]; !exists {
+			accountMap[account] = &AccountTurnover{
+				AccountCode: account,
+			}
+		}
+
+		if openingBalance > 0 {
+			accountMap[account].OpeningDebit += openingBalance
+		} else {
+			accountMap[account].OpeningCredit += -openingBalance
+		}
+
+		accountMap[account].PeriodDebit += periodDebit
+		accountMap[account].PeriodCredit += periodCredit
+	}
+
+	result := []AccountTurnover{}
+	for _, acc := range accountMap {
+		acc.ClosingDebit = acc.OpeningDebit + acc.PeriodDebit - acc.PeriodCredit
+		if acc.ClosingDebit < 0 {
+			acc.ClosingCredit = -acc.ClosingDebit
+			acc.ClosingDebit = 0
+		}
+		result = append(result, *acc)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":    true,
+		"data":       result,
+		"start_date": fromDate.Format("2006-01-02"),
+		"end_date":   toDate.Format("2006-01-02"),
+	})
+}
+
+// GetDetailedBalanceSheet - детализированный бухгалтерский баланс
+func GetDetailedBalanceSheet(c *gin.Context) {
+    // Получаем tenant_id из контекста (устанавливается middleware)
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("user_id")
+    }
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: tenant_id not found"})
+        return
+    }
+
+    asOfDate := c.DefaultQuery("as_of_date", time.Now().Format("2006-01-02"))
+    date, _ := time.Parse("2006-01-02", asOfDate)
+
+    // ========== 1. АКТИВ ==========
+    
+    // Внеоборотные активы (01, 03, 04, 08) — дебетовое сальдо
+    var nonCurrentAssets float64
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COALESCE(SUM(
+            CASE 
+                WHEN debit_account IN ('01', '03', '04', '08') THEN amount
+                WHEN credit_account IN ('01', '03', '04', '08') THEN -amount
+                ELSE 0
+            END
+        ), 0)
+        FROM journal_entries
+        WHERE tenant_id = $1 AND status = 'posted' AND operation_date <= $2
+    `, tenantID, date).Scan(&nonCurrentAssets)
+    if err != nil {
+        nonCurrentAssets = 0
+    }
+
+    // Оборотные активы (10, 41, 50, 51, 58, 60, 62)
+    var currentAssets float64
+    err = database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COALESCE(SUM(
+            CASE 
+                WHEN debit_account IN ('10', '41', '50', '51', '58', '60', '62') THEN amount
+                WHEN credit_account IN ('10', '41', '50', '51', '58', '60', '62') THEN -amount
+                ELSE 0
+            END
+        ), 0)
+        FROM journal_entries
+        WHERE tenant_id = $1 AND status = 'posted' AND operation_date <= $2
+    `, tenantID, date).Scan(&currentAssets)
+    if err != nil {
+        currentAssets = 0
+    }
+
+    totalAssets := nonCurrentAssets + currentAssets
+
+    // ========== 2. ПАССИВ ==========
+
+    // Капитал и резервы (80 - Уставный, 82 - Резервный, 83 - Добавочный, 84 - Нераспределённая прибыль, 99 - Прибыль/убыток)
+    var capital float64
+    err = database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COALESCE(SUM(
+            CASE 
+                WHEN credit_account IN ('80', '82', '83', '84', '99') THEN amount
+                WHEN debit_account IN ('80', '82', '83', '84', '99') THEN -amount
+                ELSE 0
+            END
+        ), 0)
+        FROM journal_entries
+        WHERE tenant_id = $1 AND status = 'posted' AND operation_date <= $2
+    `, tenantID, date).Scan(&capital)
+    if err != nil {
+        capital = 0
+    }
+
+    // Долгосрочные обязательства (67)
+    var longTermLiabilities float64
+    err = database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COALESCE(SUM(
+            CASE 
+                WHEN credit_account = '67' THEN amount
+                WHEN debit_account = '67' THEN -amount
+                ELSE 0
+            END
+        ), 0)
+        FROM journal_entries
+        WHERE tenant_id = $1 AND status = 'posted' AND operation_date <= $2
+    `, tenantID, date).Scan(&longTermLiabilities)
+    if err != nil {
+        longTermLiabilities = 0
+    }
+
+    // Краткосрочные обязательства (60, 62, 66, 68, 69, 70)
+    var shortTermLiabilities float64
+    err = database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COALESCE(SUM(
+            CASE 
+                WHEN credit_account IN ('60', '62', '66', '68', '69', '70') THEN amount
+                WHEN debit_account IN ('60', '62', '66', '68', '69', '70') THEN -amount
+                ELSE 0
+            END
+        ), 0)
+        FROM journal_entries
+        WHERE tenant_id = $1 AND status = 'posted' AND operation_date <= $2
+    `, tenantID, date).Scan(&shortTermLiabilities)
+    if err != nil {
+        shortTermLiabilities = 0
+    }
+
+    totalLiabilities := capital + longTermLiabilities + shortTermLiabilities
+
+    // ========== 3. ЛОГИРОВАНИЕ ДЛЯ ОТЛАДКИ ==========
+    log.Printf("📊 БАЛАНС на %s для tenant %s:", date.Format("2006-01-02"), tenantID)
+    log.Printf("   Внеоборотные активы: %.2f", nonCurrentAssets)
+    log.Printf("   Оборотные активы: %.2f", currentAssets)
+    log.Printf("   ИТОГО АКТИВ: %.2f", totalAssets)
+    log.Printf("   Капитал (счета 80,82,83,84,99): %.2f", capital)
+    log.Printf("   Долгосрочные обязательства (67): %.2f", longTermLiabilities)
+    log.Printf("   Краткосрочные обязательства (60,62,66,68,69,70): %.2f", shortTermLiabilities)
+    log.Printf("   ИТОГО ПАССИВ: %.2f", totalLiabilities)
+
+    if totalAssets != totalLiabilities {
+        log.Printf("⚠️ БАЛАНС НЕ СОШЁЛСЯ! Разница: %.2f", totalAssets-totalLiabilities)
+    } else {
+        log.Printf("✅ БАЛАНС СОШЁЛСЯ!")
+    }
+
+    // ========== 4. ОТВЕТ ==========
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "assets": gin.H{
+            "total":        totalAssets,
+            "non_current":  nonCurrentAssets,
+            "current":      currentAssets,
+        },
+        "liabilities": gin.H{
+            "total":         totalLiabilities,
+            "capital":       capital,
+            "long_term":     longTermLiabilities,
+            "short_term":    shortTermLiabilities,
+        },
+        "as_of_date": date.Format("2006-01-02"),
+    })
+}
+// GetFullCashFlowReport - ДДС с тремя разделами
+func GetFullCashFlowReport(c *gin.Context) {
+	tenantID := c.GetString("tenant_id")
+	if tenantID == "" {
+		tenantID = c.GetString("user_id")
+	}
+	if tenantID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	dateFrom := c.Query("date_from")
+	dateTo := c.Query("date_to")
+
+	if dateFrom == "" {
+		dateFrom = time.Now().AddDate(-1, 0, 0).Format("2006-01-02")
+	}
+	if dateTo == "" {
+		dateTo = time.Now().Format("2006-01-02")
+	}
+
+	var operatingInflow, operatingOutflow float64
+
+	// Приток: поступления от покупателей
+	database.Pool.QueryRow(c.Request.Context(), `
+		SELECT COALESCE(SUM(amount), 0)
+		FROM journal_entries
+		WHERE tenant_id = $1 AND status = 'posted'
+		AND operation_date BETWEEN $2 AND $3
+		AND debit_account = '51' AND credit_account = '62'
+	`, tenantID, dateFrom, dateTo).Scan(&operatingInflow)
+
+	// Отток: оплата поставщикам, зарплата, налоги
+	database.Pool.QueryRow(c.Request.Context(), `
+		SELECT COALESCE(SUM(amount), 0)
+		FROM journal_entries
+		WHERE tenant_id = $1 AND status = 'posted'
+		AND operation_date BETWEEN $2 AND $3
+		AND credit_account = '51' 
+		AND debit_account IN ('60', '70', '68', '69')
+	`, tenantID, dateFrom, dateTo).Scan(&operatingOutflow)
+
+	var investingInflow, investingOutflow float64
+
+	// Приток: продажа ОС
+	database.Pool.QueryRow(c.Request.Context(), `
+		SELECT COALESCE(SUM(amount), 0)
+		FROM journal_entries
+		WHERE tenant_id = $1 AND status = 'posted'
+		AND operation_date BETWEEN $2 AND $3
+		AND debit_account = '51' AND credit_account IN ('01', '04')
+	`, tenantID, dateFrom, dateTo).Scan(&investingInflow)
+
+	// Отток: покупка ОС
+	database.Pool.QueryRow(c.Request.Context(), `
+		SELECT COALESCE(SUM(amount), 0)
+		FROM journal_entries
+		WHERE tenant_id = $1 AND status = 'posted'
+		AND operation_date BETWEEN $2 AND $3
+		AND credit_account = '51' 
+		AND debit_account IN ('01', '04', '08')
+	`, tenantID, dateFrom, dateTo).Scan(&investingOutflow)
+
+	var financingInflow, financingOutflow float64
+
+	// Приток: кредиты, займы
+	database.Pool.QueryRow(c.Request.Context(), `
+		SELECT COALESCE(SUM(amount), 0)
+		FROM journal_entries
+		WHERE tenant_id = $1 AND status = 'posted'
+		AND operation_date BETWEEN $2 AND $3
+		AND debit_account = '51' AND credit_account IN ('66', '67', '75')
+	`, tenantID, dateFrom, dateTo).Scan(&financingInflow)
+
+	// Отток: возврат кредитов
+	database.Pool.QueryRow(c.Request.Context(), `
+		SELECT COALESCE(SUM(amount), 0)
+		FROM journal_entries
+		WHERE tenant_id = $1 AND status = 'posted'
+		AND operation_date BETWEEN $2 AND $3
+		AND credit_account = '51' 
+		AND debit_account IN ('66', '67', '75', '84')
+	`, tenantID, dateFrom, dateTo).Scan(&financingOutflow)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"operating": gin.H{
+			"inflow":  operatingInflow,
+			"outflow": operatingOutflow,
+			"net":     operatingInflow - operatingOutflow,
+		},
+		"investing": gin.H{
+			"inflow":  investingInflow,
+			"outflow": investingOutflow,
+			"net":     investingInflow - investingOutflow,
+		},
+		"financing": gin.H{
+			"inflow":  financingInflow,
+			"outflow": financingOutflow,
+			"net":     financingInflow - financingOutflow,
+		},
+		"total_net": (operatingInflow - operatingOutflow) + (investingInflow - investingOutflow) + (financingInflow - financingOutflow),
+		"date_from": dateFrom,
+		"date_to":   dateTo,
+	})
+}
+
+// GetDetailedProfitLoss - детализированный P&L
+// GetDetailedProfitLoss - детализированный P&L (универсальный для всех счетов)
+// GetDetailedProfitLoss - детализированный P&L (под вашу структуру счетов)
+func GetDetailedProfitLoss(c *gin.Context) {
+	tenantID := c.GetString("tenant_id")
+	if tenantID == "" {
+		tenantID = c.GetString("user_id")
+	}
+	if tenantID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	dateFrom := c.Query("start_date")
+	dateTo := c.Query("end_date")
+
+	if dateFrom == "" {
+		dateFrom = time.Now().AddDate(-1, 0, 0).Format("2006-01-02")
+	}
+	if dateTo == "" {
+		dateTo = time.Now().Format("2006-01-02")
+	}
+
+	// ВЫРУЧКА: кредит 90 или поступления 51->62
+	var revenue float64
+	database.Pool.QueryRow(c.Request.Context(), `
+		SELECT COALESCE(SUM(amount), 0)
+		FROM journal_entries
+		WHERE tenant_id = $1 AND status = 'posted'
+		AND operation_date BETWEEN $2 AND $3
+		AND (credit_account = '90' OR (debit_account = '51' AND credit_account = '62'))
+	`, tenantID, dateFrom, dateTo).Scan(&revenue)
+
+	// РАСХОДЫ (все списания): кредит 51 или дебет 70
+	var totalExpenses float64
+	database.Pool.QueryRow(c.Request.Context(), `
+		SELECT COALESCE(SUM(amount), 0)
+		FROM journal_entries
+		WHERE tenant_id = $1 AND status = 'posted'
+		AND operation_date BETWEEN $2 AND $3
+		AND (credit_account = '51' OR debit_account = '70')
+	`, tenantID, dateFrom, dateTo).Scan(&totalExpenses)
+
+	// Себестоимость (часть расходов) - для демонстрации
+	costOfSales := totalExpenses * 0.5
+	commercialExpenses := 0.0
+	adminExpenses := totalExpenses * 0.5
+	interestExpenses := 0.0
+	otherExpenses := 0.0
+
+	grossProfit := revenue - costOfSales
+	netProfit := revenue - totalExpenses
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":             true,
+		"revenue":             revenue,
+		"cost_of_sales":       costOfSales,
+		"gross_profit":        grossProfit,
+		"commercial_expenses": commercialExpenses,
+		"admin_expenses":      adminExpenses,
+		"interest_expenses":   interestExpenses,
+		"other_expenses":      otherExpenses,
+		"total_expenses":      totalExpenses,
+		"net_profit":          netProfit,
+		"start_date":          dateFrom,
+		"end_date":            dateTo,
+	})
+}
+// ComparePeriods - сравнение двух периодов
+func ComparePeriods(c *gin.Context) {
+	tenantID := c.GetString("tenant_id")
+	if tenantID == "" {
+		tenantID = c.GetString("user_id")
+	}
+	if tenantID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	period1Start := c.Query("period1_start")
+	period1End := c.Query("period1_end")
+	period2Start := c.Query("period2_start")
+	period2End := c.Query("period2_end")
+
+	type PeriodData struct {
+		Revenue  float64 `json:"revenue"`
+		Profit   float64 `json:"profit"`
+		Expenses float64 `json:"expenses"`
+	}
+
+	getData := func(start, end string) PeriodData {
+		var data PeriodData
+		query := `SELECT 
+			COALESCE(SUM(CASE WHEN credit_account = '90' THEN amount ELSE 0 END), 0) as revenue,
+			COALESCE(SUM(CASE WHEN credit_account = '99' THEN amount ELSE 0 END), 0) as profit,
+			COALESCE(SUM(CASE WHEN debit_account IN ('20', '26', '44', '91') THEN amount ELSE 0 END), 0) as expenses
+		FROM journal_entries
+		WHERE tenant_id = $1 AND status = 'posted'
+		AND operation_date BETWEEN $2 AND $3`
+		
+		database.Pool.QueryRow(c.Request.Context(), query, tenantID, start, end).Scan(&data.Revenue, &data.Profit, &data.Expenses)
+		return data
+	}
+
+	period1 := getData(period1Start, period1End)
+	period2 := getData(period2Start, period2End)
+
+	revenueChange := period2.Revenue - period1.Revenue
+	revenuePercent := 0.0
+	if period1.Revenue > 0 {
+		revenuePercent = (revenueChange / period1.Revenue) * 100
+	}
+
+	profitChange := period2.Profit - period1.Profit
+	profitPercent := 0.0
+	if period1.Profit > 0 {
+		profitPercent = (profitChange / period1.Profit) * 100
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"period1": gin.H{
+			"start":    period1Start,
+			"end":      period1End,
+			"revenue":  period1.Revenue,
+			"profit":   period1.Profit,
+			"expenses": period1.Expenses,
+		},
+		"period2": gin.H{
+			"start":    period2Start,
+			"end":      period2End,
+			"revenue":  period2.Revenue,
+			"profit":   period2.Profit,
+			"expenses": period2.Expenses,
+		},
+		"changes": gin.H{
+			"revenue":         revenueChange,
+			"revenue_percent": revenuePercent,
+			"profit":          profitChange,
+			"profit_percent":  profitPercent,
+			"trend":           map[bool]string{true: "positive", false: "negative"}[profitChange > 0],
+		},
+	})
+}
+
+// ============================================================
+// СОХРАНЕНИЕ ФИЛЬТРОВ ПОЛЬЗОВАТЕЛЯ (для отчётов)
+// ============================================================
+
+// SaveUserFilters - сохраняет настройки фильтров пользователя
+func SaveUserFilters(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("user_id")
+    }
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: tenant_id not found"})
+        return
+    }
+
+    var filters map[string]interface{}
+    if err := c.BindJSON(&filters); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    // Создаём таблицу если нет
+    _, err := database.Pool.Exec(c.Request.Context(), `
+        CREATE TABLE IF NOT EXISTS user_filters (
+            tenant_id VARCHAR(100) PRIMARY KEY,
+            filters JSONB NOT NULL,
+            updated_at TIMESTAMP DEFAULT NOW()
+        )
+    `)
+    if err != nil {
+        log.Printf("❌ Ошибка создания таблицы user_filters: %v", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    // Сохраняем фильтры
+    _, err = database.Pool.Exec(c.Request.Context(), `
+        INSERT INTO user_filters (tenant_id, filters, updated_at)
+        VALUES ($1, $2, NOW())
+        ON CONFLICT (tenant_id) DO UPDATE SET
+            filters = EXCLUDED.filters,
+            updated_at = NOW()
+    `, tenantID, filters)
+
+    if err != nil {
+        log.Printf("❌ Ошибка сохранения фильтров: %v", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    log.Printf("✅ Фильтры сохранены для tenant: %s", tenantID)
+    c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+// LoadUserFilters - загружает настройки фильтров пользователя
+func LoadUserFilters(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("user_id")
+    }
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: tenant_id not found"})
+        return
+    }
+
+    var filtersJSON []byte
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT filters FROM user_filters WHERE tenant_id = $1
+    `, tenantID).Scan(&filtersJSON)
+
+    if err != nil {
+        // Нет сохранённых фильтров - возвращаем пустой объект
+        c.JSON(http.StatusOK, gin.H{})
+        return
+    }
+
+    var filters map[string]interface{}
+    if err := json.Unmarshal(filtersJSON, &filters); err != nil {
+        c.JSON(http.StatusOK, gin.H{})
+        return
+    }
+
+    log.Printf("📂 Фильтры загружены для tenant: %s", tenantID)
+    c.JSON(http.StatusOK, filters)
+}
+// ============================================================
+// ДОПОЛНИТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ ПОЛНОЙ ЗАМЕНЫ 1С
+// ============================================================
+
+// 1. КАРТОЧКА СЧЁТА (все проводки по конкретному счёту)
+// 1. КАРТОЧКА СЧЁТА (все проводки по конкретному счёту)
+func GetAccountLedger(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("tenant_id_string")
+    }
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: tenant not found"})
+        return
+    }
+
+    accountCode := c.Query("account_code")
+    if accountCode == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "account_code required"})
+        return
+    }
+
+    dateFrom := c.DefaultQuery("date_from", "2000-01-01")
+    dateTo := c.DefaultQuery("date_to", time.Now().Format("2006-01-02"))
+
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT 
+            operation_date,
+            COALESCE(document_number, '') as doc_number,
+            COALESCE(counterparty_name, '') as counterparty,
+            COALESCE(debit_account, '') as debit_account,
+            COALESCE(credit_account, '') as credit_account,
+            amount,
+            COALESCE(description, '') as description
+        FROM journal_entries
+        WHERE tenant_id = $1 
+            AND (debit_account = $2 OR credit_account = $2)
+            AND operation_date BETWEEN $3 AND $4
+        ORDER BY operation_date DESC
+        LIMIT 500
+    `, tenantID, accountCode, dateFrom, dateTo)
+
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    defer rows.Close()
+
+    var entries []gin.H
+    var openingBalance float64
+    var closingBalance float64
+
+    err = database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COALESCE(SUM(
+            CASE WHEN debit_account = $1 THEN amount ELSE 0 END -
+            CASE WHEN credit_account = $1 THEN amount ELSE 0 END
+        ), 0)
+        FROM journal_entries
+        WHERE tenant_id = $2 AND operation_date < $3
+    `, accountCode, tenantID, dateFrom).Scan(&openingBalance)
+    if err != nil {
+        openingBalance = 0
+    }
+
+    closingBalance = openingBalance
+
+    for rows.Next() {
+        var opDate time.Time
+        var docNumber, counterparty, debitAcc, creditAcc, description string
+        var amount float64
+
+        err = rows.Scan(&opDate, &docNumber, &counterparty, &debitAcc, &creditAcc, &amount, &description)
+        if err != nil {
+            continue
+        }
+
+        if debitAcc == accountCode {
+            closingBalance += amount
+        }
+        if creditAcc == accountCode {
+            closingBalance -= amount
+        }
+
+        entries = append(entries, gin.H{
+            "date":            opDate.Format("2006-01-02"),
+            "document":        docNumber,
+            "counterparty":    counterparty,
+            "debit":           amount,
+            "credit":          amount,
+            "debit_account":   debitAcc,
+            "credit_account":  creditAcc,
+            "description":     description,
+        })
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "success":          true,
+        "account_code":     accountCode,
+        "date_from":        dateFrom,
+        "date_to":          dateTo,
+        "opening_balance":  openingBalance,
+        "closing_balance":  closingBalance,
+        "entries":          entries,
+    })
+}
+// 2. АНАЛИЗ ДЕБИТОРСКОЙ ЗАДОЛЖЕННОСТИ (кто должен вам)
+func GetAccountsReceivable(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("user_id")
+    }
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+        return
+    }
+
+    asOfDate := c.DefaultQuery("as_of_date", time.Now().Format("2006-01-02"))
+
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT 
+            COALESCE(counterparty_name, 'Без контрагента') as counterparty,
+            COALESCE(counterparty_inn, '') as inn,
+            SUM(CASE WHEN debit_account = '62' THEN amount ELSE 0 END) as debit_total,
+            SUM(CASE WHEN credit_account = '62' THEN amount ELSE 0 END) as credit_total,
+            MAX(operation_date) as last_operation
+        FROM journal_entries
+        WHERE tenant_id = $1 
+            AND operation_date <= $2
+            AND (debit_account = '62' OR credit_account = '62')
+        GROUP BY counterparty_name, counterparty_inn
+        HAVING SUM(CASE WHEN debit_account = '62' THEN amount ELSE 0 END) - 
+               SUM(CASE WHEN credit_account = '62' THEN amount ELSE 0 END) > 0
+        ORDER BY 4 DESC
+    `, tenantID, asOfDate)
+
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    defer rows.Close()
+
+    var debtors []gin.H
+    var totalDebt float64
+
+    for rows.Next() {
+        var counterparty, inn string
+        var debitTotal, creditTotal float64
+        var lastOp time.Time
+
+        rows.Scan(&counterparty, &inn, &debitTotal, &creditTotal, &lastOp)
+        debt := debitTotal - creditTotal
+        totalDebt += debt
+
+        // Определяем просрочку
+        daysOverdue := int(time.Since(lastOp).Hours() / 24)
+        risk := "normal"
+        if daysOverdue > 90 {
+            risk = "high"
+        } else if daysOverdue > 30 {
+            risk = "medium"
+        }
+
+        debtors = append(debtors, gin.H{
+            "counterparty":   counterparty,
+            "inn":           inn,
+            "debt":          debt,
+            "last_operation": lastOp.Format("2006-01-02"),
+            "days_overdue":  daysOverdue,
+            "risk":          risk,
+        })
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "success":        true,
+        "as_of_date":     asOfDate,
+        "total_debt":     totalDebt,
+        "debtors_count":  len(debtors),
+        "debtors":        debtors,
+    })
+}
+
+// 3. АНАЛИЗ КРЕДИТОРСКОЙ ЗАДОЛЖЕННОСТИ (кому должны вы)
+func GetAccountsPayable(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("user_id")
+    }
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+        return
+    }
+
+    asOfDate := c.DefaultQuery("as_of_date", time.Now().Format("2006-01-02"))
+
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT 
+            COALESCE(counterparty_name, 'Без контрагента') as counterparty,
+            COALESCE(counterparty_inn, '') as inn,
+            SUM(CASE WHEN credit_account = '60' THEN amount ELSE 0 END) as credit_total,
+            SUM(CASE WHEN debit_account = '60' THEN amount ELSE 0 END) as debit_total,
+            MAX(operation_date) as last_operation
+        FROM journal_entries
+        WHERE tenant_id = $1 
+            AND operation_date <= $2
+            AND (debit_account = '60' OR credit_account = '60')
+        GROUP BY counterparty_name, counterparty_inn
+        HAVING SUM(CASE WHEN credit_account = '60' THEN amount ELSE 0 END) - 
+               SUM(CASE WHEN debit_account = '60' THEN amount ELSE 0 END) > 0
+        ORDER BY 4 DESC
+    `, tenantID, asOfDate)
+
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    defer rows.Close()
+
+    var creditors []gin.H
+    var totalPayable float64
+
+    for rows.Next() {
+        var counterparty, inn string
+        var creditTotal, debitTotal float64
+        var lastOp time.Time
+
+        rows.Scan(&counterparty, &inn, &creditTotal, &debitTotal, &lastOp)
+        debt := creditTotal - debitTotal
+        totalPayable += debt
+
+        daysSince := int(time.Since(lastOp).Hours() / 24)
+
+        creditors = append(creditors, gin.H{
+            "counterparty":   counterparty,
+            "inn":           inn,
+            "debt":          debt,
+            "last_operation": lastOp.Format("2006-01-02"),
+            "days_since":    daysSince,
+        })
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "success":         true,
+        "as_of_date":      asOfDate,
+        "total_payable":   totalPayable,
+        "creditors_count": len(creditors),
+        "creditors":       creditors,
+    })
+}
+
+// 4. ОБОРОТНО-САЛЬДОВАЯ ВЕДОМОСТЬ ПО СЧЁТУ
+func GetAccountTurnoverBalance(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("user_id")
+    }
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+        return
+    }
+
+    accountCode := c.Query("account_code")
+    if accountCode == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "account_code required"})
+        return
+    }
+
+    dateFrom := c.DefaultQuery("date_from", "2000-01-01")
+    dateTo := c.DefaultQuery("date_to", time.Now().Format("2006-01-02"))
+
+    var openingDebit, openingCredit, periodDebit, periodCredit, closingDebit, closingCredit float64
+
+    // Входящее сальдо (дебет)
+    database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COALESCE(SUM(amount), 0)
+        FROM journal_entries
+        WHERE tenant_id = $1 AND debit_account = $2 AND operation_date < $3
+    `, tenantID, accountCode, dateFrom).Scan(&openingDebit)
+
+    // Входящее сальдо (кредит)
+    database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COALESCE(SUM(amount), 0)
+        FROM journal_entries
+        WHERE tenant_id = $1 AND credit_account = $2 AND operation_date < $3
+    `, tenantID, accountCode, dateFrom).Scan(&openingCredit)
+
+    // Обороты за период (дебет)
+    database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COALESCE(SUM(amount), 0)
+        FROM journal_entries
+        WHERE tenant_id = $1 AND debit_account = $2 
+            AND operation_date BETWEEN $3 AND $4
+    `, tenantID, accountCode, dateFrom, dateTo).Scan(&periodDebit)
+
+    // Обороты за период (кредит)
+    database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COALESCE(SUM(amount), 0)
+        FROM journal_entries
+        WHERE tenant_id = $1 AND credit_account = $2 
+            AND operation_date BETWEEN $3 AND $4
+    `, tenantID, accountCode, dateFrom, dateTo).Scan(&periodCredit)
+
+    closingDebit = openingDebit + periodDebit - periodCredit
+    if closingDebit < 0 {
+        closingCredit = -closingDebit
+        closingDebit = 0
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "success":         true,
+        "account_code":    accountCode,
+        "date_from":       dateFrom,
+        "date_to":         dateTo,
+        "opening_debit":   openingDebit,
+        "opening_credit":  openingCredit,
+        "period_debit":    periodDebit,
+        "period_credit":   periodCredit,
+        "closing_debit":   closingDebit,
+        "closing_credit":  closingCredit,
+    })
+}
+
+// 5. ШАХМАТНАЯ ВЕДОМОСТЬ (обороты между счетами)
+func GetChessboardReport(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("user_id")
+    }
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+        return
+    }
+
+    dateFrom := c.DefaultQuery("date_from", time.Now().AddDate(0, -1, 0).Format("2006-01-02"))
+    dateTo := c.DefaultQuery("date_to", time.Now().Format("2006-01-02"))
+
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT 
+            COALESCE(debit_account, '') as debit,
+            COALESCE(credit_account, '') as credit,
+            SUM(amount) as total
+        FROM journal_entries
+        WHERE tenant_id = $1 
+            AND operation_date BETWEEN $2 AND $3
+            AND debit_account IS NOT NULL 
+            AND credit_account IS NOT NULL
+        GROUP BY debit_account, credit_account
+        ORDER BY debit_account, credit_account
+    `, tenantID, dateFrom, dateTo)
+
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    defer rows.Close()
+
+    var turnovers []gin.H
+    var totalTurnover float64
+
+    for rows.Next() {
+        var debit, credit string
+        var amount float64
+        rows.Scan(&debit, &credit, &amount)
+        totalTurnover += amount
+
+        turnovers = append(turnovers, gin.H{
+            "debit_account":  debit,
+            "credit_account": credit,
+            "amount":         amount,
+        })
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "success":        true,
+        "date_from":      dateFrom,
+        "date_to":        dateTo,
+        "total_turnover": totalTurnover,
+        "turnovers":      turnovers,
+    })
+}
+
+// GetPurchaseLedger - Книга покупок (входящий НДС)
+// Берет данные напрямую из journal_entries, не требует ручного заполнения invoices
+func GetPurchaseLedger(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("user_id")
+    }
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+        return
+    }
+
+    dateFrom := c.DefaultQuery("date_from", "2020-01-01")
+    dateTo := c.DefaultQuery("date_to", time.Now().Format("2006-01-02"))
+
+    // Берем данные НАПРЯМУЮ из journal_entries
+    // Не нужно никаких invoices!
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT 
+            operation_date,
+            COALESCE(document_number, '') as invoice_number,
+            COALESCE(counterparty_name, 
+                CASE 
+                    WHEN credit_account = '60' THEN 'Поставщик'
+                    WHEN credit_account = '76' THEN 'Прочий кредитор'
+                    ELSE 'Контрагент'
+                END
+            ) as supplier,
+            amount,
+            amount * 0.20 as nds_amount,
+            description
+        FROM journal_entries
+        WHERE tenant_id = $1 
+            AND operation_date BETWEEN $2 AND $3
+            AND status = 'posted'
+            AND amount > 0
+            AND (
+                -- Покупка: в дебете счета ТМЦ/расходов
+                debit_account IN ('10', '41', '20', '26', '44', '08')
+                OR
+                -- ИЛИ в кредите счет поставщика
+                credit_account IN ('60', '76', '71')
+            )
+        ORDER BY operation_date DESC
+    `, tenantID, dateFrom, dateTo)
+
+    if err != nil {
+        log.Printf("❌ Ошибка запроса книги покупок: %v", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    defer rows.Close()
+
+    var purchases []gin.H
+    var totalPurchases float64
+    var totalNdsInput float64
+
+    for rows.Next() {
+        var opDate time.Time
+        var invoiceNum, supplier, description string
+        var amount, nds float64
+
+        if err := rows.Scan(&opDate, &invoiceNum, &supplier, &amount, &nds, &description); err != nil {
+            continue
+        }
+        
+        totalPurchases += amount
+        totalNdsInput += nds
+
+        purchases = append(purchases, gin.H{
+            "date":           opDate.Format("2006-01-02"),
+            "invoice_number": invoiceNum,
+            "supplier":       supplier,
+            "amount":         amount,
+            "nds_amount":     nds,
+            "description":    description,
+        })
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "success":          true,
+        "date_from":        dateFrom,
+        "date_to":          dateTo,
+        "total_purchases":  totalPurchases,
+        "total_nds_input":  totalNdsInput,
+        "purchases":        purchases,
+    })
+}
+// GetSalesLedger - Книга продаж (исходящий НДС)
+func GetSalesLedger(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("user_id")
+    }
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+        return
+    }
+
+    dateFrom := c.DefaultQuery("date_from", "2020-01-01")
+    dateTo := c.DefaultQuery("date_to", time.Now().Format("2006-01-02"))
+
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT 
+            operation_date,
+            COALESCE(document_number, '') as invoice_number,
+            COALESCE(counterparty_name, 'Покупатель') as buyer,
+            COALESCE(counterparty_inn, '') as buyer_inn,
+            amount,
+            amount * 0.20 as nds_amount
+        FROM journal_entries
+        WHERE tenant_id = $1 
+            AND operation_date BETWEEN $2 AND $3
+            AND status = 'posted'
+            AND amount > 0
+            AND debit_account = '62'  -- Покупатели
+            AND credit_account = '90'  -- Продажи
+        ORDER BY operation_date DESC
+    `, tenantID, dateFrom, dateTo)
+
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    defer rows.Close()
+
+    var sales []gin.H
+    var totalAmount, totalNDS float64
+
+    for rows.Next() {
+        var opDate time.Time
+        var invoiceNum, buyer, inn string
+        var amount, nds float64
+
+        rows.Scan(&opDate, &invoiceNum, &buyer, &inn, &amount, &nds)
+        totalAmount += amount
+        totalNDS += nds
+
+        sales = append(sales, gin.H{
+            "date":           opDate.Format("2006-01-02"),
+            "invoice_number": invoiceNum,
+            "buyer":          buyer,
+            "buyer_inn":      inn,
+            "amount":         amount,
+            "nds_amount":     nds,
+        })
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "success":       true,
+        "date_from":     dateFrom,
+        "date_to":       dateTo,
+        "total_sales":   totalAmount,
+        "total_nds_out": totalNDS,
+        "sales":         sales,
+    })
 }

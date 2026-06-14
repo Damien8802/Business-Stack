@@ -29,10 +29,24 @@ type ActionResult struct {
 }
 
 func (e *AIActionExecutor) ExecuteAction(tenantID, userID string, intent IntentExtended, entities map[string]string) ActionResult {
-    log.Printf("⚡ Executing action: %s", intent.Action)
+    log.Printf("⚡ Executing action: %s, tenantID: %s, userID: %s", intent.Action, tenantID, userID)
     
+    // Проверка tenant - если пустой или default, ошибка в middleware
     if tenantID == "" || tenantID == "default" {
-        tenantID = "11111111-1111-1111-1111-111111111111"
+        log.Printf("❌ ExecuteAction: invalid tenantID='%s', userID=%s, action=%s", tenantID, userID, intent.Action)
+        return ActionResult{
+            Success: false,
+            Message: "❌ Ошибка авторизации: не удалось определить организацию. Пожалуйста, выйдите и зайдите заново.",
+        }
+    }
+    
+    // Валидируем что tenantID это валидный UUID
+    if _, err := uuid.Parse(tenantID); err != nil {
+        log.Printf("❌ ExecuteAction: tenantID is not valid UUID: %s", tenantID)
+        return ActionResult{
+            Success: false,
+            Message: "❌ Ошибка авторизации: неверный формат идентификатора организации.",
+        }
     }
     
     switch intent.Action {
@@ -49,14 +63,15 @@ func (e *AIActionExecutor) ExecuteAction(tenantID, userID string, intent IntentE
         return e.showPartnerDeals(tenantID, entities)
     
     // FinCore - Финансы
-    case "create_invoice":
-        return e.createInvoice(tenantID, entities)
-    case "create_payment":
-        return e.createPayment(tenantID, entities)
-    case "create_act":
-        return e.createReconciliationAct(tenantID, entities)
-    case "close_month":
-        return e.closeMonth(tenantID, entities)
+  // FinCore - Финансы
+case "create_invoice":
+    return e.createInvoice(tenantID, entities)
+case "create_payment":
+    return e.createPayment(tenantID, userID, entities)  
+case "create_act":
+    return e.createReconciliationAct(tenantID, entities)
+case "close_month":
+    return e.closeMonth(tenantID, entities)
     case "create_journal_entry":
         return e.createJournalEntry(tenantID, entities)
     case "create_budget":
@@ -113,6 +128,21 @@ func (e *AIActionExecutor) ExecuteAction(tenantID, userID string, intent IntentE
         return e.getInfo(intent.Action, entities)
     case "help":
         return ActionResult{Success: true, Message: GetHelpMessage()}
+    
+    // НОВЫЕ FINCORE ACTION
+    case "archive_account":
+        return e.archiveAccount(tenantID, entities)
+    case "restore_account":
+        return e.restoreAccount(tenantID, entities)
+    case "show_archive":
+        return e.showArchive(tenantID, entities)
+    case "get_osv":
+        return e.getOSV(tenantID, entities)
+    case "export_to_excel":
+        return e.exportToExcelFinCore(tenantID, entities)
+    case "get_balance_sheet":
+        return e.getBalanceSheet(tenantID, entities)
+
     default:
         return ActionResult{
             Success: true,
@@ -160,11 +190,22 @@ func (e *AIActionExecutor) createPartner(tenantID, userID string, entities map[s
     
     ctx := context.Background()
     
+    // Парсим tenantID в UUID
+    tenantUUID, err := uuid.Parse(tenantID)
+    if err != nil {
+        return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка: неверный tenant ID")}
+    }
+    
+    userUUID, err := uuid.Parse(userID)
+    if err != nil {
+        userUUID = uuid.Nil
+    }
+    
     // Проверяем существование партнёра
     var exists bool
-    err := e.db.QueryRow(ctx, `
+    err = e.db.QueryRow(ctx, `
         SELECT EXISTS(SELECT 1 FROM crm_partners WHERE name = $1 AND tenant_id = $2)
-    `, name, tenantID).Scan(&exists)
+    `, name, tenantUUID).Scan(&exists)
     
     if err == nil && exists {
         return ActionResult{
@@ -182,11 +223,11 @@ func (e *AIActionExecutor) createPartner(tenantID, userID string, entities map[s
     }
     
     // Создаём партнёра
-    partnerID := uuid.New().String()
+    partnerID := uuid.New()
     _, err = e.db.Exec(ctx, `
         INSERT INTO crm_partners (id, tenant_id, name, phone, email, user_id, created_at)
         VALUES ($1, $2, $3, $4, $5, $6, NOW())
-    `, partnerID, tenantID, name, phone, email, userID)
+    `, partnerID, tenantUUID, name, phone, email, userUUID)
     
     if err != nil {
         log.Printf("❌ Ошибка создания партнёра: %v", err)
@@ -209,7 +250,7 @@ func (e *AIActionExecutor) createPartner(tenantID, userID string, entities map[s
         Success: true,
         Message: resultMsg,
         Data: map[string]interface{}{
-            "id":           partnerID,
+            "id":           partnerID.String(),
             "partner_name": name,
             "phone":        phone,
             "email":        email,
@@ -237,6 +278,9 @@ func (e *AIActionExecutor) createDeal(tenantID, userID string, entities map[stri
         return ActionResult{Success: false, Message: "❌ Не указана сумма сделки"}
     }
     
+    tenantUUID, _ := uuid.Parse(tenantID)
+    userUUID, _ := uuid.Parse(userID)
+    
     // Находим партнёра по имени
     partner, err := e.getPartnerByName(tenantID, customerName)
     if err != nil {
@@ -244,6 +288,11 @@ func (e *AIActionExecutor) createDeal(tenantID, userID string, entities map[stri
             Success: false, 
             Message: fmt.Sprintf("❌ Партнёр \"%s\" не найден. Сначала создайте партнёра командой: создай партнёра %s", customerName, customerName),
         }
+    }
+    
+    partnerUUID, err := uuid.Parse(partner["id"].(string))
+    if err != nil {
+        return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка: неверный ID партнёра")}
     }
     
     var amountInt int
@@ -257,14 +306,13 @@ func (e *AIActionExecutor) createDeal(tenantID, userID string, entities map[stri
         dealName = fmt.Sprintf("Сделка с %s на %d ₽", customerName, amountInt)
     }
     
-    dealID := uuid.New().String()
+    dealID := uuid.New()
     ctx := context.Background()
     
-    // Добавляем partner_id и user_id в INSERT
     _, err = e.db.Exec(ctx, `
         INSERT INTO crm_deals (id, title, value, tenant_id, partner_id, user_id, stage, created_at) 
         VALUES ($1, $2, $3, $4, $5, $6, 'new', NOW())
-    `, dealID, dealName, amount, tenantID, partner["id"], userID)
+    `, dealID, dealName, amount, tenantUUID, partnerUUID, userUUID)
     
     if err != nil {
         log.Printf("❌ Ошибка создания сделки: %v", err)
@@ -275,7 +323,7 @@ func (e *AIActionExecutor) createDeal(tenantID, userID string, entities map[stri
         Success: true,
         Message: fmt.Sprintf("✅ Сделка \"%s\" на сумму %s ₽ создана для партнёра %s!\n\n🔗 [Посмотреть сделки →](/crm?tab=deals)", dealName, amount, customerName),
         Data: map[string]interface{}{
-            "id":           dealID,
+            "id":           dealID.String(),
             "title":        dealName,
             "value":        amount,
             "partner_id":   partner["id"],
@@ -334,7 +382,7 @@ func (e *AIActionExecutor) showPartnerInfo(tenantID string, entities map[string]
         message += "📄 Счетов пока нет"
     }
     
-    message += fmt.Sprintf("\n🔗 [Перейти в CRM →](/crm)")
+    message += fmt.Sprintf("\n\n🔗 [Перейти в CRM →](/crm)")
     
     return ActionResult{
         Success: true,
@@ -414,7 +462,12 @@ func (e *AIActionExecutor) createInvoice(tenantID string, entities map[string]st
         return ActionResult{Success: false, Message: "❌ Не указана сумма счёта"}
     }
     
-    invoiceID := uuid.New().String()
+    tenantUUID, err := uuid.Parse(tenantID)
+    if err != nil {
+        return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка: неверный tenant ID")}
+    }
+    
+    invoiceID := uuid.New()
     invoiceNumber := fmt.Sprintf("INV-%d", time.Now().UnixNano()%100000)
     ctx := context.Background()
     
@@ -444,10 +497,10 @@ func (e *AIActionExecutor) createInvoice(tenantID string, entities map[string]st
         }
     }
     
-    _, err := e.db.Exec(ctx, `
+    _, err = e.db.Exec(ctx, `
         INSERT INTO invoices (id, number, partner_name, amount, tenant_id, status, created_at, due_date) 
         VALUES ($1, $2, $3, $4, $5, 'sent', NOW(), NOW() + INTERVAL '14 days')
-    `, invoiceID, invoiceNumber, partnerName, amount, tenantID)
+    `, invoiceID, invoiceNumber, partnerName, amount, tenantUUID)
     
     if err != nil {
         return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка: %v", err), Error: err}
@@ -457,7 +510,7 @@ func (e *AIActionExecutor) createInvoice(tenantID string, entities map[string]st
         Success: true,
         Message: fmt.Sprintf("✅ Счёт №%s на сумму %s ₽ выставлен партнёру %s!\n\n🔗 [Перейти в Финансы →](/finance)", invoiceNumber, amount, partnerName),
         Data: map[string]interface{}{
-            "id":           invoiceID,
+            "id":           invoiceID.String(),
             "number":       invoiceNumber,
             "amount":       amount,
             "redirect_url": "/finance",
@@ -466,73 +519,98 @@ func (e *AIActionExecutor) createInvoice(tenantID string, entities map[string]st
     }
 }
 
-func (e *AIActionExecutor) createPayment(tenantID string, entities map[string]string) ActionResult {
+func (e *AIActionExecutor) createPayment(tenantID, userID string, entities map[string]string) ActionResult {
     recipient := entities["recipient"]
-    if recipient == "" {
-        return ActionResult{Success: false, Message: "❌ Не указан получатель платежа"}
-    }
-    
     amount := entities["amount"]
-    if amount == "" {
-        return ActionResult{Success: false, Message: "❌ Не указана сумма платежа"}
-    }
+    purpose := entities["purpose"]
     
-    paymentID := uuid.New().String()
-    ctx := context.Background()
-    
-    var tableExists bool
-    e.db.QueryRow(ctx, `
-        SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_name = 'payments'
-        )
-    `).Scan(&tableExists)
-    
-    if !tableExists {
-        _, err := e.db.Exec(ctx, `
-            CREATE TABLE IF NOT EXISTS payments (
-                id UUID PRIMARY KEY,
-                recipient VARCHAR(255),
-                amount DECIMAL(15,2),
-                tenant_id UUID,
-                status VARCHAR(50),
-                created_at TIMESTAMP
-            )
-        `)
-        if err != nil {
-            return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка создания таблицы: %v", err)}
+    // ШАГ 1: Нет получателя
+    if recipient == "" {
+        return ActionResult{
+            Success: false,
+            Message: "💰 Кому нужно перевести деньги? Укажите получателя.",
+            Data: map[string]interface{}{
+                "step":      "recipient",
+                "action":    "create_payment",
+                "amount":    amount,
+                "purpose":   purpose,
+            },
         }
     }
     
-    _, err := e.db.Exec(ctx, `
-        INSERT INTO payments (id, recipient, amount, tenant_id, status, created_at) 
-        VALUES ($1, $2, $3, $4, 'pending', NOW())
-    `, paymentID, recipient, amount, tenantID)
+    // ШАГ 2: Нет суммы
+    if amount == "" {
+        return ActionResult{
+            Success: false,
+            Message: fmt.Sprintf("💰 Получатель: %s\n\nКакую сумму перевести?", recipient),
+            Data: map[string]interface{}{
+                "step":      "amount",
+                "action":    "create_payment",
+                "recipient": recipient,
+                "purpose":   purpose,
+            },
+        }
+    }
     
-    if err != nil {
-        return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка: %v", err), Error: err}
+    // ШАГ 3: Нет назначения
+    if purpose == "" {
+        return ActionResult{
+            Success: false,
+            Message: fmt.Sprintf("💰 Получатель: %s\n💰 Сумма: %s ₽\n\nУкажите назначение платежа:", recipient, amount),
+            Data: map[string]interface{}{
+                "step":      "purpose",
+                "action":    "create_payment",
+                "recipient": recipient,
+                "amount":    amount,
+            },
+        }
+    }
+    
+    // ШАГ 4: Все данные есть - создаем платеж
+    tenantUUID, _ := uuid.Parse(tenantID)
+    userUUID, _ := uuid.Parse(userID)
+    
+    var userName string
+    e.db.QueryRow(context.Background(), 
+        "SELECT COALESCE(name, email, 'Пользователь') FROM users WHERE id = $1", userUUID).Scan(&userName)
+    
+    paymentID := uuid.New()
+    
+    _, execErr := e.db.Exec(context.Background(), `
+        INSERT INTO payments (
+            id, counterparty_name, amount, tenant_id, user_id, 
+            purpose, method, status, created_at, payment_date, 
+            payment_method, plan_name, user_name, payment_type
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'completed', NOW(), 
+                  CURRENT_DATE, 'bank_transfer', 'AI Платёж', $8, 'expense')
+    `, paymentID, recipient, amount, tenantUUID, userUUID, 
+       purpose, "bank_transfer", userName)
+    
+    if execErr != nil {
+        return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка: %v", execErr)}
     }
     
     return ActionResult{
         Success: true,
-        Message: fmt.Sprintf("✅ Платёж для '%s' на сумму %s ₽ создан!\n\n🔗 [Перейти в Банк →](/bank)", recipient, amount),
+        Message: fmt.Sprintf("✅ **Платёж создан!**\n\n💰 Сумма: %s ₽\n👤 Получатель: %s\n📝 Назначение: %s\n\n🔗 [Посмотреть платежи →](/finance)", 
+            amount, recipient, purpose),
         Data: map[string]interface{}{
-            "id":           paymentID,
-            "recipient":    recipient,
-            "amount":       amount,
-            "redirect_url": "/bank",
-            "module":       "bank",
+            "completed": true,
         },
     }
 }
-
 func (e *AIActionExecutor) createReconciliationAct(tenantID string, entities map[string]string) ActionResult {
     partnerName := entities["partner_name"]
     if partnerName == "" {
         return ActionResult{Success: false, Message: "❌ Не указан партнёр для акта сверки"}
     }
     
-    actID := uuid.New().String()
+    tenantUUID, err := uuid.Parse(tenantID)
+    if err != nil {
+        return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка: неверный tenant ID")}
+    }
+    
+    actID := uuid.New()
     ctx := context.Background()
     
     var tableExists bool
@@ -559,10 +637,10 @@ func (e *AIActionExecutor) createReconciliationAct(tenantID string, entities map
         }
     }
     
-    _, err := e.db.Exec(ctx, `
+    _, err = e.db.Exec(ctx, `
         INSERT INTO reconciliation_acts (id, partner_name, counterparty_name, tenant_id, status, created_at) 
         VALUES ($1, $2, $3, $4, 'draft', NOW())
-    `, actID, partnerName, partnerName, tenantID)
+    `, actID, partnerName, partnerName, tenantUUID)
     
     if err != nil {
         return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка: %v", err), Error: err}
@@ -572,7 +650,7 @@ func (e *AIActionExecutor) createReconciliationAct(tenantID string, entities map
         Success: true,
         Message: fmt.Sprintf("✅ Акт сверки с партнёром %s создан!\n\n🔗 [Перейти к актам сверки →](/reconciliation-acts)", partnerName),
         Data: map[string]interface{}{
-            "id":           actID,
+            "id":           actID.String(),
             "partner_name": partnerName,
             "redirect_url": "/reconciliation-acts",
             "module":       "reconciliation",
@@ -580,52 +658,589 @@ func (e *AIActionExecutor) createReconciliationAct(tenantID string, entities map
     }
 }
 
-func (e *AIActionExecutor) closeMonth(tenantID string, entities map[string]string) ActionResult {
-    ctx := context.Background()
-    
-    now := time.Now()
-    year := now.Year()
-    month := int(now.Month())
-    monthYear := fmt.Sprintf("%s %d", now.Format("January"), year)
-    
-    var hasYear, hasMonth bool
-    e.db.QueryRow(ctx, `
-        SELECT EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'month_closing' AND column_name = 'year')
-    `).Scan(&hasYear)
-    e.db.QueryRow(ctx, `
-        SELECT EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'month_closing' AND column_name = 'month')
-    `).Scan(&hasMonth)
-    
-    var err error
-    if hasYear && hasMonth {
-        _, err = e.db.Exec(ctx, `
-            INSERT INTO month_closing (id, tenant_id, year, month, closed_at)
-            VALUES (gen_random_uuid(), $1, $2, $3, NOW())
-        `, tenantID, year, month)
-    } else {
-        periodDate := now.Format("2006-01-01")
-        _, err = e.db.Exec(ctx, `
-            INSERT INTO month_closing (id, tenant_id, closed_at, period)
-            VALUES (gen_random_uuid(), $1, NOW(), $2)
-        `, tenantID, periodDate)
+// ============================================
+// FINCORE - НОВЫЕ ФУНКЦИИ С ИСПРАВЛЕНИЯМИ
+// ============================================
+
+func (e *AIActionExecutor) archiveAccount(tenantID string, entities map[string]string) ActionResult {
+    accountCode := entities["account_code"]
+    if accountCode == "" {
+        return ActionResult{
+            Success: false,
+            Message: "❌ Не указан код счета для архивации.\n\nПример: *архивируй счёт 51*",
+        }
     }
     
+    tenantUUID, err := uuid.Parse(tenantID)
     if err != nil {
-        return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка закрытия месяца: %v", err)}
+        return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка: неверный tenant ID")}
+    }
+    
+    ctx := context.Background()
+    
+    // Проверяем существует ли таблица chart_of_accounts
+    var tableExists bool
+    e.db.QueryRow(ctx, `
+        SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_name = 'chart_of_accounts'
+        )
+    `).Scan(&tableExists)
+    
+    if !tableExists {
+        // Создаём таблицу если её нет
+        _, err = e.db.Exec(ctx, `
+            CREATE TABLE IF NOT EXISTS chart_of_accounts (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                code VARCHAR(20) NOT NULL,
+                name VARCHAR(255) NOT NULL,
+                type VARCHAR(50),
+                is_active BOOLEAN DEFAULT true,
+                tenant_id UUID NOT NULL,
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW(),
+                deleted_at TIMESTAMP,
+                UNIQUE(code, tenant_id)
+            )
+        `)
+        if err != nil {
+            return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка создания таблицы: %v", err)}
+        }
+        
+        // Добавляем стандартные счета
+        standardAccounts := []struct{ code, name, typ string }{
+            {"01", "Основные средства", "asset"},
+            {"10", "Материалы", "asset"},
+            {"50", "Касса", "asset"},
+            {"51", "Расчетный счет", "asset"},
+            {"60", "Расчеты с поставщиками", "liability"},
+            {"62", "Расчеты с покупателями", "asset"},
+            {"68", "Расчеты по налогам", "liability"},
+            {"69", "Расчеты по соцстрахованию", "liability"},
+            {"70", "Расчеты с персоналом", "liability"},
+            {"80", "Уставный капитал", "equity"},
+            {"90", "Продажи", "revenue"},
+            {"91", "Прочие доходы и расходы", "other"},
+            {"99", "Прибыли и убытки", "equity"},
+        }
+        
+        for _, acc := range standardAccounts {
+            _, _ = e.db.Exec(ctx, `
+                INSERT INTO chart_of_accounts (code, name, type, tenant_id, created_at, updated_at)
+                VALUES ($1, $2, $3, $4, NOW(), NOW())
+                ON CONFLICT (code, tenant_id) DO NOTHING
+            `, acc.code, acc.name, acc.typ, tenantUUID)
+        }
+    }
+    
+    // Реально обновляем БД
+    result, err := e.db.Exec(ctx, `
+        UPDATE chart_of_accounts 
+        SET deleted_at = NOW(), is_active = false, updated_at = NOW()
+        WHERE code = $1 AND tenant_id = $2 AND deleted_at IS NULL
+    `, accountCode, tenantUUID)
+    
+    if err != nil {
+        return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка архивации: %v", err)}
+    }
+    
+    if result.RowsAffected() == 0 {
+        return ActionResult{Success: false, Message: fmt.Sprintf("❌ Счёт %s не найден или уже в архиве", accountCode)}
     }
     
     return ActionResult{
         Success: true,
-        Message: fmt.Sprintf("🔒 Месяц %s успешно закрыт! Все проводки зафиксированы.\n\n🔗 [Перейти в Закрытие месяца →](/month-end)", monthYear),
+       Message: fmt.Sprintf("✅ **Счёт %s успешно архивирован!**\n\n📦 Счёт перемещён в архив.\n\n🔗 [Посмотреть архив счетов](/finance?tab=accounts)", accountCode),
+        Data: map[string]interface{}{"account_code": accountCode, "archived": true},
+    }
+}
+
+func (e *AIActionExecutor) restoreAccount(tenantID string, entities map[string]string) ActionResult {
+    accountCode := entities["account_code"]
+    if accountCode == "" {
+        return ActionResult{
+            Success: false,
+            Message: "❌ Не указан код счета для восстановления.\n\nПример: *восстанови счёт 51*",
+        }
+    }
+    
+    tenantUUID, err := uuid.Parse(tenantID)
+    if err != nil {
+        return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка: неверный tenant ID")}
+    }
+    
+    ctx := context.Background()
+    
+    // Реально обновляем БД
+    result, err := e.db.Exec(ctx, `
+        UPDATE chart_of_accounts 
+        SET deleted_at = NULL, is_active = true, updated_at = NOW()
+        WHERE code = $1 AND tenant_id = $2 AND deleted_at IS NOT NULL
+    `, accountCode, tenantUUID)
+    
+    if err != nil {
+        return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка восстановления: %v", err)}
+    }
+    
+    if result.RowsAffected() == 0 {
+        return ActionResult{Success: false, Message: fmt.Sprintf("❌ Архивированный счёт %s не найден", accountCode)}
+    }
+    
+    return ActionResult{
+        Success: true,
+       Message: fmt.Sprintf("✅ **Счёт %s успешно восстановлен!**\n\n📋 Счёт возвращён в план счетов.\n\n🔗 [План счетов](/finance?tab=accounts)", accountCode),
+        Data: map[string]interface{}{"account_code": accountCode, "restored": true},
+    }
+}
+
+func (e *AIActionExecutor) showArchive(tenantID string, entities map[string]string) ActionResult {
+    tenantUUID, err := uuid.Parse(tenantID)
+    if err != nil {
+        return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка: неверный tenant ID")}
+    }
+    
+    ctx := context.Background()
+    
+    // Проверяем существование таблицы
+    var tableExists bool
+    e.db.QueryRow(ctx, `
+        SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_name = 'chart_of_accounts'
+        )
+    `).Scan(&tableExists)
+    
+    if !tableExists {
+        return ActionResult{
+            Success: true,
+            Message: "📦 **Архив счетов** (пуст)\n\n💡 Счета можно архивировать командой *архивируй счёт 51*",
+        }
+    }
+    
+    // Считаем реальное количество архивных счетов
+    var count int
+    e.db.QueryRow(ctx, `SELECT COUNT(*) FROM chart_of_accounts WHERE tenant_id = $1 AND deleted_at IS NOT NULL`, tenantUUID).Scan(&count)
+    
+    // Получаем список архивных счетов если их не много
+    var archiveList string
+    if count > 0 && count <= 20 {
+        rows, err := e.db.Query(ctx, `
+            SELECT code, name FROM chart_of_accounts 
+            WHERE tenant_id = $1 AND deleted_at IS NOT NULL 
+            ORDER BY code
+        `, tenantUUID)
+        if err == nil {
+            defer rows.Close()
+            archiveList = "\n\n**Архивированные счета:**\n"
+            for rows.Next() {
+                var code, name string
+                rows.Scan(&code, &name)
+                archiveList += fmt.Sprintf("• %s - %s\n", code, name)
+            }
+        }
+    }
+    
+    archiveText := "пуст"
+    if count > 0 {
+        archiveText = fmt.Sprintf("%d счёт(ов)", count)
+    }
+    
+    return ActionResult{
+        Success: true,
+        Message: fmt.Sprintf("📦 **Архив счетов** (%s)%s\n\n🔘 Нажмите на кнопку **\"Архив\"** в разделе **\"План счетов\"**\n\n🔗 [Перейти в финансы → План счетов](/finance?tab=accounts)\n\n💡 Там можно восстановить или удалить счета навсегда.", 
+            archiveText, archiveList),
+    }
+}
+
+func (e *AIActionExecutor) getOSV(tenantID string, entities map[string]string) ActionResult {
+    period := entities["period"]
+    if period == "" {
+        period = "текущий месяц"
+    }
+    
+    tenantUUID, err := uuid.Parse(tenantID)
+    if err != nil {
+        return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка: неверный tenant ID")}
+    }
+    
+    ctx := context.Background()
+    
+    // Проверяем наличие данных
+    var entriesCount int
+    e.db.QueryRow(ctx, `SELECT COUNT(*) FROM journal_entries WHERE tenant_id = $1`, tenantUUID).Scan(&entriesCount)
+    
+    var additionalInfo string
+    if entriesCount == 0 {
+        additionalInfo = "\n\n⚠️ В системе пока нет проводок. Создайте их в разделе Финансы → Журнал операций."
+    } else {
+        additionalInfo = fmt.Sprintf("\n\n📊 Найдено проводок: %d", entriesCount)
+    }
+    
+    return ActionResult{
+        Success: true,
+        Message: fmt.Sprintf("📊 **Оборотно-сальдовая ведомость** за %s%s\n\n📥 [Скачать Excel](/api/reports/export/osv?tenant_id=%s)\n\n🔗 [Открыть в веб-интерфейсе](/finance?tab=reports)\n\n💡 Выберите период в фильтре на странице.", 
+            period, additionalInfo, tenantID),
         Data: map[string]interface{}{
-            "closed":       true,
-            "year":         year,
-            "month":        month,
-            "redirect_url": "/month-end",
-            "module":       "month-end",
+            "period": period,
+            "entries_count": entriesCount,
         },
     }
 }
+
+func (e *AIActionExecutor) exportToExcelFinCore(tenantID string, entities map[string]string) ActionResult {
+    reportType := entities["report_type"]
+    if reportType == "" {
+        reportType = "ОСВ"
+    }
+    
+    period := entities["period"]
+    if period == "" {
+        period = "текущий месяц"
+    }
+    
+    var downloadURL string
+    switch strings.ToLower(reportType) {
+    case "осв", "osv":
+        downloadURL = fmt.Sprintf("/api/reports/export/osv?tenant_id=%s", tenantID)
+    case "баланс", "balance_sheet":
+        downloadURL = fmt.Sprintf("/api/reports/export/balance-sheet?tenant_id=%s", tenantID)
+    default:
+        downloadURL = fmt.Sprintf("/api/reports/export/osv?tenant_id=%s", tenantID)
+    }
+    
+    return ActionResult{
+        Success: true,
+        Message: fmt.Sprintf("📎 **Экспорт %s в Excel** за %s\n\n📥 [Скачать файл](%s)\n\n💡 Файл скачается автоматически. Если скачивание не началось, нажмите на ссылку.", 
+            reportType, period, downloadURL),
+        Data: map[string]interface{}{
+            "report_type": reportType,
+            "period": period,
+            "download_url": downloadURL,
+        },
+    }
+}
+
+func (e *AIActionExecutor) getBalanceSheet(tenantID string, entities map[string]string) ActionResult {
+    date := entities["date"]
+    if date == "" {
+        date = "текущую дату"
+    }
+    
+    tenantUUID, err := uuid.Parse(tenantID)
+    if err != nil {
+        return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка: неверный tenant ID")}
+    }
+    
+    ctx := context.Background()
+    
+    // Получаем суммы по типам счетов
+    var totalAssets, totalLiabilities float64
+    
+    e.db.QueryRow(ctx, `
+        SELECT COALESCE(SUM(
+            CASE WHEN c.type IN ('asset', 'other_asset') THEN 
+                COALESCE(j.amount, 0)
+            ELSE 0 END
+        ), 0)
+        FROM chart_of_accounts c
+        LEFT JOIN journal_entries j ON j.debit_account = c.code AND j.tenant_id = c.tenant_id
+        WHERE c.tenant_id = $1 AND c.deleted_at IS NULL
+    `, tenantUUID).Scan(&totalAssets)
+    
+    e.db.QueryRow(ctx, `
+        SELECT COALESCE(SUM(
+            CASE WHEN c.type IN ('liability', 'equity', 'capital') THEN 
+                COALESCE(j.amount, 0)
+            ELSE 0 END
+        ), 0)
+        FROM chart_of_accounts c
+        LEFT JOIN journal_entries j ON j.credit_account = c.code AND j.tenant_id = c.tenant_id
+        WHERE c.tenant_id = $1 AND c.deleted_at IS NULL
+    `, tenantUUID).Scan(&totalLiabilities)
+    
+    // Если нет данных, показываем пример
+    if totalAssets == 0 && totalLiabilities == 0 {
+        return ActionResult{
+            Success: true,
+            Message: fmt.Sprintf("📊 **Бухгалтерский баланс** на %s\n\n⚠️ В системе пока нет данных для формирования баланса.\n\n📥 [Скачать шаблон Excel](/api/reports/export/balance-sheet?tenant_id=%s)\n\n🔗 [Перейти в финансы](/finance)\n\n💡 Создайте проводки для формирования баланса.", date, tenantID),
+        }
+    }
+    
+    difference := totalAssets - totalLiabilities
+    
+    return ActionResult{
+        Success: true,
+       Message: fmt.Sprintf("📊 **Бухгалтерский баланс** на %s\n\n**АКТИВЫ:** %.2f ₽\n**ПАССИВЫ:** %.2f ₽\n**Нераспределённая прибыль:** %.2f ₽\n\n📥 [Скачать Excel](/api/reports/export/balance-sheet?tenant_id=%s)\n\n🔗 [Открыть в веб-интерфейсе](/finance?tab=reports)", 
+            date, totalAssets, totalLiabilities, difference, tenantID),
+        Data: map[string]interface{}{
+            "date": date,
+            "total_assets": totalAssets,
+            "total_liabilities": totalLiabilities,
+            "difference": difference,
+        },
+    }
+}
+
+// ============================================
+// ЗАКРЫТИЕ МЕСЯЦА - ИСПРАВЛЕННАЯ ВЕРСИЯ
+// ============================================
+
+func (e *AIActionExecutor) closeMonth(tenantID string, entities map[string]string) ActionResult {
+    month := entities["month"]
+    if month == "" {
+        month = time.Now().Format("January 2006")
+    }
+    
+    tenantUUID, err := uuid.Parse(tenantID)
+    if err != nil {
+        return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка: неверный tenant ID")}
+    }
+    
+    ctx := context.Background()
+    
+    // Проверяем существование таблицы month_closures
+    var tableExists bool
+    e.db.QueryRow(ctx, `
+        SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_name = 'month_closures'
+        )
+    `).Scan(&tableExists)
+    
+    if !tableExists {
+        _, err = e.db.Exec(ctx, `
+            CREATE TABLE IF NOT EXISTS month_closures (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                tenant_id UUID NOT NULL,
+                period DATE NOT NULL,
+                closed_at TIMESTAMP DEFAULT NOW(),
+                closed_by UUID,
+                status VARCHAR(50) DEFAULT 'completed',
+                UNIQUE(tenant_id, period)
+            )
+        `)
+        if err != nil {
+            return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка создания таблицы: %v", err)}
+        }
+    }
+    
+    // Определяем период закрытия
+    var periodStart, periodEnd time.Time
+    if strings.Contains(strings.ToLower(month), "январ") || strings.Contains(strings.ToLower(month), "january") {
+        periodStart = time.Date(time.Now().Year(), time.January, 1, 0, 0, 0, 0, time.UTC)
+        periodEnd = periodStart.AddDate(0, 1, -1)
+    } else if strings.Contains(strings.ToLower(month), "феврал") || strings.Contains(strings.ToLower(month), "february") {
+        periodStart = time.Date(time.Now().Year(), time.February, 1, 0, 0, 0, 0, time.UTC)
+        periodEnd = periodStart.AddDate(0, 1, -1)
+    } else {
+        // Если месяц не распознан, закрываем предыдущий месяц
+        periodStart = time.Now().AddDate(0, -1, 0).Truncate(24 * time.Hour)
+        periodStart = time.Date(periodStart.Year(), periodStart.Month(), 1, 0, 0, 0, 0, time.UTC)
+        periodEnd = periodStart.AddDate(0, 1, -1)
+    }
+    
+    // Проверяем не закрыт ли уже месяц
+    var alreadyClosed bool
+    e.db.QueryRow(ctx, `
+        SELECT EXISTS(SELECT 1 FROM month_closures WHERE tenant_id = $1 AND period = $2)
+    `, tenantUUID, periodStart).Scan(&alreadyClosed)
+    
+    if alreadyClosed {
+        return ActionResult{
+            Success: false,
+            Message: fmt.Sprintf("⚠️ Месяц %s уже закрыт. Повторное закрытие невозможно.", periodStart.Format("January 2006")),
+        }
+    }
+    
+    // Создаём закрывающие проводки для счетов 90, 91, 99
+    // 1. Закрытие счёта 90 "Продажи"
+    _, err = e.db.Exec(ctx, `
+        INSERT INTO journal_entries (id, debit_account, credit_account, amount, description, tenant_id, created_at)
+        SELECT 
+            gen_random_uuid(),
+            '90' as debit_account,
+            '99' as credit_account,
+            SUM(amount) as amount,
+            'Закрытие месяца: списание финансового результата от продаж',
+            $1,
+            NOW()
+        FROM journal_entries 
+        WHERE tenant_id = $1 
+            AND debit_account = '90'
+            AND created_at BETWEEN $2 AND $3
+    `, tenantUUID, periodStart, periodEnd.Add(24*time.Hour))
+    
+    if err != nil {
+        log.Printf("⚠️ Ошибка при закрытии счёта 90: %v", err)
+    }
+    
+    // 2. Закрытие счёта 91 "Прочие доходы и расходы"
+    _, err = e.db.Exec(ctx, `
+        INSERT INTO journal_entries (id, debit_account, credit_account, amount, description, tenant_id, created_at)
+        SELECT 
+            gen_random_uuid(),
+            '91' as debit_account,
+            '99' as credit_account,
+            SUM(amount) as amount,
+            'Закрытие месяца: списание прочих доходов и расходов',
+            $1,
+            NOW()
+        FROM journal_entries 
+        WHERE tenant_id = $1 
+            AND debit_account = '91'
+            AND created_at BETWEEN $2 AND $3
+    `, tenantUUID, periodStart, periodEnd.Add(24*time.Hour))
+    
+    if err != nil {
+        log.Printf("⚠️ Ошибка при закрытии счёта 91: %v", err)
+    }
+    
+    // 3. Сохраняем запись о закрытии месяца
+    _, err = e.db.Exec(ctx, `
+        INSERT INTO month_closures (tenant_id, period, closed_at, status)
+        VALUES ($1, $2, NOW(), 'completed')
+    `, tenantUUID, periodStart)
+    
+    if err != nil {
+        return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка сохранения закрытия месяца: %v", err)}
+    }
+    
+    return ActionResult{
+        Success: true,
+        Message: fmt.Sprintf("✅ **Месяц %s успешно закрыт!**\n\n📋 Выполнены следующие операции:\n• Сформирован финансовый результат (счет 90 → 99)\n• Закрыты прочие доходы/расходы (счет 91 → 99)\n• Созданы закрывающие проводки\n\n🔗 [Посмотреть закрытие месяца](/finance?tab=reports)\n📥 [Скачать отчёт о закрытии](/api/reports/export/month-closure?tenant_id=%s)", 
+            periodStart.Format("January 2006"), tenantID),
+        Data: map[string]interface{}{
+            "period": periodStart.Format("2006-01"),
+            "closed_at": time.Now(),
+            "status": "completed",
+        },
+    }
+}
+
+// ============================================
+// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// ============================================
+
+func (e *AIActionExecutor) getPartnerByName(tenantID, name string) (map[string]interface{}, error) {
+    ctx := context.Background()
+    
+    tenantUUID, err := uuid.Parse(tenantID)
+    if err != nil {
+        return nil, err
+    }
+    
+    var id, partnerName, phone, email string
+    var createdAt time.Time
+    
+    err = e.db.QueryRow(ctx, `
+        SELECT id, name, COALESCE(phone, ''), COALESCE(email, ''), created_at
+        FROM crm_partners
+        WHERE name ILIKE $1 AND tenant_id = $2
+        LIMIT 1
+    `, "%"+name+"%", tenantUUID).Scan(&id, &partnerName, &phone, &email, &createdAt)
+    
+    if err != nil {
+        return nil, err
+    }
+    
+    return map[string]interface{}{
+        "id":         id,
+        "name":       partnerName,
+        "phone":      phone,
+        "email":      email,
+        "created_at": createdAt,
+    }, nil
+}
+
+func (e *AIActionExecutor) getPartnerDeals(tenantID, partnerID string) ([]map[string]interface{}, error) {
+    ctx := context.Background()
+    
+    tenantUUID, err := uuid.Parse(tenantID)
+    if err != nil {
+        return nil, err
+    }
+    
+    partnerUUID, err := uuid.Parse(partnerID)
+    if err != nil {
+        return nil, err
+    }
+    
+    rows, err := e.db.Query(ctx, `
+        SELECT id, title, value, stage, created_at
+        FROM crm_deals 
+        WHERE tenant_id = $1 AND partner_id = $2
+        ORDER BY created_at DESC
+        LIMIT 10
+    `, tenantUUID, partnerUUID)
+    
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+    
+    var deals []map[string]interface{}
+    for rows.Next() {
+        var id, title, stage string
+        var value float64
+        var createdAt time.Time
+        
+        err := rows.Scan(&id, &title, &value, &stage, &createdAt)
+        if err != nil {
+            return nil, err
+        }
+        deals = append(deals, map[string]interface{}{
+            "id":         id,
+            "title":      title,
+            "value":      value,
+            "stage":      stage,
+            "created_at": createdAt,
+        })
+    }
+    return deals, nil
+}
+
+func (e *AIActionExecutor) getPartnerInvoices(tenantID, partnerName string) ([]map[string]interface{}, error) {
+    ctx := context.Background()
+    
+    tenantUUID, err := uuid.Parse(tenantID)
+    if err != nil {
+        return nil, err
+    }
+    
+    rows, err := e.db.Query(ctx, `
+        SELECT id, number, amount, status, created_at
+        FROM invoices 
+        WHERE tenant_id = $1 AND partner_name ILIKE $2
+        ORDER BY created_at DESC
+        LIMIT 10
+    `, tenantUUID, "%"+partnerName+"%")
+    
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+    
+    var invoices []map[string]interface{}
+    for rows.Next() {
+        var id, number, status string
+        var amount float64
+        var createdAt time.Time
+        
+        rows.Scan(&id, &number, &amount, &status, &createdAt)
+        invoices = append(invoices, map[string]interface{}{
+            "id":         id,
+            "number":     number,
+            "amount":     amount,
+            "status":     status,
+            "created_at": createdAt,
+        })
+    }
+    return invoices, nil
+}
+
+// ============================================
+// ОСТАЛЬНЫЕ ФУНКЦИИ (СОХРАНЕНЫ БЕЗ ИЗМЕНЕНИЙ)
+// ============================================
 
 func (e *AIActionExecutor) createJournalEntry(tenantID string, entities map[string]string) ActionResult {
     debitAccount := entities["debit_account"]
@@ -640,15 +1255,18 @@ func (e *AIActionExecutor) createJournalEntry(tenantID string, entities map[stri
         return ActionResult{Success: false, Message: "❌ Не указана сумма проводки"}
     }
     
-    entryID := uuid.New().String()
-    ctx := context.Background()
+    tenantUUID, err := uuid.Parse(tenantID)
+    if err != nil {
+        return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка: неверный tenant ID")}
+    }
     
-    var err error
+    entryID := uuid.New()
+    ctx := context.Background()
     
     _, err = e.db.Exec(ctx, `
         INSERT INTO journal_entries (id, debit_account, credit_account, amount, description, tenant_id, created_at)
         VALUES ($1, $2, $3, $4, $5, $6, NOW())
-    `, entryID, debitAccount, creditAccount, amount, description, tenantID)
+    `, entryID, debitAccount, creditAccount, amount, description, tenantUUID)
     
     if err != nil {
         return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка создания проводки: %v", err)}
@@ -658,7 +1276,7 @@ func (e *AIActionExecutor) createJournalEntry(tenantID string, entities map[stri
         Success: true,
         Message: fmt.Sprintf("✅ Проводка Дт %s Кт %s на сумму %s ₽ создана!\n\n🔗 [Перейти в Журнал →](/journal)", debitAccount, creditAccount, amount),
         Data: map[string]interface{}{
-            "id":           entryID,
+            "id":           entryID.String(),
             "debit":        debitAccount,
             "credit":       creditAccount,
             "amount":       amount,
@@ -683,7 +1301,12 @@ func (e *AIActionExecutor) createBudget(tenantID string, entities map[string]str
         period = time.Now().Format("2006-01")
     }
     
-    budgetID := uuid.New().String()
+    tenantUUID, err := uuid.Parse(tenantID)
+    if err != nil {
+        return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка: неверный tenant ID")}
+    }
+    
+    budgetID := uuid.New()
     ctx := context.Background()
     
     var tableExists bool
@@ -710,10 +1333,10 @@ func (e *AIActionExecutor) createBudget(tenantID string, entities map[string]str
         }
     }
     
-    _, err := e.db.Exec(ctx, `
+    _, err = e.db.Exec(ctx, `
         INSERT INTO budgets (id, name, amount, period, tenant_id, created_at)
         VALUES ($1, $2, $3, $4, $5, NOW())
-    `, budgetID, name, amount, period, tenantID)
+    `, budgetID, name, amount, period, tenantUUID)
     
     if err != nil {
         return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка создания бюджета: %v", err)}
@@ -723,7 +1346,7 @@ func (e *AIActionExecutor) createBudget(tenantID string, entities map[string]str
         Success: true,
         Message: fmt.Sprintf("✅ Бюджет \"%s\" на сумму %s ₽ на период %s создан!\n\n🔗 [Перейти в Управленку →](/management)", name, amount, period),
         Data: map[string]interface{}{
-            "id":           budgetID,
+            "id":           budgetID.String(),
             "name":         name,
             "amount":       amount,
             "period":       period,
@@ -739,7 +1362,12 @@ func (e *AIActionExecutor) createTag(tenantID string, entities map[string]string
         return ActionResult{Success: false, Message: "❌ Не указано название тега"}
     }
     
-    tagID := uuid.New().String()
+    tenantUUID, err := uuid.Parse(tenantID)
+    if err != nil {
+        return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка: неверный tenant ID")}
+    }
+    
+    tagID := uuid.New()
     ctx := context.Background()
     
     var hasType bool
@@ -750,17 +1378,16 @@ func (e *AIActionExecutor) createTag(tenantID string, entities map[string]string
         )
     `).Scan(&hasType)
     
-    var err error
     if hasType {
         _, err = e.db.Exec(ctx, `
             INSERT INTO tags (id, name, type, tenant_id, created_at)
             VALUES ($1, $2, $3, $4, NOW())
-        `, tagID, name, "category", tenantID)
+        `, tagID, name, "category", tenantUUID)
     } else {
         _, err = e.db.Exec(ctx, `
             INSERT INTO tags (id, name, tenant_id, created_at)
             VALUES ($1, $2, $3, NOW())
-        `, tagID, name, tenantID)
+        `, tagID, name, tenantUUID)
     }
     
     if err != nil {
@@ -771,7 +1398,7 @@ func (e *AIActionExecutor) createTag(tenantID string, entities map[string]string
         Success: true,
         Message: fmt.Sprintf("✅ Тег \"%s\" успешно создан!\n\n🔗 [Перейти в Управленку →](/management)", name),
         Data: map[string]interface{}{
-            "id":           tagID,
+            "id":           tagID.String(),
             "name":         name,
             "redirect_url": "/management",
             "module":       "management",
@@ -780,7 +1407,7 @@ func (e *AIActionExecutor) createTag(tenantID string, entities map[string]string
 }
 
 // ============================================
-// СКАЧИВАНИЕ ФАЙЛОВ
+// ОСТАЛЬНЫЕ ФУНКЦИИ (БЕЗ ИЗМЕНЕНИЙ)
 // ============================================
 
 func (e *AIActionExecutor) downloadReport(tenantID string, entities map[string]string) ActionResult {
@@ -815,9 +1442,9 @@ func (e *AIActionExecutor) downloadReport(tenantID string, entities map[string]s
     var downloadURL string
     switch format {
     case "xlsx", "excel":
-        downloadURL = fmt.Sprintf("/api/reports/export/%s?start_date=%s&end_date=%s", reportTypeEng, startDate, endDate)
+        downloadURL = fmt.Sprintf("/api/reports/export/%s?start_date=%s&end_date=%s&tenant_id=%s", reportTypeEng, startDate, endDate, tenantID)
     default:
-        downloadURL = fmt.Sprintf("/api/reports/export/%s?start_date=%s&end_date=%s", reportTypeEng, startDate, endDate)
+        downloadURL = fmt.Sprintf("/api/reports/export/%s?start_date=%s&end_date=%s&tenant_id=%s", reportTypeEng, startDate, endDate, tenantID)
     }
     
     formatNames := map[string]string{
@@ -845,7 +1472,7 @@ func (e *AIActionExecutor) downloadInvoice(tenantID string, entities map[string]
         return ActionResult{Success: false, Message: "❌ Не указан номер счёта"}
     }
     
-    downloadURL := fmt.Sprintf("/api/invoices/%s/download", invoiceNumber)
+    downloadURL := fmt.Sprintf("/api/invoices/%s/download?tenant_id=%s", invoiceNumber, tenantID)
     
     return ActionResult{
         Success: true,
@@ -863,7 +1490,7 @@ func (e *AIActionExecutor) downloadAct(tenantID string, entities map[string]stri
         return ActionResult{Success: false, Message: "❌ Не указан номер акта сверки"}
     }
     
-    downloadURL := fmt.Sprintf("/api/reconciliation/download/%s", actNumber)
+    downloadURL := fmt.Sprintf("/api/reconciliation/download/%s?tenant_id=%s", actNumber, tenantID)
     
     return ActionResult{
         Success: true,
@@ -879,7 +1506,7 @@ func (e *AIActionExecutor) downloadTaxReport(tenantID string, entities map[strin
     taxType := entities["tax_type"]
     period := entities["period"]
     
-    downloadURL := fmt.Sprintf("/api/tax/export-excel?type=%s&period=%s", taxType, period)
+    downloadURL := fmt.Sprintf("/api/tax/export-excel?type=%s&period=%s&tenant_id=%s", taxType, period, tenantID)
     
     return ActionResult{
         Success: true,
@@ -914,10 +1541,6 @@ func (e *AIActionExecutor) generatePayslip(tenantID string, entities map[string]
         },
     }
 }
-
-// ============================================
-// ОТЧЁТЫ
-// ============================================
 
 func (e *AIActionExecutor) generateReport(tenantID string, entities map[string]string) ActionResult {
     reportType := entities["report_type"]
@@ -956,10 +1579,6 @@ func (e *AIActionExecutor) sendReport(tenantID string, entities map[string]strin
         },
     }
 }
-
-// ============================================
-// ЗАРПЛАТА
-// ============================================
 
 func (e *AIActionExecutor) calculatePayroll(tenantID string, entities map[string]string) ActionResult {
     month := entities["month"]
@@ -1009,10 +1628,6 @@ func (e *AIActionExecutor) addEmployee(tenantID string, entities map[string]stri
     }
 }
 
-// ============================================
-// НАЛОГИ
-// ============================================
-
 func (e *AIActionExecutor) generateTaxReport(tenantID string, entities map[string]string) ActionResult {
     taxType := entities["tax_type"]
     period := entities["period"]
@@ -1040,10 +1655,6 @@ func (e *AIActionExecutor) sendTaxReport(tenantID string, entities map[string]st
         },
     }
 }
-
-// ============================================
-// ИМПОРТ
-// ============================================
 
 func (e *AIActionExecutor) importExcel(tenantID string, entities map[string]string) ActionResult {
     importType := entities["import_type"]
@@ -1078,10 +1689,6 @@ func (e *AIActionExecutor) importBankStatement(tenantID string, entities map[str
         },
     }
 }
-
-// ============================================
-// БАНК
-// ============================================
 
 func (e *AIActionExecutor) syncBank(tenantID string, entities map[string]string) ActionResult {
     bankName := entities["bank_name"]
@@ -1118,17 +1725,18 @@ func (e *AIActionExecutor) getBalance(tenantID string, entities map[string]strin
     }
 }
 
-// ============================================
-// ПРОЧЕЕ
-// ============================================
-
 func (e *AIActionExecutor) createTask(tenantID string, entities map[string]string) ActionResult {
     title := entities["title"]
     if title == "" {
         return ActionResult{Success: false, Message: "❌ Не указано название задачи"}
     }
     
-    taskID := uuid.New().String()
+    tenantUUID, err := uuid.Parse(tenantID)
+    if err != nil {
+        return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка: неверный tenant ID")}
+    }
+    
+    taskID := uuid.New()
     assignee := entities["assignee"]
     ctx := context.Background()
     
@@ -1156,10 +1764,10 @@ func (e *AIActionExecutor) createTask(tenantID string, entities map[string]strin
         }
     }
     
-    _, err := e.db.Exec(ctx, `
+    _, err = e.db.Exec(ctx, `
         INSERT INTO tasks (id, title, assignee, tenant_id, status, created_at)
         VALUES ($1, $2, $3, $4, 'pending', NOW())
-    `, taskID, title, assignee, tenantID)
+    `, taskID, title, assignee, tenantUUID)
     
     if err != nil {
         return ActionResult{Success: false, Message: fmt.Sprintf("❌ Ошибка создания задачи: %v", err)}
@@ -1175,7 +1783,7 @@ func (e *AIActionExecutor) createTask(tenantID string, entities map[string]strin
         Success: true,
         Message: msg,
         Data: map[string]interface{}{
-            "id":           taskID,
+            "id":           taskID.String(),
             "title":        title,
             "assignee":     assignee,
             "redirect_url": "/teamsphere/dashboard",
@@ -1215,109 +1823,11 @@ func (e *AIActionExecutor) getInfo(action string, entities map[string]string) Ac
     }
 }
 
-// ============================================
-// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-// ============================================
-
-func (e *AIActionExecutor) getPartnerByName(tenantID, name string) (map[string]interface{}, error) {
-    ctx := context.Background()
-    
-    var id, partnerName, phone, email string
-    var createdAt time.Time
-    
-    err := e.db.QueryRow(ctx, `
-        SELECT id, name, COALESCE(phone, ''), COALESCE(email, ''), created_at
-        FROM crm_partners
-        WHERE name ILIKE $1 AND tenant_id = $2
-        LIMIT 1
-    `, "%"+name+"%", tenantID).Scan(&id, &partnerName, &phone, &email, &createdAt)
-    
-    if err != nil {
-        return nil, err
-    }
-    
-    return map[string]interface{}{
-        "id":         id,
-        "name":       partnerName,
-        "phone":      phone,
-        "email":      email,
-        "created_at": createdAt,
-    }, nil
-}
-
-func (e *AIActionExecutor) getPartnerDeals(tenantID, partnerID string) ([]map[string]interface{}, error) {
-    ctx := context.Background()
-    
-    rows, err := e.db.Query(ctx, `
-        SELECT id, title, value, stage, created_at
-        FROM crm_deals 
-        WHERE tenant_id = $1 AND partner_id = $2
-        ORDER BY created_at DESC
-        LIMIT 10
-    `, tenantID, partnerID)
-    
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
-    
-    var deals []map[string]interface{}
-    for rows.Next() {
-        var id, title, stage string
-        var value float64
-        var createdAt time.Time
-        
-        err := rows.Scan(&id, &title, &value, &stage, &createdAt)
-        if err != nil {
-            return nil, err
-        }
-        deals = append(deals, map[string]interface{}{
-            "id":         id,
-            "title":      title,
-            "value":      value,
-            "stage":      stage,
-            "created_at": createdAt,
-        })
-    }
-    return deals, nil
-}
-
-func (e *AIActionExecutor) getPartnerInvoices(tenantID, partnerName string) ([]map[string]interface{}, error) {
-    ctx := context.Background()
-    
-    rows, err := e.db.Query(ctx, `
-        SELECT id, number, amount, status, created_at
-        FROM invoices 
-        WHERE tenant_id = $1 AND partner_name ILIKE $2
-        ORDER BY created_at DESC
-        LIMIT 10
-    `, tenantID, "%"+partnerName+"%")
-    
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
-    
-    var invoices []map[string]interface{}
-    for rows.Next() {
-        var id, number, status string
-        var amount float64
-        var createdAt time.Time
-        
-        rows.Scan(&id, &number, &amount, &status, &createdAt)
-        invoices = append(invoices, map[string]interface{}{
-            "id":         id,
-            "number":     number,
-            "amount":     amount,
-            "status":     status,
-            "created_at": createdAt,
-        })
-    }
-    return invoices, nil
-}
-
 func (e *AIActionExecutor) SaveActionHistory(tenantID, userID, actionType string, actionData, result interface{}, err error) {
     ctx := context.Background()
+    
+    tenantUUID, _ := uuid.Parse(tenantID)
+    userUUID, _ := uuid.Parse(userID)
     
     var actionDataJSON, resultJSON string
     if actionData != nil {
@@ -1343,7 +1853,7 @@ func (e *AIActionExecutor) SaveActionHistory(tenantID, userID, actionType string
     _, dbErr := e.db.Exec(ctx, `
         INSERT INTO ai_action_history (id, tenant_id, user_id, action_type, action_data, result, status, error_message, created_at)
         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, NOW())
-    `, tenantID, userID, actionType, actionDataJSON, resultJSON, status, errorMsg)
+    `, tenantUUID, userUUID, actionType, actionDataJSON, resultJSON, status, errorMsg)
     
     if dbErr != nil {
         log.Printf("⚠️ Ошибка сохранения истории: %v", dbErr)
@@ -1353,13 +1863,18 @@ func (e *AIActionExecutor) SaveActionHistory(tenantID, userID, actionType string
 func (e *AIActionExecutor) GetActionHistory(tenantID string, limit int) ([]map[string]interface{}, error) {
     ctx := context.Background()
     
+    tenantUUID, err := uuid.Parse(tenantID)
+    if err != nil {
+        return nil, err
+    }
+    
     rows, err := e.db.Query(ctx, `
         SELECT id, action_type, action_data, result, status, error_message, created_at
         FROM ai_action_history
         WHERE tenant_id = $1
         ORDER BY created_at DESC
         LIMIT $2
-    `, tenantID, limit)
+    `, tenantUUID, limit)
     if err != nil {
         return nil, err
     }

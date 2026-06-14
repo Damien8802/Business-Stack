@@ -173,6 +173,8 @@ _, err = database.Pool.Exec(ctx, `
         document_type VARCHAR(50),
         counterparty_name VARCHAR(255),
         counterparty_inn VARCHAR(12),
+        debit_account VARCHAR(20),
+        credit_account VARCHAR(20),
         debit_amount DECIMAL(15,2) DEFAULT 0,
         credit_amount DECIMAL(15,2) DEFAULT 0,
         description TEXT,
@@ -185,6 +187,8 @@ if err != nil {
 } else {
     log.Println("✅ Таблица journal_entries готова")
 }
+
+
 // ========== СОЗДАНИЕ ТАБЛИЦЫ ДОРАБОТОК ==========
 _, err = database.Pool.Exec(ctx, `
     CREATE TABLE IF NOT EXISTS feature_requests (
@@ -346,6 +350,15 @@ if err != nil {
     log.Println("✅ Таблица dev_modules готова")
 }
     
+// Добавить колонку deleted_at в chart_of_accounts (если нет)
+_, err = database.Pool.Exec(ctx, `
+    ALTER TABLE chart_of_accounts ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;
+`)
+if err != nil {
+    log.Printf("⚠️ Ошибка добавления deleted_at: %v", err)
+} else {
+    log.Println("✅ Колонка deleted_at добавлена в chart_of_accounts")
+}
     handlers.InitVPNWithDB(database.Pool)
     // Инициализация Stealth VPN сервиса
     handlers.InitStealthVPN(database.Pool)
@@ -430,8 +443,9 @@ r.SetTrustedProxies(cfg.TrustedProxies)
 r.Use(middleware.SetupCORS(cfg))
 
 // ========== ОСНОВНЫЕ MIDDLEWARE (ТОЛЬКО ОДИН РАЗ!) ==========
+ 
+r.Use(middleware.AuthMiddleware(cfg))
 r.Use(middleware.TenantMiddleware(database.Pool))  // ← ТОЛЬКО ОДИН РАЗ!
-r.Use(middleware.AuthMiddleware(cfg))              // ← Auth после Tenant
 r.Use(middleware.DevModulesMiddleware())           // ← DevModules после Auth!
 
 // ========== ЛИМИТЕРЫ ==========
@@ -757,9 +771,13 @@ r.GET("/api/tax/diagnose", middleware.AuthMiddleware(cfg), middleware.AdminMiddl
 r.POST("/api/ai/executor/chat", func(c *gin.Context) {
     // Получаем tenant_id из контекста
     tenantID := c.GetString("tenant_id")
-    if tenantID == "" {
-        tenantID = "default"
-    }
+if tenantID == "" {
+    tenantID = c.GetString("tenant_id_string")
+}
+if tenantID == "" {
+    c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+    return
+}
     userID := c.GetString("user_id")
     if userID == "" {
         userID = "system"
@@ -809,9 +827,13 @@ workflowResults := workflowEngine.ExecuteWorkflows(tenantID, intent.Action, resu
 // Получить список workflows
 r.GET("/api/ai/workflows", func(c *gin.Context) {
     tenantID := c.GetString("tenant_id")
-    if tenantID == "" {
-        tenantID = "default"
-    }
+if tenantID == "" {
+    tenantID = c.GetString("tenant_id_string")
+}
+if tenantID == "" {
+    c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+    return
+}
     workflows, err := workflowEngine.GetWorkflows(tenantID)
     if err != nil {
         c.JSON(500, gin.H{"error": err.Error()})
@@ -823,9 +845,13 @@ r.GET("/api/ai/workflows", func(c *gin.Context) {
 // Создать workflow
 r.POST("/api/ai/workflows", middleware.AdminMiddleware(cfg), func(c *gin.Context) {
     tenantID := c.GetString("tenant_id")
-    if tenantID == "" {
-        tenantID = "default"
-    }
+if tenantID == "" {
+    tenantID = c.GetString("tenant_id_string")
+}
+if tenantID == "" {
+    c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+    return
+}
     
     var req struct {
         Name         string          `json:"name"`
@@ -848,9 +874,13 @@ r.POST("/api/ai/workflows", middleware.AdminMiddleware(cfg), func(c *gin.Context
 // Получить историю действий AI
 r.GET("/api/ai/history", func(c *gin.Context) {
     tenantID := c.GetString("tenant_id")
-    if tenantID == "" {
-        tenantID = "default"
-    }
+if tenantID == "" {
+    tenantID = c.GetString("tenant_id_string")
+}
+if tenantID == "" {
+    c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+    return
+}
     history, err := aiExecutor.GetActionHistory(tenantID, 50)
     if err != nil {
         c.JSON(500, gin.H{"error": err.Error()})
@@ -863,7 +893,11 @@ r.GET("/api/ai/history", func(c *gin.Context) {
 r.GET("/api/ai/recommendations", func(c *gin.Context) {
     tenantID := c.GetString("tenant_id")
     if tenantID == "" {
-        tenantID = "default"
+        tenantID = c.GetString("tenant_id_string")
+    }
+    if tenantID == "" {
+        c.JSON(401, gin.H{"error": "Unauthorized - tenant not found"})
+        return
     }
     recommendations, err := workflowEngine.GetRecommendations(tenantID)
     if err != nil {
@@ -871,8 +905,7 @@ r.GET("/api/ai/recommendations", func(c *gin.Context) {
         return
     }
     c.JSON(200, recommendations)
-})
-    
+})    
     // Individual Orders - страницы
     r.GET("/individual-order", individualOrdersHandler.OrderPage)
     r.GET("/admin/orders", individualOrdersHandler.AdminOrdersPage)
@@ -957,35 +990,25 @@ r.GET("/api/qr/reset-status", handlers.QRResetStatusWebSocket)
     r.GET("/api/goods-receipts/:id", handlers.GetGoodsReceipt)
     r.POST("/api/goods-receipts", handlers.CreateGoodsReceipt)
 
-    // ========== ФИНАНСОВЫЙ УЧЕТ ==========
-    r.GET("/api/chart-of-accounts", handlers.GetChartOfAccounts)
-    r.POST("/api/chart-of-accounts", handlers.CreateChartOfAccount)
-    r.PUT("/api/chart-of-accounts/:id", handlers.UpdateChartOfAccount)
-    r.DELETE("/api/chart-of-accounts/:id", handlers.DeleteChartOfAccount)
-
     r.GET("/finance", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("fincore"), func(c *gin.Context) {
         c.HTML(http.StatusOK, "finance.html", gin.H{
             "title": "Финансовый учет | Business Stack",
         })
     })
 
-    r.GET("/api/payments", handlers.GetFinancePayments)
-    r.POST("/api/payments", handlers.CreateFinancePayment)
-    r.PUT("/api/payments/:id/status", handlers.UpdateFinancePaymentStatus)
-
-    r.GET("/api/cash-operations", handlers.GetCashOperations)
-    r.POST("/api/cash-operations", handlers.CreateCashOperation)
-    r.GET("/api/journal-entries", handlers.GetJournalEntries)
-    r.GET("/api/journal-entries/:id", handlers.GetJournalEntry)
-    r.POST("/api/journal-entries", handlers.CreateJournalEntrySimple)
-    r.POST("/api/journal-entries/:id/post", handlers.PostJournalEntry)
-    r.PUT("/api/journal-entries/:id", handlers.UpdateJournalEntrySimple)
-    r.DELETE("/api/journal-entries/:id", handlers.DeleteJournalEntry)
-
+ 
 // Расширенные отчёты
 r.GET("/api/reports/advanced-osv", handlers.GetAdvancedTurnoverBalance)
 r.GET("/api/reports/profit-loss-detailed", handlers.GetProfitLossDetailed)
 r.GET("/api/reports/cash-flow", handlers.GetCashFlowReport)
+
+// ==========  РАСШИРЕННЫЕ ОТЧЁТЫ  ==========
+r.GET("/api/reports/turnover-balance-grouped", handlers.GetTurnoverBalanceSheetGrouped)
+r.GET("/api/reports/balance-sheet-detailed", handlers.GetDetailedBalanceSheet)
+r.GET("/api/reports/cash-flow-full", handlers.GetFullCashFlowReport)
+r.GET("/api/reports/profit-loss-detailed-new", handlers.GetDetailedProfitLoss)
+r.GET("/api/reports/compare-periods", handlers.ComparePeriods)
+
 
 // Управленческий учёт (дополнительные)
 fincoreBudgets := r.Group("/api/fincore/budgets")
@@ -1050,6 +1073,7 @@ r.GET("/suppliers", func(c *gin.Context) {
     // Экспорт отчетов
     r.GET("/api/reports/export/osv", handlers.ExportOSVToExcel)
     r.GET("/api/reports/export/profit-loss", handlers.ExportProfitLossToExcel)
+    r.GET("/api/reports/export/month-closure", middleware.AuthMiddleware(cfg), handlers.ExportMonthClosureReport)
 
     // Гант-диаграмма
     r.GET("/api/gantt", handlers.GetGanttData)
@@ -1103,6 +1127,7 @@ r.GET("/developer-portal", middleware.AuthMiddleware(cfg), handlers.DeveloperPor
 // ========== ДОПОЛНИТЕЛЬНЫЕ ОТЧЁТЫ ==========
 r.GET("/api/reports/balance-sheet", handlers.GetBalanceSheet)
 r.GET("/api/reports/cash-flow-detailed", handlers.GetCashFlowReport)
+
 
     r.GET("/reports", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("reports-analytics"), func(c *gin.Context) {
         c.HTML(http.StatusOK, "reports.html", gin.H{
@@ -1991,31 +2016,72 @@ logisticsGroup.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAcces
         deliveryAPI.GET("/track/:trackingNumber", handlers.TrackAPIHandler)
     }
 
+//---------------------------------------------------------------------
+      // Основное API
+api := r.Group("/api")
 
-       // Основное API
-    api := r.Group("/api")
-    api.Use(func(c *gin.Context) {
-        path := c.Request.URL.Path
-        
-        // Исключаем QR генерацию и WebSocket из rate limiter
-        // (WebSocket создает одно соединение, а не много запросов)
-        if strings.Contains(path, "generate-reset") || 
-           strings.Contains(path, "qr/reset-status") ||
-           strings.Contains(path, "qr/status") {
-            c.Next()
-            return
-        }
-        
-        ip := c.ClientIP()
-        if rateLimiter.Limit(ip) {
-            c.JSON(http.StatusTooManyRequests, gin.H{
-                "error": "Слишком много запросов. Попробуйте позже.",
-            })
-            c.Abort()
-            return
-        }
+// Rate limiter middleware
+api.Use(func(c *gin.Context) {
+    path := c.Request.URL.Path
+    
+    if strings.Contains(path, "generate-reset") || 
+       strings.Contains(path, "qr/reset-status") ||
+       strings.Contains(path, "qr/status") {
         c.Next()
-    })
+        return
+    }
+    
+    ip := c.ClientIP()
+    if rateLimiter.Limit(ip) {
+        c.JSON(http.StatusTooManyRequests, gin.H{
+            "error": "Слишком много запросов. Попробуйте позже.",
+        })
+        c.Abort()
+        return
+    }
+    c.Next()
+})
+
+// Auth middleware
+api.Use(middleware.AuthMiddleware(cfg))
+
+// ========== ФИНАНСОВЫЙ УЧЕТ ==========
+api.GET("/journal-entries", handlers.GetJournalEntriesSimple)
+api.GET("/journal-entries/:id", handlers.GetJournalEntry)
+api.POST("/journal-entries", handlers.CreateJournalEntrySimple)
+api.PUT("/journal-entries/:id", handlers.UpdateJournalEntry)
+api.DELETE("/journal-entries/:id", handlers.DeleteJournalEntry)
+
+api.GET("/chart-of-accounts", handlers.GetChartOfAccounts)
+api.POST("/chart-of-accounts", handlers.CreateChartOfAccount)
+api.PUT("/chart-of-accounts/:id", handlers.UpdateChartOfAccount)
+api.DELETE("/chart-of-accounts/:id", handlers.DeleteChartOfAccount)
+
+// ========== АРХИВ СЧЕТОВ ==========
+api.GET("/chart-of-accounts/archived", handlers.GetArchivedChartOfAccounts)
+api.DELETE("/chart-of-accounts/:id/archive", handlers.ArchiveChartOfAccount)
+api.PUT("/chart-of-accounts/:id/restore", handlers.RestoreChartOfAccount)
+api.DELETE("/chart-of-accounts/:id/permanent", handlers.PermanentDeleteChartOfAccount)
+
+api.GET("/payments", handlers.GetFinancePayments)
+api.POST("/payments", handlers.CreateFinancePayment)
+api.PUT("/payments/:id", handlers.UpdatePayment)       
+api.PUT("/payments/:id/status", handlers.UpdateFinancePaymentStatus)
+api.DELETE("/payments/:id", handlers.DeletePayment)    
+
+api.GET("/cash-operations", handlers.GetCashOperations)
+api.POST("/cash-operations", handlers.CreateCashOperation)
+
+
+    // ==========  ОТЧЁТОВ ==========
+    api.GET("/reports/account-ledger", handlers.GetAccountLedger)
+    api.GET("/reports/accounts-receivable", handlers.GetAccountsReceivable)
+    api.GET("/reports/accounts-payable", handlers.GetAccountsPayable)
+    api.GET("/reports/chessboard", handlers.GetChessboardReport)
+    api.GET("/reports/purchase-ledger", handlers.GetPurchaseLedger)
+    api.GET("/reports/sales-ledger", handlers.GetSalesLedger)
+
+
 // ========== WEBHOOKS ДЛЯ РАЗРАБОТЧИКОВ ==========
 api.GET("/webhooks", func(c *gin.Context) {
     userID := c.GetString("user_id")
@@ -2086,8 +2152,9 @@ api.DELETE("/webhooks/:id", func(c *gin.Context) {
     c.JSON(200, gin.H{"success": true})
 })
     api.Use(middleware.AuthMiddleware(cfg))
+api.Use(middleware.TenantMiddleware(database.Pool))
 
-  {
+  
 
 // ========== АВАТАРКИ ==========
     api.POST("/avatar/upload", handlers.UploadAvatar)
@@ -2105,6 +2172,8 @@ api.GET("/user/role", func(c *gin.Context) {
         api.GET("/test", handlers.TestHandler)
         api.POST("/user/profile", handlers.UpdateProfileHandler)
         api.POST("/user/password", handlers.UpdatePasswordHandler)
+        api.POST("/user/save-filters", handlers.SaveUserFilters)
+        api.GET("/user/load-filters", handlers.LoadUserFilters) 
         api.GET("/plans", handlers.GetPlansHandler)
         api.POST("/subscriptions", handlers.CreateSubscriptionHandler)
         api.POST("/ai/ask", handlers.AIAskHandler)
@@ -2244,7 +2313,7 @@ api.POST("/sessions/limit", handlers.SetMaxSessions)
             "trial_days":  14,
         })
     })
-    }
+
 
     // ========== ТРИАЛЬНЫЙ ПЕРИОД ДЛЯ РАЗРАБОТЧИКОВ ==========
     api.POST("/developer/trial/start", func(c *gin.Context) {
@@ -3713,3 +3782,4 @@ func handleHRRequest(c *gin.Context, tenantID, userID, message string) string {
 
 Просто напишите, что нужно сделать!`
 }
+

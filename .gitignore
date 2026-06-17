@@ -82,3 +82,7 @@ project_structure.txt
 *.key
 *.pem
 *.old
+subscription-app
+backup_GO_local.sql
+*.exe
+*.sql

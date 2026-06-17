@@ -260,6 +260,8 @@ func LogoutHandler(c *gin.Context) {
 }
 
 // RefreshHandler обновляет access token
+// RefreshHandler обновляет access token
+// RefreshHandler обновляет access token
 func RefreshHandler(c *gin.Context) {
     var req struct {
         RefreshToken string `json:"refresh_token" binding:"required"`
@@ -270,18 +272,31 @@ func RefreshHandler(c *gin.Context) {
         return
     }
 
-    var exists bool
-    err := database.Pool.QueryRow(c.Request.Context(),
-        "SELECT EXISTS(SELECT 1 FROM user_tokens WHERE token = $1 AND expires_at > NOW())",
-        req.RefreshToken).Scan(&exists)
-    if err != nil || !exists {
+    // Получаем данные пользователя из refresh токена
+    var tenantID, userID, userName, email, role string
+
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT u.tenant_id, u.id, u.name, u.email, u.role
+        FROM user_tokens ut
+        JOIN users u ON ut.user_id = u.id
+        WHERE ut.token = $1 AND ut.expires_at > NOW()
+    `, req.RefreshToken).Scan(&tenantID, &userID, &userName, &email, &role)
+
+    if err != nil || tenantID == "" {
         c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired refresh token"})
         return
     }
 
-   newAccessToken, err := utils.RefreshToken(req.RefreshToken, "")
+    // Генерируем НОВЫЙ access token с правильным tenant_id
+    newAccessToken, _, err := utils.GenerateTokens(
+        userID,
+        userName,
+        email,
+        role,
+        tenantID,
+    )
     if err != nil {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid refresh token"})
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate new token"})
         return
     }
 
@@ -290,7 +305,6 @@ func RefreshHandler(c *gin.Context) {
         "access_token": newAccessToken,
     })
 }
-
 // ResendVerificationHandler отправляет код подтверждения повторно
 func ResendVerificationHandler(c *gin.Context) {
     var req struct {

@@ -119,7 +119,12 @@ func CreateChartOfAccount(c *gin.Context) {
     c.JSON(http.StatusOK, gin.H{"success": true})
 }
 func UpdateChartOfAccount(c *gin.Context) {
-    userID := getUserID(c)
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "tenant_id не найден"})
+        return
+    }
+    
     accountID := c.Param("id")
     
     var req struct {
@@ -144,13 +149,13 @@ func UpdateChartOfAccount(c *gin.Context) {
             code = $1, name = $2, account_type = $3, parent_id = $4,
             level = $5, is_group = $6, currency = $7, description = $8,
             is_active = $9, updated_at = NOW()
-        WHERE id = $10 AND user_id = $11
+        WHERE id = $10 AND tenant_id = $11
     `, req.Code, req.Name, req.AccountType, req.ParentID,
         req.Level, req.IsGroup, req.Currency, req.Description,
-        req.IsActive, accountID, userID)
+        req.IsActive, accountID, tenantID)
     
     if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Не удалось обновить счет"})
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
         return
     }
     
@@ -159,7 +164,6 @@ func UpdateChartOfAccount(c *gin.Context) {
         "message": "Счет обновлен",
     })
 }
-
 func DeleteChartOfAccount(c *gin.Context) {
     log.Println("🚨🚨🚨 [1] DeleteChartOfAccount ВЫЗВАНА 🚨🚨🚨")
     
@@ -607,6 +611,15 @@ func DeleteJournalEntry(c *gin.Context) {
 
 func CreateJournalEntrySimple(c *gin.Context) {
     tenantID := middleware.GetTenantIDFromContext(c)
+
+ // ЗАПРЕЩАЕМ СОЗДАВАТЬ С ЗАГЛУШКОЙ!
+    if tenantID == uuid.Nil {
+        log.Printf("❌ CreateJournalEntrySimple: tenant_id not found")
+        c.JSON(http.StatusUnauthorized, gin.H{
+            "error": "Ошибка авторизации. Выйдите и зайдите заново.",
+        })
+        return
+    }
     
     var req struct {
         OperationDate   string  `json:"operation_date"`
@@ -626,14 +639,13 @@ func CreateJournalEntrySimple(c *gin.Context) {
         return
     }
     
-    // Проверяем баланс
-    if req.DebitAmount != req.CreditAmount {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "error": "Сумма дебета должна равняться сумме кредита",
-        })
-        return
-    }
-    
+  // Проверяем баланс (оставляем для безопасности)
+if req.DebitAmount != req.CreditAmount {
+    c.JSON(http.StatusBadRequest, gin.H{
+        "error": "Сумма дебета должна равняться сумме кредита",
+    })
+    return
+}    
     operationDate, err := time.Parse("2006-01-02", req.OperationDate)
     if err != nil {
         operationDate = time.Now()
@@ -1367,7 +1379,7 @@ func DeleteJournalEntrySimple(c *gin.Context) {
 }
 
 func UpdateJournalEntry(c *gin.Context) {
-    userID := getCurrentUserID(c)
+    tenantID := c.GetString("tenant_id")
     entryID := c.Param("id")
     
     var req struct {
@@ -1385,13 +1397,13 @@ func UpdateJournalEntry(c *gin.Context) {
         return
     }
     
-    // Если передан только статус - обновляем только статус
+    // Если передан только статус - обновляем только статус (кнопка "Провести")
     if req.Status != "" && req.DebitAccount == "" && req.CreditAccount == "" && req.DebitAmount == 0 {
         _, err := database.Pool.Exec(c.Request.Context(), `
             UPDATE journal_entries 
             SET status = $1, updated_at = NOW()
-            WHERE id = $2 AND user_id = $3
-        `, req.Status, entryID, userID)
+            WHERE id = $2 AND tenant_id = $3
+        `, req.Status, entryID, tenantID)
         
         if err != nil {
             c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -1415,10 +1427,10 @@ func UpdateJournalEntry(c *gin.Context) {
             description = $6,
             status = COALESCE($7, status),
             updated_at = NOW()
-        WHERE id = $8 AND user_id = $9
+        WHERE id = $8 AND tenant_id = $9
     `, operationDate, req.DebitAccount, req.CreditAccount, 
         req.DebitAmount, req.CreditAmount, req.Description, 
-        req.Status, entryID, userID)
+        req.Status, entryID, tenantID)
     
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -1916,5 +1928,591 @@ func PermanentDeleteChartOfAccount(c *gin.Context) {
     })
 }
 
+// ========== АРХИВ ЖУРНАЛА ПРОВОДОК ==========
 
+// MoveJournalToArchive - переместить проводку в архив
+func MoveJournalToArchive(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("tenant_id_string")
+    }
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+        return
+    }
+
+    id := c.Param("id")
+    userID := c.GetString("user_id")
+
+    // Получаем проводку
+    var entry struct {
+        ID             uuid.UUID
+        OperationDate  time.Time
+        DocumentNumber string
+        DocumentType   string
+        CounterpartyName string
+        CounterpartyINN  string
+        DebitAccount   string
+        CreditAccount  string
+        Amount         float64
+        Description    string
+        Status         string
+        CreatedAt      time.Time
+        UpdatedAt      time.Time
+    }
+
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT id, operation_date, COALESCE(document_number, ''), COALESCE(document_type, ''),
+               COALESCE(counterparty_name, ''), COALESCE(counterparty_inn, ''),
+               COALESCE(debit_account, ''), COALESCE(credit_account, ''),
+               amount, COALESCE(description, ''), 
+               CASE WHEN status IS NULL THEN 'draft' ELSE status END,
+               created_at, updated_at
+        FROM journal_entries
+        WHERE id = $1 AND tenant_id = $2
+    `, id, tenantID).Scan(
+        &entry.ID, &entry.OperationDate, &entry.DocumentNumber, &entry.DocumentType,
+        &entry.CounterpartyName, &entry.CounterpartyINN, &entry.DebitAccount,
+        &entry.CreditAccount, &entry.Amount, &entry.Description, &entry.Status,
+        &entry.CreatedAt, &entry.UpdatedAt,
+    )
+
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Проводка не найдена"})
+        return
+    }
+
+    // Сохраняем в архив
+    _, err = database.Pool.Exec(c.Request.Context(), `
+        INSERT INTO journal_archive (
+            id, original_id, tenant_id, operation_date, document_number, document_type,
+            counterparty_name, counterparty_inn, debit_account, credit_account,
+            amount, description, status, archived_at, archived_by, created_at, updated_at
+        ) VALUES (
+            gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), $13, $14, $15
+        )
+    `, entry.ID, tenantID, entry.OperationDate, entry.DocumentNumber, entry.DocumentType,
+        entry.CounterpartyName, entry.CounterpartyINN, entry.DebitAccount, entry.CreditAccount,
+        entry.Amount, entry.Description, entry.Status, userID, entry.CreatedAt, entry.UpdatedAt)
+
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    // Удаляем из основного журнала
+    _, err = database.Pool.Exec(c.Request.Context(), `
+        DELETE FROM journal_entries WHERE id = $1 AND tenant_id = $2
+    `, id, tenantID)
+
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{"success": true, "message": "Проводка перемещена в архив"})
+}
+
+// GetJournalArchiveList - получить список архивированных проводок
+func GetJournalArchiveList(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("tenant_id_string")
+    }
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+        return
+    }
+
+    status := c.DefaultQuery("status", "all")
+    page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+    limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
+    offset := (page - 1) * limit
+
+    var query string
+    var countQuery string
+    var args []interface{}
+    args = append(args, tenantID)
+
+    if status == "all" {
+        query = `
+            SELECT id, original_id, operation_date, document_number, counterparty_name,
+                   debit_account, credit_account, amount, description, status, archived_at
+            FROM journal_archive
+            WHERE tenant_id = $1
+            ORDER BY archived_at DESC
+            LIMIT $2 OFFSET $3
+        `
+        countQuery = `SELECT COUNT(*) FROM journal_archive WHERE tenant_id = $1`
+        args = append(args, limit, offset)
+    } else {
+        query = `
+            SELECT id, original_id, operation_date, document_number, counterparty_name,
+                   debit_account, credit_account, amount, description, status, archived_at
+            FROM journal_archive
+            WHERE tenant_id = $1 AND status = $2
+            ORDER BY archived_at DESC
+            LIMIT $3 OFFSET $4
+        `
+        countQuery = `SELECT COUNT(*) FROM journal_archive WHERE tenant_id = $1 AND status = $2`
+        args = append(args, status, limit, offset)
+    }
+
+    rows, err := database.Pool.Query(c.Request.Context(), query, args...)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    defer rows.Close()
+
+    var archives []gin.H
+    for rows.Next() {
+        var id, originalID uuid.UUID
+        var opDate time.Time
+        var docNumber, counterparty, debitAcc, creditAcc, description, status string
+        var amount float64
+        var archivedAt time.Time
+
+        rows.Scan(&id, &originalID, &opDate, &docNumber, &counterparty,
+            &debitAcc, &creditAcc, &amount, &description, &status, &archivedAt)
+
+        archives = append(archives, gin.H{
+            "id":              id,
+            "original_id":     originalID,
+            "date":            opDate.Format("2006-01-02"),
+            "document_number": docNumber,
+            "counterparty":    counterparty,
+            "debit_account":   debitAcc,
+            "credit_account":  creditAcc,
+            "amount":          amount,
+            "description":     description,
+            "status":          status,
+            "status_text":     map[string]string{"draft": "📝 Черновик", "posted": "✅ Проведена"}[status],
+            "archived_at":     archivedAt.Format("2006-01-02 15:04:05"),
+        })
+    }
+
+    var total int
+    database.Pool.QueryRow(c.Request.Context(), countQuery, tenantID).Scan(&total)
+
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "data":    archives,
+        "total":   total,
+        "page":    page,
+        "limit":   limit,
+    })
+}
+
+// RestoreJournalFromArchive - восстановить из архива
+func RestoreJournalFromArchive(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("tenant_id_string")
+    }
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+        return
+    }
+
+    archiveID := c.Param("id")
+
+    var archive struct {
+        OriginalID      uuid.UUID
+        OperationDate   time.Time
+        DocumentNumber  string
+        DocumentType    string
+        CounterpartyName string
+        CounterpartyINN  string
+        DebitAccount    string
+        CreditAccount   string
+        Amount          float64
+        Description     string
+        Status          string
+        CreatedAt       time.Time
+        UpdatedAt       time.Time
+    }
+
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT original_id, operation_date, document_number, document_type,
+               counterparty_name, counterparty_inn, debit_account, credit_account,
+               amount, description, status, created_at, updated_at
+        FROM journal_archive
+        WHERE id = $1 AND tenant_id = $2
+    `, archiveID, tenantID).Scan(
+        &archive.OriginalID, &archive.OperationDate, &archive.DocumentNumber,
+        &archive.DocumentType, &archive.CounterpartyName, &archive.CounterpartyINN,
+        &archive.DebitAccount, &archive.CreditAccount, &archive.Amount,
+        &archive.Description, &archive.Status, &archive.CreatedAt, &archive.UpdatedAt,
+    )
+
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Запись в архиве не найдена"})
+        return
+    }
+
+    // Восстанавливаем в основной журнал
+    _, err = database.Pool.Exec(c.Request.Context(), `
+        INSERT INTO journal_entries (
+            id, tenant_id, operation_date, document_number, document_type,
+            counterparty_name, counterparty_inn, debit_account, credit_account,
+            amount, description, status, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+    `, archive.OriginalID, tenantID, archive.OperationDate, archive.DocumentNumber,
+        archive.DocumentType, archive.CounterpartyName, archive.CounterpartyINN,
+        archive.DebitAccount, archive.CreditAccount, archive.Amount,
+        archive.Description, archive.Status, archive.CreatedAt, archive.UpdatedAt)
+
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    // Удаляем из архива
+    _, err = database.Pool.Exec(c.Request.Context(), `
+        DELETE FROM journal_archive WHERE id = $1 AND tenant_id = $2
+    `, archiveID, tenantID)
+
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{"success": true, "message": "Проводка восстановлена"})
+}
+
+// PermanentDeleteJournalArchive - удалить навсегда из архива
+func PermanentDeleteJournalArchive(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("tenant_id_string")
+    }
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+        return
+    }
+
+    archiveID := c.Param("id")
+
+    result, err := database.Pool.Exec(c.Request.Context(), `
+        DELETE FROM journal_archive WHERE id = $1 AND tenant_id = $2
+    `, archiveID, tenantID)
+
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    if result.RowsAffected() == 0 {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Запись не найдена"})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{"success": true, "message": "Проводка удалена навсегда"})
+}
+
+// GetJournalArchiveStats - статистика архива
+func GetJournalArchiveStats(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("tenant_id_string")
+    }
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+        return
+    }
+
+    var draftCount, postedCount, totalCount int
+
+    database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COUNT(*) FROM journal_archive WHERE tenant_id = $1 AND status = 'draft'
+    `, tenantID).Scan(&draftCount)
+
+    database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COUNT(*) FROM journal_archive WHERE tenant_id = $1 AND status = 'posted'
+    `, tenantID).Scan(&postedCount)
+
+    database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COUNT(*) FROM journal_archive WHERE tenant_id = $1
+    `, tenantID).Scan(&totalCount)
+
+    c.JSON(http.StatusOK, gin.H{
+        "success":      true,
+        "draft_count":  draftCount,
+        "posted_count": postedCount,
+        "total_count":  totalCount,
+    })
+}
+
+// ========== МАССОВЫЕ ОПЕРАЦИИ (ЧЕГО НЕ ХВАТАЕТ) ==========
+
+// MassMoveToArchive - массовое перемещение в архив
+func MassMoveToArchive(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("tenant_id_string")
+    }
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+        return
+    }
+
+    var req struct {
+        IDs []string `json:"ids" binding:"required"`
+    }
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    if len(req.IDs) == 0 {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "No IDs provided"})
+        return
+    }
+
+    userID := c.GetString("user_id")
+    var successCount, failCount int
+    var failedIDs []string
+
+    for _, id := range req.IDs {
+        // Получаем проводку
+        var entry struct {
+            ID             uuid.UUID
+            OperationDate  time.Time
+            DocumentNumber string
+            DocumentType   string
+            CounterpartyName string
+            CounterpartyINN  string
+            DebitAccount   string
+            CreditAccount  string
+            Amount         float64
+            Description    string
+            Status         string
+            CreatedAt      time.Time
+            UpdatedAt      time.Time
+        }
+
+        err := database.Pool.QueryRow(c.Request.Context(), `
+            SELECT id, operation_date, COALESCE(document_number, ''), COALESCE(document_type, ''),
+                   COALESCE(counterparty_name, ''), COALESCE(counterparty_inn, ''),
+                   COALESCE(debit_account, ''), COALESCE(credit_account, ''),
+                   amount, COALESCE(description, ''), 
+                   CASE WHEN status IS NULL THEN 'draft' ELSE status END,
+                   created_at, updated_at
+            FROM journal_entries
+            WHERE id = $1 AND tenant_id = $2
+        `, id, tenantID).Scan(
+            &entry.ID, &entry.OperationDate, &entry.DocumentNumber, &entry.DocumentType,
+            &entry.CounterpartyName, &entry.CounterpartyINN, &entry.DebitAccount,
+            &entry.CreditAccount, &entry.Amount, &entry.Description, &entry.Status,
+            &entry.CreatedAt, &entry.UpdatedAt,
+        )
+
+        if err != nil {
+            failCount++
+            failedIDs = append(failedIDs, id)
+            continue
+        }
+
+        // Сохраняем в архив
+        _, err = database.Pool.Exec(c.Request.Context(), `
+            INSERT INTO journal_archive (
+                id, original_id, tenant_id, operation_date, document_number, document_type,
+                counterparty_name, counterparty_inn, debit_account, credit_account,
+                amount, description, status, archived_at, archived_by, created_at, updated_at
+            ) VALUES (
+                gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), $13, $14, $15
+            )
+        `, entry.ID, tenantID, entry.OperationDate, entry.DocumentNumber, entry.DocumentType,
+            entry.CounterpartyName, entry.CounterpartyINN, entry.DebitAccount, entry.CreditAccount,
+            entry.Amount, entry.Description, entry.Status, userID, entry.CreatedAt, entry.UpdatedAt)
+
+        if err != nil {
+            failCount++
+            failedIDs = append(failedIDs, id)
+            continue
+        }
+
+        // Удаляем из основного журнала
+        _, err = database.Pool.Exec(c.Request.Context(), `
+            DELETE FROM journal_entries WHERE id = $1 AND tenant_id = $2
+        `, id, tenantID)
+
+        if err != nil {
+            failCount++
+            failedIDs = append(failedIDs, id)
+            continue
+        }
+
+        successCount++
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "success":       true,
+        "success_count": successCount,
+        "fail_count":    failCount,
+        "failed_ids":    failedIDs,
+        "message":       fmt.Sprintf("✅ Перемещено в архив: %d, ❌ Ошибок: %d", successCount, failCount),
+    })
+}
+
+// MassDeleteEntries - массовое удаление проводок
+func MassDeleteEntries(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("tenant_id_string")
+    }
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+        return
+    }
+
+    var req struct {
+        IDs []string `json:"ids" binding:"required"`
+    }
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    if len(req.IDs) == 0 {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "No IDs provided"})
+        return
+    }
+
+    var successCount, failCount int
+    var failedIDs []string
+
+    for _, id := range req.IDs {
+        // Проверяем статус (нельзя удалять проведённые)
+        var status string
+        err := database.Pool.QueryRow(c.Request.Context(), `
+            SELECT COALESCE(status, 'draft') FROM journal_entries 
+            WHERE id = $1 AND tenant_id = $2
+        `, id, tenantID).Scan(&status)
+
+        if err != nil {
+            failCount++
+            failedIDs = append(failedIDs, id)
+            continue
+        }
+
+        if status == "posted" {
+            failCount++
+            failedIDs = append(failedIDs, id)
+            continue
+        }
+
+        _, err = database.Pool.Exec(c.Request.Context(), `
+            DELETE FROM journal_entries WHERE id = $1 AND tenant_id = $2
+        `, id, tenantID)
+
+        if err != nil {
+            failCount++
+            failedIDs = append(failedIDs, id)
+            continue
+        }
+
+        successCount++
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "success":       true,
+        "success_count": successCount,
+        "fail_count":    failCount,
+        "failed_ids":    failedIDs,
+        "message":       fmt.Sprintf("✅ Удалено: %d, ❌ Ошибок: %d", successCount, failCount),
+    })
+}
+
+// MassPostEntries - массовое проведение проводок
+func MassPostEntries(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("tenant_id_string")
+    }
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+        return
+    }
+
+    var req struct {
+        IDs []string `json:"ids" binding:"required"`
+    }
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    if len(req.IDs) == 0 {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "No IDs provided"})
+        return
+    }
+
+    var successCount, failCount int
+    var failedIDs []string
+
+    for _, id := range req.IDs {
+        result, err := database.Pool.Exec(c.Request.Context(), `
+            UPDATE journal_entries 
+            SET status = 'posted', updated_at = NOW()
+            WHERE id = $1 AND tenant_id = $2 
+            AND (status IS NULL OR status = 'draft')
+        `, id, tenantID)
+
+        if err != nil {
+            failCount++
+            failedIDs = append(failedIDs, id)
+            continue
+        }
+
+        if result.RowsAffected() == 0 {
+            failCount++
+            failedIDs = append(failedIDs, id)
+            continue
+        }
+
+        successCount++
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "success":       true,
+        "success_count": successCount,
+        "fail_count":    failCount,
+        "failed_ids":    failedIDs,
+        "message":       fmt.Sprintf("✅ Проведено: %d, ❌ Ошибок: %d", successCount, failCount),
+    })
+}
+
+// DeleteTemplatePosting - удаление шаблона проводки
+func DeleteTemplatePosting(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("tenant_id_string")
+    }
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+        return
+    }
+
+    templateID := c.Param("id")
+    userID := c.GetString("user_id")
+
+    result, err := database.Pool.Exec(c.Request.Context(), `
+        DELETE FROM posting_templates 
+        WHERE id = $1 AND user_id = $2
+    `, templateID, userID)
+
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    if result.RowsAffected() == 0 {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Шаблон не найден"})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{"success": true, "message": "Шаблон удалён"})
+}
 

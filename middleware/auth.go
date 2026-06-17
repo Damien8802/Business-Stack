@@ -5,6 +5,7 @@ import (
     "net/http"
     "strings"
     "subscription-system/config"
+    "subscription-system/database"
     "subscription-system/utils"
 
     "github.com/gin-gonic/gin"
@@ -457,4 +458,36 @@ func OwnerMiddleware(cfg *config.Config) gin.HandlerFunc {
         
         c.Next()
     }
+}
+
+// GetCompanyNameFromContext - получает название компании из контекста (устанавливается в TenantMiddleware)
+func GetCompanyNameFromContext(c *gin.Context) string {
+    // Сначала пробуем взять из контекста (если TenantMiddleware уже установил)
+    if companyName, exists := c.Get("company_name"); exists {
+        if name, ok := companyName.(string); ok && name != "" {
+            return name
+        }
+    }
+    
+    // Если нет, пробуем tenant_id и ищем в БД
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        return "FinCore"
+    }
+    
+    // Пробуем получить из базы
+    var companyName string
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COALESCE(company_name, $1) 
+        FROM companies 
+        WHERE tenant_id = $2
+    `, "FinCore", tenantID).Scan(&companyName)
+    
+    if err != nil {
+        return "FinCore"
+    }
+    
+    // Сохраняем в контекст для будущих запросов
+    c.Set("company_name", companyName)
+    return companyName
 }

@@ -7,6 +7,7 @@ import (
     "github.com/gin-gonic/gin"
     "github.com/google/uuid"
     "github.com/jackc/pgx/v5/pgxpool"
+    "subscription-system/database"
 )
 
 func TenantMiddleware(db *pgxpool.Pool) gin.HandlerFunc {
@@ -38,7 +39,7 @@ func TenantMiddleware(db *pgxpool.Pool) gin.HandlerFunc {
         log.Printf("🔍 [TenantMiddleware] token_tenant_id: '%s'", tokenTenantID)
         
         // 3. СНАЧАЛА пробуем tenant из токена (самый быстрый)
-        if tokenTenantID != "" && tokenTenantID != "00000000-0000-0000-0000-000000000000" {
+       if tokenTenantID != "" {
             parsedTenant, err := uuid.Parse(tokenTenantID)
             if err == nil && parsedTenant != uuid.Nil {
                 tenantID = parsedTenant
@@ -130,12 +131,10 @@ func TenantMiddleware(db *pgxpool.Pool) gin.HandlerFunc {
         c.Next()
     }
 }
-// extractSubdomain - извлекает субдомен из host
 func extractSubdomain(host string) string {
     if idx := strings.Index(host, ":"); idx != -1 {
         host = host[:idx]
     }
-
     parts := strings.Split(host, ".")
     if len(parts) >= 2 {
         if host == "localhost" || strings.Contains(host, "127.0.0.1") {
@@ -148,28 +147,43 @@ func extractSubdomain(host string) string {
 
 // GetTenantIDFromContext - получить tenant_id из контекста как UUID
 func GetTenantIDFromContext(c *gin.Context) uuid.UUID {
+    // Пробуем из tenant_id (UUID)
     if tenantID, exists := c.Get("tenant_id"); exists {
-        if id, ok := tenantID.(uuid.UUID); ok {
+        if id, ok := tenantID.(uuid.UUID); ok && id != uuid.Nil {
             return id
         }
     }
-    return uuid.Nil
-}
-
-// GetTenantIDString - получить tenant_id как строку
-func GetTenantIDString(c *gin.Context) string {
-    if tenantIDStr, exists := c.Get("tenant_id_string"); exists {
-        if str, ok := tenantIDStr.(string); ok {
-            return str
+    
+    // Пробуем из tenant_id_string (строка)
+    if tenantIDStr := c.GetString("tenant_id_string"); tenantIDStr != "" {
+        if id, err := uuid.Parse(tenantIDStr); err == nil && id != uuid.Nil {
+            return id
         }
     }
-    if tenantID, exists := c.Get("tenant_id"); exists {
-        if id, ok := tenantID.(uuid.UUID); ok {
-            return id.String()
-        }
-    }
+    
+    // Пробуем из заголовка
     if headerID := c.GetHeader("X-Tenant-ID"); headerID != "" {
-        return headerID
+        if id, err := uuid.Parse(headerID); err == nil && id != uuid.Nil {
+            c.Set("tenant_id", id)
+            c.Set("tenant_id_string", headerID)
+            return id
+        }
     }
-    return ""
+    
+    // Пробуем из user_id (берем tenant из БД)
+    userID := c.GetString("user_id")
+    if userID != "" {
+        var dbTenantID uuid.UUID
+        err := database.Pool.QueryRow(c.Request.Context(), `
+            SELECT COALESCE(tenant_id, id::text) FROM users WHERE id = $1
+        `, userID).Scan(&dbTenantID)
+        if err == nil && dbTenantID != uuid.Nil {
+            c.Set("tenant_id", dbTenantID)
+            c.Set("tenant_id_string", dbTenantID.String())
+            return dbTenantID
+        }
+    }
+    
+    log.Printf("❌ GetTenantIDFromContext: tenant_id не найден для user_id=%s", userID)
+    return uuid.Nil
 }

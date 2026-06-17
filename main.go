@@ -2045,12 +2045,20 @@ api.Use(func(c *gin.Context) {
 // Auth middleware
 api.Use(middleware.AuthMiddleware(cfg))
 
+// Получить название компании (для уведомлений)
+api.GET("/company/name", handlers.GetCompanyNameFromContextHandler)
+
 // ========== ФИНАНСОВЫЙ УЧЕТ ==========
 api.GET("/journal-entries", handlers.GetJournalEntriesSimple)
 api.GET("/journal-entries/:id", handlers.GetJournalEntry)
 api.POST("/journal-entries", handlers.CreateJournalEntrySimple)
 api.PUT("/journal-entries/:id", handlers.UpdateJournalEntry)
 api.DELETE("/journal-entries/:id", handlers.DeleteJournalEntry)
+
+// ========== МАССОВЫЕ ОПЕРАЦИИ С ПРОВОДКАМИ ==========
+api.POST("/journal-entries/mass-archive", handlers.MassMoveToArchive)
+api.POST("/journal-entries/mass-delete", handlers.MassDeleteEntries)
+api.POST("/journal-entries/mass-post", handlers.MassPostEntries)
 
 api.GET("/chart-of-accounts", handlers.GetChartOfAccounts)
 api.POST("/chart-of-accounts", handlers.CreateChartOfAccount)
@@ -2072,7 +2080,6 @@ api.DELETE("/payments/:id", handlers.DeletePayment)
 api.GET("/cash-operations", handlers.GetCashOperations)
 api.POST("/cash-operations", handlers.CreateCashOperation)
 
-
     // ==========  ОТЧЁТОВ ==========
     api.GET("/reports/account-ledger", handlers.GetAccountLedger)
     api.GET("/reports/accounts-receivable", handlers.GetAccountsReceivable)
@@ -2081,7 +2088,16 @@ api.POST("/cash-operations", handlers.CreateCashOperation)
     api.GET("/reports/purchase-ledger", handlers.GetPurchaseLedger)
     api.GET("/reports/sales-ledger", handlers.GetSalesLedger)
 
-
+// ========== АРХИВ ЖУРНАЛА ПРОВОДОК ==========
+journalArchive := r.Group("/api/journal/archive")
+journalArchive.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("journal"))
+{
+    journalArchive.POST("/move/:id", handlers.MoveJournalToArchive)
+    journalArchive.GET("/list", handlers.GetJournalArchiveList)
+    journalArchive.POST("/restore/:id", handlers.RestoreJournalFromArchive)
+    journalArchive.DELETE("/permanent/:id", handlers.PermanentDeleteJournalArchive)
+    journalArchive.GET("/stats", handlers.GetJournalArchiveStats)
+}
 // ========== WEBHOOKS ДЛЯ РАЗРАБОТЧИКОВ ==========
 api.GET("/webhooks", func(c *gin.Context) {
     userID := c.GetString("user_id")
@@ -2641,6 +2657,13 @@ r.POST("/api/admin/load-knowledge", middleware.AuthMiddleware(cfg), middleware.A
             "app-specific": true,
         })
     })
+
+// Страница архива журнала проводок
+r.GET("/journal-archive", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("journal"), func(c *gin.Context) {
+    c.HTML(http.StatusOK, "journal_archive.html", gin.H{
+        "title": "Архив журнала проводок | FinCore",
+    })
+})
 
 // ========== API ЗАЯВОК С МУЛЬТИТЕНАНТНОСТЬЮ ==========
 r.GET("/api/orders/list", func(c *gin.Context) {
@@ -3391,6 +3414,7 @@ r.PUT("/api/orders/:id/remaining", middleware.AuthMiddleware(cfg), middleware.Ad
     {
         fincoreExtra.GET("/export", handlers.ExportFincoreReport)
         fincoreExtra.GET("/top-tags", handlers.GetTopTags)
+        fincoreExtra.DELETE("/template/:id", handlers.DeleteTemplatePosting)
     }
 
     // Страница управленческого учёта

@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Архив проводок | FinCore</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0a0a2a 0%, #0f0f35 50%, #1a1a4a 100%);
+            min-height: 100vh;
+        }
+        .simple-header {
+            background: rgba(15, 25, 35, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 1rem 2rem;
+        }
+        .simple-header .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff, #a5b4fc, #c4b5fd);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-decoration: none;
+        }
+        .hero-section {
+            background: linear-gradient(135deg, rgba(26, 26, 46, 0.9), rgba(22, 33, 62, 0.9));
+            border-bottom: 1px solid rgba(102,126,234,0.3);
+            padding: 40px 0;
+        }
+        .premium-card {
+            background: linear-gradient(135deg, rgba(26, 26, 46, 0.95), rgba(22, 33, 62, 0.95));
+            border-radius: 24px;
+            border: 1px solid rgba(102,126,234,0.4);
+            overflow: hidden;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff, #a5b4fc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .btn-gradient {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(102,126,234,0.5);
+            color: white;
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid rgba(102,126,234,0.5);
+            color: #a5b4fc;
+            padding: 10px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-outline:hover {
+            background: rgba(102,126,234,0.2);
+            color: white;
+        }
+        .btn-back {
+            background: rgba(102,126,234,0.2);
+            border: 1px solid rgba(102,126,234,0.4);
+            color: #a5b4fc;
+            padding: 10px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-back:hover {
+            background: rgba(102,126,234,0.4);
+            color: white;
+        }
+        .btn-warning-custom {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border: none;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+        }
+        .btn-danger-custom {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border: none;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+        }
+        .filter-bar {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        .form-control, .form-select {
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(102,126,234,0.3);
+            color: white;
+            border-radius: 12px;
+            padding: 10px 14px;
+        }
+        .archive-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .archive-table thead th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 14px 16px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: white;
+        }
+        .archive-table tbody tr {
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.2s;
+        }
+        .archive-table tbody tr:hover {
+            background: rgba(102,126,234,0.15);
+        }
+        .archive-table tbody td {
+            padding: 14px 16px;
+            color: #e2e8f0;
+            font-size: 0.85rem;
+        }
+        .badge-draft {
+            background: #f59e0b;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: white;
+        }
+        .badge-posted {
+            background: #10b981;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: white;
+        }
+        .restore-btn, .delete-permanent-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            margin: 0 5px;
+            font-size: 18px;
+            transition: all 0.2s;
+        }
+        .restore-btn { color: #f59e0b; }
+        .restore-btn:hover { color: #ffbb33; transform: scale(1.1); }
+        .delete-permanent-btn { color: #ef4444; }
+        .delete-permanent-btn:hover { color: #ff5555; transform: scale(1.1); }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            padding: 20px;
+        }
+        .pagination button {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            color: #fff;
+            cursor: pointer;
+        }
+        .pagination button.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+        .update-toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a2e, #0f0f23) !important;
+            border: 1px solid rgba(102,126,234,0.5) !important;
+            border-radius: 28px !important;
+            color: white !important;
+        }
+        .modal-header {
+            border-bottom: 1px solid rgba(102,126,234,0.3) !important;
+            padding: 20px 28px;
+        }
+        .modal-header .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .modal-body { padding: 28px; }
+        .modal-footer {
+            border-top: 1px solid rgba(102,126,234,0.3) !important;
+            padding: 20px 28px;
+        }
+        .btn-close-white { filter: brightness(0) invert(1); }
+        .modal-icon { font-size: 64px; margin-bottom: 20px; }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .detail-label { color: #94a3b8; font-weight: 500; }
+        .detail-value { color: white; font-weight: 600; }
+
+        /* ========== МАССОВЫЕ ОПЕРАЦИИ ========== */
+        .bulk-actions-bar {
+            background: rgba(102,126,234,0.15);
+            border-radius: 12px;
+            padding: 12px 20px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            border: 1px solid rgba(102,126,234,0.3);
+        }
+        .bulk-actions-bar .selected-count {
+            color: #a5b4fc;
+            font-weight: 600;
+        }
+        .bulk-actions-bar .selected-count i {
+            margin-right: 8px;
+        }
+        .bulk-btn {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(102,126,234,0.3);
+            border-radius: 8px;
+            padding: 6px 12px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 0 4px;
+        }
+        .bulk-btn:hover {
+            background: rgba(102,126,234,0.3);
+            border-color: #667eea;
+        }
+        .bulk-btn-restore {
+            color: #f59e0b;
+        }
+        .bulk-btn-delete {
+            color: #ef4444;
+        }
+        .bulk-btn-select-all {
+            color: #a5b4fc;
+        }
+        .checkbox-col {
+            width: 30px;
+            text-align: center;
+        }
+        .checkbox-col input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+
+<!-- МИНИМАЛИСТИЧНАЯ ШАПКА -->
+<div class="simple-header">
+    <div class="container-fluid" style="max-width: 1600px; margin: 0 auto;">
+        <a class="logo" href="/">🚀 Business Stack</a>
+    </div>
+</div>
+
+<div class="hero-section">
+    <div class="container" style="max-width: 1600px; margin: 0 auto; padding: 0 20px;">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-archive" style="font-size: 24px; color: white;"></i>
+                    </div>
+                    <div>
+                        <h1 style="font-size: 28px; font-weight: 800; color: white;">Архив проводок</h1>
+                        <p style="color: #94a3b8; margin-top: 4px;">Хранилище перемещённых проводок</p>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex gap-3">
+                <button class="btn-back" onclick="window.location.href='/journal'">
+                    <i class="fas fa-arrow-left"></i> Вернуться в журнал
+                </button>
+                <button class="btn-outline" onclick="loadArchive()">
+                    <i class="fas fa-sync-alt"></i> Обновить
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container" style="max-width: 1600px; margin: -30px auto 40px; padding: 0 20px;">
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="premium-card p-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p style="color: #94a3b8; font-size: 0.8rem; margin-bottom: 5px;">ВСЕГО В АРХИВЕ</p>
+                        <h2 class="stat-value" id="totalCount">0</h2>
+                    </div>
+                    <i class="fas fa-box-archive" style="font-size: 32px; color: #667eea;"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="premium-card p-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p style="color: #94a3b8; font-size: 0.8rem; margin-bottom: 5px;">ЧЕРНОВИКИ</p>
+                        <h2 class="stat-value" id="draftCount" style="background: linear-gradient(135deg, #f59e0b, #fbbf24); -webkit-background-clip: text;">0</h2>
+                    </div>
+                    <i class="fas fa-pencil-alt" style="font-size: 32px; color: #f59e0b;"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="premium-card p-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p style="color: #94a3b8; font-size: 0.8rem; margin-bottom: 5px;">ПРОВЕДЁННЫЕ</p>
+                        <h2 class="stat-value" id="postedCount" style="background: linear-gradient(135deg, #10b981, #34d399); -webkit-background-clip: text;">0</h2>
+                    </div>
+                    <i class="fas fa-check-circle" style="font-size: 32px; color: #10b981;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ПАНЕЛЬ МАССОВЫХ ОПЕРАЦИЙ -->
+    <div id="bulkActionsPanel" class="bulk-actions-bar" style="display: none;">
+        <div class="selected-count">
+            <i class="fas fa-check-circle"></i>
+            Выбрано: <span id="selectedCount">0</span>
+        </div>
+        <div>
+            <button class="bulk-btn bulk-btn-restore" onclick="massRestoreFromArchive()" title="Восстановить выбранные">
+                <i class="fas fa-undo-alt"></i> Восстановить
+            </button>
+            <button class="bulk-btn bulk-btn-delete" onclick="massPermanentDelete()" title="Удалить выбранные навсегда">
+                <i class="fas fa-trash-alt"></i> Удалить навсегда
+            </button>
+            <button class="bulk-btn bulk-btn-select-all" onclick="selectAllArchive()">
+                <i class="fas fa-check-double"></i> Выбрать все
+            </button>
+        </div>
+    </div>
+
+    <div class="premium-card mb-4 p-3">
+        <div class="filter-bar">
+            <select id="filterStatus" class="form-select" style="width: 180px;">
+                <option value="all">📋 Все записи</option>
+                <option value="draft">📝 Черновики</option>
+                <option value="posted">✅ Проведённые</option>
+            </select>
+            <input type="text" id="filterSearch" class="form-control" placeholder="🔍 Поиск..." style="width: 250px;">
+            <button class="btn-gradient" onclick="applyFilters()"><i class="fas fa-search"></i> Найти</button>
+            <button class="btn-outline" onclick="resetFilters()"><i class="fas fa-undo"></i> Сбросить</button>
+        </div>
+    </div>
+
+    <div class="premium-card">
+        <div class="p-3 border-bottom" style="border-color: rgba(102,126,234,0.15);">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-list-ul" style="color: #667eea;"></i>
+                <h3 style="font-size: 16px; font-weight: 600; margin: 0; color: white;">Архивированные проводки</h3>
+            </div>
+        </div>
+        <div style="overflow-x: auto;">
+            <table class="archive-table">
+                <thead>
+                    <tr>
+                        <th class="checkbox-col"><input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAllArchive()"></th>
+                        <th>Дата</th>
+                        <th>№ документа</th>
+                        <th>Дебет</th>
+                        <th>Кредит</th>
+                        <th>Партнер</th>
+                        <th>Сумма</th>
+                        <th>Статус</th>
+                        <th>В архиве с</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody id="archiveTableBody">
+                    <tr><td colspan="10" style="text-align: center; padding: 60px;"><i class="fas fa-spinner fa-spin"></i> Загрузка...<\/tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="pagination" id="pagination"></div>
+    </div>
+</div>
+
+<!-- Модальное окно восстановления -->
+<div class="modal fade" id="restoreModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-undo-alt me-2"></i> Восстановление проводки</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="modal-icon"><i class="fas fa-archive" style="color: #f59e0b;"></i></div>
+                <h4 class="mb-3">Вернуть проводку в журнал?</h4>
+                <p class="text-muted mb-4">Проводка будет восстановлена в основной журнал проводок.</p>
+                <div class="detail-row">
+                    <span class="detail-label">📅 Дата:</span>
+                    <span class="detail-value" id="restoreDate">—</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">💰 Сумма:</span>
+                    <span class="detail-value" id="restoreAmount">—</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">📝 Описание:</span>
+                    <span class="detail-value" id="restoreDescription">—</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-outline" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn-warning-custom" id="confirmRestoreBtn">Восстановить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно удаления -->
+<div class="modal fade" id="deleteModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-trash-alt me-2"></i> Удаление навсегда</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="modal-icon"><i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i></div>
+                <h4 class="mb-3 text-danger">⚠️ Необратимое действие!</h4>
+                <p class="mb-4">Проводка будет <strong class="text-danger">удалена навсегда</strong> без возможности восстановления.</p>
+                <div class="detail-row">
+                    <span class="detail-label">📅 Дата:</span>
+                    <span class="detail-value" id="deleteDate">—</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">💰 Сумма:</span>
+                    <span class="detail-value" id="deleteAmount">—</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">📝 Описание:</span>
+                    <span class="detail-value" id="deleteDescription">—</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-outline" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn-danger-custom" id="confirmDeleteBtn">Удалить навсегда</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = '/login';
+    
+    let archiveItems = [];
+    let currentPage = 1;
+    let itemsPerPage = 20;
+    let currentStatus = 'all';
+    let currentSearch = '';
+    let pendingRestoreId = null;
+    let pendingDeleteId = null;
+    
+    async function loadArchive() {
+        currentStatus = document.getElementById('filterStatus').value;
+        currentSearch = document.getElementById('filterSearch').value;
+        
+        document.getElementById('archiveTableBody').innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 60px;"><i class="fas fa-spinner fa-spin fa-2x"></i><p style="margin-top: 16px; color: #94a3b8;">Загрузка...</p></td></tr>';
+        
+        try {
+            const statsRes = await fetch('/api/journal/archive/stats', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const stats = await statsRes.json();
+            if (stats.success) {
+                document.getElementById('totalCount').innerText = stats.total_count;
+                document.getElementById('draftCount').innerText = stats.draft_count;
+                document.getElementById('postedCount').innerText = stats.posted_count;
+            }
+            
+            let url = `/api/journal/archive/list?status=${currentStatus}&page=${currentPage}&limit=${itemsPerPage}`;
+            if (currentSearch) url += `&search=${encodeURIComponent(currentSearch)}`;
+            
+            const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+            const data = await res.json();
+            
+            if (data.success && data.data && data.data.length > 0) {
+                archiveItems = data.data;
+                renderTable();
+                
+                const totalPages = Math.ceil(data.total / itemsPerPage);
+                let paginationHtml = '';
+                for (let i = 1; i <= Math.min(totalPages, 10); i++) {
+                    paginationHtml += `<button class="${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+                }
+                document.getElementById('pagination').innerHTML = paginationHtml;
+                
+                // Сброс выделения
+                document.getElementById('selectAllCheckbox').checked = false;
+                updateArchiveSelectedCount();
+            } else {
+                document.getElementById('archiveTableBody').innerHTML = `
+                    <tr><td colspan="10" style="text-align: center; padding: 80px 20px;">
+                        <i class="fas fa-archive" style="font-size: 64px; color: #475569; margin-bottom: 20px; display: block;"></i>
+                        <h3 style="color: #94a3b8; font-size: 20px; font-weight: 500; margin-bottom: 10px;">Архив пуст</h3>
+                        <p style="color: #64748b; font-size: 14px;">Здесь будут появляться проводки, которые вы отправите в архив</p>
+                        <button class="btn-gradient" onclick="window.location.href='/journal'" style="margin-top: 20px;">
+                            <i class="fas fa-book"></i> Перейти в журнал проводок
+                        </button>
+                    </td>
+                </tr>`;
+                document.getElementById('pagination').innerHTML = '';
+                document.getElementById('bulkActionsPanel').style.display = 'none';
+            }
+        } catch(e) {
+            console.error(e);
+            document.getElementById('archiveTableBody').innerHTML = `
+                <tr><td colspan="10" style="text-align: center; padding: 80px 20px;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 64px; color: #f59e0b; margin-bottom: 20px; display: block;"></i>
+                    <h3 style="color: #94a3b8; font-size: 20px; font-weight: 500; margin-bottom: 10px;">Не удалось загрузить архив</h3>
+                    <p style="color: #64748b; font-size: 14px;">Проверьте подключение и попробуйте снова</p>
+                    <button class="btn-gradient" onclick="loadArchive()" style="margin-top: 20px;">
+                        <i class="fas fa-sync-alt"></i> Повторить попытку
+                    </button>
+                </td>
+            </tr>`;
+            document.getElementById('pagination').innerHTML = '';
+        }
+    }
+    
+    function renderTable() {
+        const tbody = document.getElementById('archiveTableBody');
+        if (!archiveItems || archiveItems.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 60px;"><i class="fas fa-inbox" style="font-size: 48px; color: #475569;"></i><p style="color: #64748b; margin-top: 16px;">Нет записей</p></td></table>';
+            return;
+        }
+        
+        let html = '';
+        for (let item of archiveItems) {
+            const statusBadge = item.status === 'draft' ? '<span class="badge-draft">📝 Черновик</span>' : '<span class="badge-posted">✅ Проведена</span>';
+            html += `
+                <tr>
+                    <td class="checkbox-col"><input type="checkbox" class="archive-checkbox" data-id="${item.id}" onclick="updateArchiveSelectedCount()"></td>
+                    <td>${item.date || '-'}</td>
+                    <td><code style="background: rgba(102,126,234,0.15); padding: 4px 8px; border-radius: 6px;">${item.document_number || '-'}</code></td>
+                    <td><span style="background: #10b981; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; color: white;">${item.debit_account || '—'}</span></td>
+                    <td><span style="background: #ef4444; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; color: white;">${item.credit_account || '—'}</span></td>
+                    <td>${item.counterparty || '-'}</td>
+                    <td style="color: #10b981;">${(item.amount || 0).toLocaleString()} ₽</td>
+                    <td style="text-align: center;">${statusBadge}</td>
+                    <td>${item.archived_at || '-'}</td>
+                    <td>
+                        <button class="restore-btn" onclick='showRestoreModal("${item.id}", "${item.date}", ${item.amount || 0}, "${(item.description || '').replace(/'/g, "\\'")}")' title="Восстановить">
+                            <i class="fas fa-undo-alt"></i>
+                        </button>
+                        <button class="delete-permanent-btn" onclick='showDeleteModal("${item.id}", "${item.date}", ${item.amount || 0}, "${(item.description || '').replace(/'/g, "\\'")}")' title="Удалить навсегда">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+        tbody.innerHTML = html;
+    }
+    
+    function goToPage(page) {
+        currentPage = page;
+        loadArchive();
+        document.querySelector('.premium-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    
+    function applyFilters() { currentPage = 1; loadArchive(); }
+    function resetFilters() {
+        document.getElementById('filterStatus').value = 'all';
+        document.getElementById('filterSearch').value = '';
+        currentPage = 1;
+        loadArchive();
+    }
+    
+    function showRestoreModal(id, date, amount, description) {
+        pendingRestoreId = id;
+        document.getElementById('restoreDate').innerText = date;
+        document.getElementById('restoreAmount').innerText = amount.toLocaleString() + ' ₽';
+        document.getElementById('restoreDescription').innerText = description || '—';
+        new bootstrap.Modal(document.getElementById('restoreModal')).show();
+    }
+    
+    function showDeleteModal(id, date, amount, description) {
+        pendingDeleteId = id;
+        document.getElementById('deleteDate').innerText = date;
+        document.getElementById('deleteAmount').innerText = amount.toLocaleString() + ' ₽';
+        document.getElementById('deleteDescription').innerText = description || '—';
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
+    
+    document.getElementById('confirmRestoreBtn').onclick = async function() {
+        bootstrap.Modal.getInstance(document.getElementById('restoreModal')).hide();
+        try {
+            const res = await fetch(`/api/journal/archive/restore/${pendingRestoreId}`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
+            const data = await res.json();
+            showNotification(data.success ? '✅ Проводка восстановлена' : '❌ Ошибка: ' + data.error, data.success ? 'success' : 'error');
+            if (data.success) loadArchive();
+        } catch(e) { showNotification('❌ Ошибка: ' + e.message, 'error'); }
+        pendingRestoreId = null;
+    };
+    
+    document.getElementById('confirmDeleteBtn').onclick = async function() {
+        bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+        try {
+            const res = await fetch(`/api/journal/archive/permanent/${pendingDeleteId}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+            const data = await res.json();
+            showNotification(data.success ? '✅ Проводка удалена навсегда' : '❌ Ошибка: ' + data.error, data.success ? 'success' : 'error');
+            if (data.success) loadArchive();
+        } catch(e) { showNotification('❌ Ошибка: ' + e.message, 'error'); }
+        pendingDeleteId = null;
+    };
+    
+    function showNotification(msg, type) {
+        const toast = document.createElement('div');
+        toast.className = 'update-toast';
+        toast.style.cssText = `position:fixed; bottom:20px; right:20px; background:${type === 'success' ? '#10b981' : '#ef4444'}; color:white; padding:12px 24px; border-radius:12px; z-index:10001; font-weight:500;`;
+        toast.innerHTML = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+    
+    // ========== МАССОВЫЕ ОПЕРАЦИИ ==========
+    
+    function updateArchiveSelectedCount() {
+        const checkboxes = document.querySelectorAll('.archive-checkbox:checked');
+        const count = checkboxes.length;
+        document.getElementById('selectedCount').innerText = count;
+        
+        const panel = document.getElementById('bulkActionsPanel');
+        if (count > 0) {
+            panel.style.display = 'flex';
+        } else {
+            panel.style.display = 'none';
+        }
+        
+        const selectAll = document.getElementById('selectAllCheckbox');
+        if (selectAll) {
+            const allCheckboxes = document.querySelectorAll('.archive-checkbox');
+            selectAll.checked = allCheckboxes.length > 0 && allCheckboxes.length === checkboxes.length;
+        }
+    }
+    
+    function selectAllArchive() {
+        const checkboxes = document.querySelectorAll('.archive-checkbox');
+        const selectAll = document.getElementById('selectAllCheckbox');
+        const isChecked = selectAll.checked;
+        
+        checkboxes.forEach(cb => {
+            cb.checked = isChecked;
+        });
+        updateArchiveSelectedCount();
+    }
+    
+    function toggleSelectAllArchive() {
+        selectAllArchive();
+    }
+    
+    async function massRestoreFromArchive() {
+        const checkboxes = document.querySelectorAll('.archive-checkbox:checked');
+        if (checkboxes.length === 0) {
+            showNotification('❌ Не выбрано ни одной записи', 'error');
+            return;
+        }
+        
+        if (!confirm(`📤 Восстановить ${checkboxes.length} записей из архива?`)) return;
+        
+        const ids = Array.from(checkboxes).map(cb => cb.dataset.id);
+        let successCount = 0;
+        let failCount = 0;
+        
+        for (const id of ids) {
+            try {
+                const res = await fetch(`/api/journal/archive/restore/${id}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    successCount++;
+                } else {
+                    failCount++;
+                }
+            } catch(e) {
+                failCount++;
+            }
+        }
+        
+        showNotification(`✅ Восстановлено: ${successCount}, ❌ Ошибок: ${failCount}`, 'success');
+        loadArchive();
+    }
+    
+    async function massPermanentDelete() {
+        const checkboxes = document.querySelectorAll('.archive-checkbox:checked');
+        if (checkboxes.length === 0) {
+            showNotification('❌ Не выбрано ни одной записи', 'error');
+            return;
+        }
+        
+        if (!confirm(`⚠️ Удалить ${checkboxes.length} записей навсегда? Действие нельзя отменить!`)) return;
+        
+        const ids = Array.from(checkboxes).map(cb => cb.dataset.id);
+        let successCount = 0;
+        let failCount = 0;
+        
+        for (const id of ids) {
+            try {
+                const res = await fetch(`/api/journal/archive/permanent/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    successCount++;
+                } else {
+                    failCount++;
+                }
+            } catch(e) {
+                failCount++;
+            }
+        }
+        
+        showNotification(`✅ Удалено: ${successCount}, ❌ Ошибок: ${failCount}`, 'success');
+        loadArchive();
+    }
+    
+    loadArchive();
+</script>
+</body>
+</html>

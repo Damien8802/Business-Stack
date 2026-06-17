@@ -302,6 +302,234 @@
             background: #1a1a2e !important;
             color: #ffffff !important;
         }
+
+.draft-row td {
+    opacity: 0.7;
+    background: rgba(255, 255, 255, 0.03);
+}
+.draft-row:hover td {
+    opacity: 1;
+}
+
+/* ========== МОДАЛЬНОЕ ОКНО-СПРАВКА ========== */
+.help-modal-content {
+    background: linear-gradient(135deg, #1a1a2e, #0f0f23) !important;
+    border: 1px solid rgba(102,126,234,0.5) !important;
+    border-radius: 28px !important;
+    color: white !important;
+    max-width: 800px;
+}
+.help-section {
+    background: rgba(0,0,0,0.3);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-left: 4px solid #667eea;
+}
+.help-section h4 {
+    color: #a5b4fc;
+    font-size: 18px;
+    margin-bottom: 15px;
+}
+.help-section h4 i {
+    margin-right: 10px;
+}
+.help-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.help-item:last-child {
+    border-bottom: none;
+}
+.help-icon {
+    width: 40px;
+    height: 40px;
+    background: rgba(102,126,234,0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+.help-text {
+    flex: 1;
+}
+.help-text strong {
+    color: #fff;
+    display: block;
+    margin-bottom: 4px;
+}
+.help-text span {
+    color: #94a3b8;
+    font-size: 12px;
+}
+.help-badge {
+    background: rgba(102,126,234,0.3);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    color: #a5b4fc;
+    font-family: monospace;
+}
+.help-tip {
+    background: linear-gradient(135deg, #667eea20, #764ba220);
+    border-radius: 16px;
+    padding: 15px;
+    margin-top: 20px;
+    text-align: center;
+    border: 1px solid rgba(102,126,234,0.3);
+}
+.help-tip i {
+    color: #f59e0b;
+    margin-right: 8px;
+}
+.help-tip p {
+    color: #94a3b8;
+    font-size: 13px;
+    margin: 0;
+}
+
+/* ========== МАССОВЫЕ ОПЕРАЦИИ ========== */
+.bulk-actions-bar {
+    background: rgba(102,126,234,0.15);
+    border-radius: 12px;
+    padding: 12px 20px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    border: 1px solid rgba(102,126,234,0.3);
+}
+.bulk-actions-bar .selected-count {
+    color: #a5b4fc;
+    font-weight: 600;
+}
+.bulk-actions-bar .selected-count i {
+    margin-right: 8px;
+}
+.bulk-btn {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(102,126,234,0.3);
+    border-radius: 8px;
+    padding: 6px 12px;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin: 0 4px;
+}
+.bulk-btn:hover {
+    background: rgba(102,126,234,0.3);
+    border-color: #667eea;
+}
+.bulk-btn-archive {
+    color: #f59e0b;
+}
+.bulk-btn-delete {
+    color: #ef4444;
+}
+.bulk-btn-post {
+    color: #10b981;
+}
+.bulk-btn-select-all {
+    color: #a5b4fc;
+}
+.checkbox-col {
+    width: 30px;
+    text-align: center;
+}
+.checkbox-col input {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #667eea;
+}
+
+/* ========== ШИКАРНЫЕ УВЕДОМЛЕНИЯ ========== */
+.update-toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    padding: 16px 28px;
+    border-radius: 16px;
+    z-index: 10001;
+    font-weight: 600;
+    font-size: 15px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    animation: slideUp 0.3s ease-out, fadeOut 0.5s ease-in 3s forwards;
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.1);
+    max-width: 500px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.update-toast.success {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border-color: rgba(16,185,129,0.3);
+}
+
+.update-toast.error {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    border-color: rgba(239,68,68,0.3);
+}
+
+.update-toast.info {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    border-color: rgba(59,130,246,0.3);
+}
+
+.update-toast.warning {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+    border-color: rgba(245,158,11,0.3);
+}
+
+.update-toast .toast-icon {
+    font-size: 24px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.15);
+    border-radius: 12px;
+}
+
+.update-toast .toast-text {
+    flex: 1;
+}
+
+.update-toast .toast-close {
+    cursor: pointer;
+    opacity: 0.6;
+    transition: all 0.2s;
+    padding: 4px 8px;
+    border-radius: 8px;
+}
+
+.update-toast .toast-close:hover {
+    opacity: 1;
+    background: rgba(255,255,255,0.1);
+}
+
+@keyframes slideUp {
+    from { transform: translateY(100px) scale(0.9); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to { opacity: 0; transform: translateY(-30px) scale(0.9); }
+}
     </style>
 </head>
 <body>
@@ -341,22 +569,30 @@
                 </div>
             </div>
             <div class="d-flex gap-3 flex-wrap">
-                <button class="btn-gradient" data-bs-toggle="modal" data-bs-target="#addEntryModal">
-                    <i class="fas fa-plus"></i> Новая проводка
-                </button>
-                <button class="btn-excel" onclick="exportToExcel()">
-                    <i class="fas fa-file-excel"></i> Экспорт Excel
-                </button>
-                <button class="btn-pdf" onclick="exportToPDF()">
-                    <i class="fas fa-file-pdf"></i> Экспорт PDF
-                </button>
-                <button class="btn-outline" onclick="loadEntries()">
-                    <i class="fas fa-sync-alt"></i> Обновить
-                </button>
-            </div>
+    <button class="btn-gradient" data-bs-toggle="modal" data-bs-target="#addEntryModal">
+        <i class="fas fa-plus"></i> Новая проводка
+    </button>
+    <button class="btn-outline" onclick="window.location.href='/journal-archive'" style="background: rgba(102,126,234,0.2);">
+        <i class="fas fa-archive"></i> Архив
+    </button>
+    <button class="btn-excel" onclick="exportToExcel()">
+        <i class="fas fa-file-excel"></i> Экспорт Excel
+    </button>
+    <button class="btn-pdf" onclick="exportToPDF()">
+        <i class="fas fa-file-pdf"></i> Экспорт PDF
+    </button>
+    <button class="btn-outline" onclick="loadEntries()">
+        <i class="fas fa-sync-alt"></i> Обновить
+    </button>
+    <button class="btn-outline" onclick="showHelpModal()" style="background: rgba(102,126,234,0.2);">
+        <i class="fas fa-question-circle"></i> Справка
+    </button>
+</div>
         </div>
     </div>
 </div>
+
+
 
 <div class="container" style="max-width: 1600px; margin: -30px auto 40px; padding: 0 20px;">
     <div class="row g-4 mb-4">
@@ -424,6 +660,47 @@
         </div>
     </div>
 
+
+<!-- ПАНЕЛЬ МАССОВЫХ ОПЕРАЦИЙ -->
+<div id="bulkActionsPanel" class="bulk-actions-bar" style="display: none;">
+    <div class="selected-count">
+        <i class="fas fa-check-circle"></i>
+        Выбрано: <span id="selectedCount">0</span>
+    </div>
+    <div>
+        <button class="bulk-btn bulk-btn-post" onclick="massPostEntries()" title="Провести выбранные">
+            <i class="fas fa-check-circle"></i> Провести
+        </button>
+        <button class="bulk-btn bulk-btn-archive" onclick="massArchiveEntries()" title="Переместить в архив">
+            <i class="fas fa-archive"></i> В архив
+        </button>
+        <button class="bulk-btn bulk-btn-delete" onclick="massDeleteEntries()" title="Удалить выбранные">
+            <i class="fas fa-trash"></i> Удалить
+        </button>
+        <button class="bulk-btn bulk-btn-select-all" onclick="selectAllEntries()">
+            <i class="fas fa-check-double"></i> Выбрать все
+        </button>
+    </div>
+</div>
+<!-- БЫСТРЫЕ ФИЛЬТРЫ -->
+<div class="d-flex gap-2 mb-3 flex-wrap">
+    <button class="btn-outline" style="padding: 6px 16px; font-size: 13px;" onclick="setQuickFilter('today')">
+        <i class="far fa-calendar-day"></i> Сегодня
+    </button>
+    <button class="btn-outline" style="padding: 6px 16px; font-size: 13px;" onclick="setQuickFilter('week')">
+        <i class="far fa-calendar-week"></i> Эта неделя
+    </button>
+    <button class="btn-outline" style="padding: 6px 16px; font-size: 13px;" onclick="setQuickFilter('month')">
+        <i class="far fa-calendar-alt"></i> Этот месяц
+    </button>
+    <button class="btn-outline" style="padding: 6px 16px; font-size: 13px;" onclick="setQuickFilter('quarter')">
+        <i class="far fa-calendar"></i> Квартал
+    </button>
+    <button class="btn-outline" style="padding: 6px 16px; font-size: 13px;" onclick="setQuickFilter('year')">
+        <i class="far fa-calendar-check"></i> Год
+    </button>
+</div>
+
     <div class="premium-card">
         <div class="p-3 border-bottom" style="border-color: rgba(102,126,234,0.15);">
             <div class="d-flex align-items-center justify-content-between">
@@ -436,21 +713,31 @@
         </div>
         <div style="overflow-x: auto;">
             <table class="journal-table">
-                <thead>
-                    <tr>
-                        <th>Дата</th>
-                        <th>№ документа</th>
-                        <th>Дебет счёт</th>
-                        <th>Кредит счёт</th>
-                        <th>Партнер</th>
-                        <th>Сумма</th>
-                        <th>Описание</th>
-                        <th style="width: 80px;">Действия</th>
-                    </tr>
-                </thead>
-                <tbody id="entriesTable">
-                    <tr><td colspan="8" style="text-align: center; padding: 60px;"><i class="fas fa-spinner fa-spin"></i> Загрузка...<\/tr>
-                </tbody>
+              <thead>
+    <tr>
+        <th class="checkbox-col"><input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()"></th>
+        <th>Дата</th>
+        <th>№ документа</th>
+        <th>Дебет счёт</th>
+        <th>Кредит счёт</th>
+        <th>Партнер</th>
+        <th>Сумма</th>
+        <th>Статус</th>
+        <th>Описание</th>
+        <th style="width: 120px;">Действия</th>
+    </tr>
+</thead>
+               <tbody id="entriesTable">
+    <tr><td colspan="10" style="text-align: center; padding: 60px;"><i class="fas fa-spinner fa-spin"></i> Загрузка...<\/tr>
+</tbody>
+
+<tfoot>
+    <tr style="background: rgba(102,126,234,0.2); font-weight: bold; border-top: 2px solid #667eea;">
+        <td colspan="6" style="text-align: right; padding: 12px;">ИТОГО на странице:</td>
+        <td id="footerTotalAmount" style="color: #10b981; padding: 12px;">0 ₽</td>
+        <td colspan="3"></td>
+    </table>
+</tfoot>
             <table>
         </div>
         <div class="pagination" id="pagination"></div>
@@ -464,6 +751,16 @@
             <div class="modal-header">
                 <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Новая проводка</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+<button class="btn-outline" onclick="showTemplatesModal()" style="background: rgba(102,126,234,0.2);">
+    <i class="fas fa-copy"></i> Шаблоны
+</button>
+<button class="btn-outline" onclick="saveCurrentAsTemplate()" style="background: rgba(102,126,234,0.2);">
+    <i class="fas fa-save"></i> Сохранить как шаблон
+</button>
+
+<button class="btn-outline" onclick="showAIGenerateModal()" style="background: rgba(102,126,234,0.2);">
+    <i class="fas fa-robot"></i> AI-генерация
+</button>
             </div>
             <div class="modal-body">
                 <div class="row g-3">
@@ -487,10 +784,14 @@
                         <label class="form-label">Партнер</label>
                         <input type="text" class="form-control" id="new_counterparty_name" placeholder="ООО Ромашка">
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Сумма (₽)</label>
-                        <input type="number" class="form-control" id="new_amount" value="0" step="0.01">
-                    </div>
+                    <div class="col-md-6">
+    <label class="form-label">Сумма дебета (₽)</label>
+    <input type="number" class="form-control" id="new_debit_amount" value="0" step="0.01">
+</div>
+<div class="col-md-6">
+    <label class="form-label">Сумма кредита (₽)</label>
+    <input type="number" class="form-control" id="new_credit_amount" value="0" step="0.01">
+</div>
                     <div class="col-12">
                         <label class="form-label">Описание</label>
                         <textarea class="form-control" id="new_description" rows="2" placeholder="Описание операции..."></textarea>
@@ -536,10 +837,14 @@
                         <label class="form-label">Партнер</label>
                         <input type="text" class="form-control" id="edit_counterparty_name">
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Сумма (₽)</label>
-                        <input type="number" class="form-control" id="edit_amount" step="0.01">
-                    </div>
+                  <div class="col-md-6">
+    <label class="form-label">Сумма дебета (₽)</label>
+    <input type="number" class="form-control" id="edit_debit_amount" value="0" step="0.01" placeholder="Например: 50000">
+</div>
+<div class="col-md-6">
+    <label class="form-label">Сумма кредита (₽)</label>
+    <input type="number" class="form-control" id="edit_credit_amount" value="0" step="0.01" placeholder="Например: 50000">
+</div>
                     <div class="col-12">
                         <label class="form-label">Описание</label>
                         <textarea class="form-control" id="edit_description" rows="2"></textarea>
@@ -557,12 +862,50 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const token = localStorage.getItem('token');
+let companyName = 'FinCore'; // Значение по умолчанию
+
+
+// Загружаем название компании из БД
+async function loadCompanyName() {
+    // ✅ СНАЧАЛА УСТАНАВЛИВАЕМ ЗНАЧЕНИЕ ПО УМОЛЧАНИЮ
+    companyName = 'FinCore';
+    
+    try {
+        const response = await fetch('/api/company/name', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await response.json();
+        
+        // ✅ ЕСЛИ СЕРВЕР ВЕРНУЛ НАЗВАНИЕ - ИСПОЛЬЗУЕМ ЕГО
+        if (data && data.company_name && data.company_name !== '') {
+            companyName = data.company_name;
+            console.log('🏢 Название компании загружено:', companyName);
+        } else {
+            console.log('⚠️ Сервер не вернул название, используем: FinCore');
+            companyName = 'FinCore';
+        }
+    } catch (e) {
+        console.warn('⚠️ Ошибка загрузки названия компании:', e);
+        companyName = 'FinCore';
+    }
+    
+    // ✅ ОБНОВЛЯЕМ UI
+    document.title = `${companyName} — Журнал проводок | FinCore`;
+    const brand = document.querySelector('.navbar-brand');
+    if (brand) {
+        brand.textContent = `🚀 ${companyName}`;
+    }
+}
     let allEntries = [];
     let currentPage = 1;
     let itemsPerPage = 20;
     let filteredEntries = [];
 
-   async function loadEntries() {
+async function loadEntries() {
+ // ✅ ПРИНУДИТЕЛЬНАЯ ЗАГРУЗКА НАЗВАНИЯ КОМПАНИИ
+    if (!companyName || companyName === 'FinCore' || companyName === '') {
+        await loadCompanyName();
+    }
     try {
         const response = await fetch('/api/journal-entries', {
             headers: { 'Authorization': 'Bearer ' + token }
@@ -574,28 +917,52 @@
         updateStats();
         applyFilters();
         
-        const updateTime = new Date().toLocaleString('ru-RU');
+        const updateTime = new Date().toLocaleString('ru-RU', { 
+    hour: '2-digit', 
+    minute: '2-digit',
+    second: '2-digit'
+});
         document.getElementById('lastUpdate').innerHTML = `<i class="far fa-clock"></i> ${updateTime}`;
         
-        // ✅ Показываем уведомление об успешном обновлении
         showNotification(`✅ Журнал обновлён! Загружено ${allEntries.length} проводок`, 'success');
         
-        // ✅ Push-уведомление (если разрешено)
-        if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('FinCore - Журнал обновлён', {
-                body: `Загружено ${allEntries.length} проводок`,
-                icon: '/favicon.svg',
-                silent: false
-            });
-        }
+// ✅ PUSH-УВЕДОМЛЕНИЕ (автоматически закрывается через 10 секунд)
+if ('Notification' in window && Notification.permission === 'granted') {
+    let totalDebitSum = 0;
+    let totalCreditSum = 0;
+    let draftCount = 0;
+    let postedCount = 0;
+    
+    for (let e of allEntries) {
+        totalDebitSum += (e.debit_amount || 0);
+        totalCreditSum += (e.credit_amount || 0);
+        if (e.status === 'draft') draftCount++;
+        else if (e.status === 'posted') postedCount++;
+    }
+    
+   // ✅ ФИКС: используем companyName, если он пустой - ставим "FinCore"
+// ✅ ЖЕСТКО ЗАШИТО: Всегда FinCore
+const notification = new Notification('📒 FinCore — Журнал проводок', {
+    body: `📊 Всего: ${allEntries.length} проводок\n` +
+          `📈 Дебет: ${totalDebitSum.toLocaleString()} ₽\n` +
+          `📉 Кредит: ${totalCreditSum.toLocaleString()} ₽\n` +
+          `📝 Черновиков: ${draftCount} | ✅ Проведено: ${postedCount}`,
+    icon: '/favicon.svg',
+    silent: false,
+    tag: 'journal-update',
+    badge: '/favicon.svg',
+    requireInteraction: false
+});
+    
+    setTimeout(() => notification.close(), 10000);
+}
         
-    } catch (error) {
+    } catch (error) {  // ✅ catch на правильном уровне
         console.error('Ошибка:', error);
-        document.getElementById('entriesTable').innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 60px; color: #ef4444;">❌ Ошибка загрузки</tr>';
+        document.getElementById('entriesTable').innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 60px; color: #ef4444;">❌ Ошибка загрузки</tr>';
         showNotification('❌ Ошибка загрузки журнала', 'error');
     }
 }
-
   function updateStats() {
     let totalDebitSum = 0;
     let totalCreditSum = 0;
@@ -612,25 +979,37 @@
     document.getElementById('balance').innerHTML = (totalDebitSum - totalCreditSum).toLocaleString() + ' ₽';
 }
 
-    function applyFilters() {
-        const dateFrom = document.getElementById('filterDateFrom').value;
-        const dateTo = document.getElementById('filterDateTo').value;
-        const search = document.getElementById('filterSearch').value.toLowerCase();
-        const account = document.getElementById('filterAccount').value;
-        
-        filteredEntries = allEntries.filter(entry => {
-            if (dateFrom && entry.operation_date < dateFrom) return false;
-            if (dateTo && entry.operation_date > dateTo) return false;
-            if (search && !(entry.description || '').toLowerCase().includes(search)) return false;
-            if (account) {
-                if (entry.debit_account !== account && entry.credit_account !== account) return false;
-            }
-            return true;
+   function applyFilters() {
+    const dateFrom = document.getElementById('filterDateFrom').value;
+    const dateTo = document.getElementById('filterDateTo').value;
+    const search = document.getElementById('filterSearch').value.toLowerCase();
+    const account = document.getElementById('filterAccount').value;
+    
+    // Убираем фильтр по датам, если они пустые
+    let filtered = [...allEntries];
+    
+    if (dateFrom && dateTo) {
+        filtered = filtered.filter(entry => {
+            return entry.operation_date >= dateFrom && entry.operation_date <= dateTo;
         });
-        
-        currentPage = 1;
-        renderTable();
     }
+    
+    if (search) {
+        filtered = filtered.filter(entry => 
+            (entry.description || '').toLowerCase().includes(search)
+        );
+    }
+    
+    if (account) {
+        filtered = filtered.filter(entry => 
+            entry.debit_account === account || entry.credit_account === account
+        );
+    }
+    
+    filteredEntries = filtered;
+    currentPage = 1;
+    renderTable();
+}
 
     function resetFilters() {
         document.getElementById('filterDateFrom').value = '';
@@ -642,156 +1021,290 @@
         renderTable();
     }
 
-    function renderTable() {
-        const tbody = document.getElementById('entriesTable');
-        const start = (currentPage - 1) * itemsPerPage;
-        const pageEntries = filteredEntries.slice(start, start + itemsPerPage);
-        
-        if (pageEntries.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 60px;"><i class="fas fa-inbox" style="font-size: 48px; color: #475569;"></i><p style="color: #64748b; margin-top: 16px;">Нет проводок</p><\/tr>';
-            document.getElementById('pagination').innerHTML = '';
-            return;
-        }
-        
-        let html = '';
-        for (let e of pageEntries) {
-            const amount = (e.debit_amount || 0) + (e.credit_amount || 0);
-            html += `
-                <tr>
-                    <td>${e.operation_date || '-'}</td>
-                    <td><code style="background: rgba(102,126,234,0.15); padding: 4px 8px; border-radius: 6px;">${e.document_number || '-'}</code></td>
-                    <td><span class="badge-debit">${e.debit_account || '—'}</span></td>
-                    <td><span class="badge-credit">${e.credit_account || '—'}</span></td>
-                    <td>${e.counterparty_name || '-'}</td>
-                    <td>${amount > 0 ? (e.debit_amount > 0 ? '<span style="color:#10b981;">' + amount.toLocaleString() + ' ₽</span>' : '<span style="color:#ef4444;">' + amount.toLocaleString() + ' ₽</span>') : '0 ₽'}</td>
-                    <td style="max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${e.description || '-'}</td>
-                    <td>
-                        <button class="edit-btn" onclick='editEntryDirect("${e.id}", "${e.debit_account || ''}", "${e.credit_account || ''}", ${amount}, "${(e.description || '').replace(/'/g, "\\'")}", "${e.counterparty_name || ''}", "${e.document_number || ''}", "${e.operation_date || ''}")'><i class="fas fa-edit"></i></button>
-                        <button class="delete-btn" onclick="deleteEntry('${e.id}')"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>
-            `;
-        }
-        tbody.innerHTML = html;
-        
-        const totalPages = Math.ceil(filteredEntries.length / itemsPerPage);
-        let paginationHtml = '';
-        for (let i = 1; i <= Math.min(totalPages, 10); i++) {
-            paginationHtml += `<button class="${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
-        }
-        document.getElementById('pagination').innerHTML = paginationHtml;
+   function renderTable() {
+    const tbody = document.getElementById('entriesTable');
+    const start = (currentPage - 1) * itemsPerPage;
+    const pageEntries = filteredEntries.slice(start, start + itemsPerPage);
+    
+    if (pageEntries.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 60px;"><i class="fas fa-inbox" style="font-size: 48px; color: #475569;"></i><p style="color: #64748b; margin-top: 16px;">Нет проводок</p><\/tr>';
+        document.getElementById('pagination').innerHTML = '';
+        return;
     }
-
-    function goToPage(page) {
-        currentPage = page;
-        renderTable();
+    
+    let html = '';
+    for (let e of pageEntries) {
+        const amount = (e.debit_amount || 0) + (e.credit_amount || 0);
+        
+        // Определяем класс строки для черновиков
+        let rowClass = e.status === 'draft' ? 'class="draft-row"' : '';
+        
+        // Определяем бейдж статуса
+        let statusBadge = e.status === 'draft' 
+            ? '<span class="badge bg-secondary" style="background: #6c757d !important;">📝 Черновик</span>'
+            : '<span class="badge bg-success" style="background: #10b981 !important;">✅ Проведена</span>';
+        
+        // Кнопка "Провести" только для черновиков
+        let postButton = '';
+        if (e.status === 'draft') {
+            postButton = `<button class="post-btn" onclick="postEntry('${e.id}')" title="Провести" style="background: none; border: none; color: #3b82f6; cursor: pointer; margin-right: 8px;">
+                <i class="fas fa-check-circle"></i>
+            </button>`;
+        }
+        
+       html += `
+    <tr ${rowClass}>
+       <td class="checkbox-col"><input type="checkbox" class="entry-checkbox" data-id="${e.id}" data-status="${e.status || 'draft'}" onclick="updateSelectedCount()"></td>
+        <td>${e.operation_date || '-'}</td>
+        <td><code style="background: rgba(102,126,234,0.15); padding: 4px 8px; border-radius: 6px;">${e.document_number || '-'}</code></td>
+        <td><span class="badge-debit">${e.debit_account || '—'}</span></td>
+        <td><span class="badge-credit">${e.credit_account || '—'}</span></td>
+        <td>${e.counterparty_name || '-'}</td>
+        <td>${amount > 0 ? (e.debit_amount > 0 ? '<span style="color:#10b981;">' + amount.toLocaleString() + ' ₽</span>' : '<span style="color:#ef4444;">' + amount.toLocaleString() + ' ₽</span>') : '0 ₽'}</td>
+        <td style="text-align: center;">${statusBadge}</td>
+        <td style="max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${e.description || '-'}</td>
+        <td>
+          <button class="edit-btn" onclick='editEntryDirect("${e.id}", "${e.debit_account || ''}", "${e.credit_account || ''}", ${amount}, "${(e.description || '').replace(/'/g, "\\'")}", "${e.counterparty_name || ''}", "${e.document_number || ''}", "${e.operation_date || ''}")'>
+    <i class="fas fa-edit"></i>
+</button>
+            <button class="copy-btn" onclick='copyEntry("${e.id}")' title="Копировать">
+                <i class="fas fa-copy"></i>
+            </button>
+            <button class="archive-btn" onclick='moveToArchive("${e.id}")' title="В архив">
+                <i class="fas fa-archive"></i>
+            </button>
+            ${postButton}
+            <button class="delete-btn" onclick="deleteEntry('${e.id}')">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    </tr>
+`;
     }
+    
+    // Рассчитываем итог по странице
+    let pageTotal = 0;
+    for (let e of pageEntries) {
+        pageTotal += (e.debit_amount || 0) + (e.credit_amount || 0);
+    }
+    document.getElementById('footerTotalAmount').innerHTML = pageTotal.toLocaleString() + ' ₽';
+    tbody.innerHTML = html;
+    
+    const totalPages = Math.ceil(filteredEntries.length / itemsPerPage);
+    let paginationHtml = '';
+    for (let i = 1; i <= Math.min(totalPages, 10); i++) {
+        paginationHtml += `<button class="${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+    }
+    document.getElementById('pagination').innerHTML = paginationHtml;
+    // Сброс выделения после перерисовки
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    if (selectAllCheckbox) selectAllCheckbox.checked = false;
+    updateSelectedCount();
+}
 
-    async function createEntry() {
-        const entry = {
-            operation_date: document.getElementById('new_operation_date').value,
-            document_number: document.getElementById('new_document_number').value,
-            document_type: 'Проводка',
-            counterparty_name: document.getElementById('new_counterparty_name').value,
-            debit_account: document.getElementById('new_debit_account').value,
-            credit_account: document.getElementById('new_credit_account').value,
-            debit_amount: parseFloat(document.getElementById('new_amount').value) || 0,
-            credit_amount: 0,
-            description: document.getElementById('new_description').value
-        };
+
+function goToPage(page) {
+    currentPage = page;
+    renderTable();
+    // Прокрутка к таблице
+    const tableContainer = document.querySelector('.premium-card');
+    if (tableContainer) {
+        tableContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+async function createEntry() {
+    const debitAmount = parseFloat(document.getElementById('new_debit_amount').value) || 0;
+    const creditAmount = parseFloat(document.getElementById('new_credit_amount').value) || 0;
+    
+    if (debitAmount !== creditAmount) {
+        showNotification('❌ Сумма дебета должна равняться сумме кредита!', 'error');
+        return;
+    }
+    
+    if (debitAmount <= 0) {
+        showNotification('❌ Сумма должна быть больше 0', 'error');
+        return;
+    }
+    
+    const entry = {
+        operation_date: document.getElementById('new_operation_date').value,
+        document_number: document.getElementById('new_document_number').value,
+        document_type: 'Проводка',
+        counterparty_name: document.getElementById('new_counterparty_name').value,
+        debit_account: document.getElementById('new_debit_account').value,
+        credit_account: document.getElementById('new_credit_account').value,
+        debit_amount: debitAmount,
+        credit_amount: creditAmount,
+        description: document.getElementById('new_description').value
+    };
+    
+    if (!entry.operation_date) {
+        showNotification('❌ Заполните дату', 'error');
+        return;
+    }
+    if (!entry.debit_account || !entry.credit_account) {
+        showNotification('❌ Укажите дебет и кредит счета', 'error');
+        return;
+    }
+    if (debitAmount <= 0) {
+        showNotification('❌ Сумма должна быть больше 0', 'error');
+        return;
+    }
+    
+    // ✅ БЛОКИРУЕМ КНОПКУ, ЧТОБЫ НЕ БЫЛО ДВОЙНЫХ КЛИКОВ
+    const submitBtn = document.querySelector('#addEntryModal .btn-gradient');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Создание...';
+    }
+    
+    try {
+        const response = await fetch('/api/journal-entries', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify(entry)
+        });
         
-        if (!entry.operation_date) {
-            showNotification('❌ Заполните дату', 'error');
-            return;
-        }
-        if (!entry.debit_account || !entry.credit_account) {
-            showNotification('❌ Укажите дебет и кредит счета', 'error');
-            return;
-        }
+        const data = await response.json();
         
-        try {
-            const response = await fetch('/api/journal-entries', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + token
-                },
-                body: JSON.stringify(entry)
-            });
-            
-            if (response.ok) {
-                bootstrap.Modal.getInstance(document.getElementById('addEntryModal')).hide();
-                document.getElementById('new_document_number').value = '';
-                document.getElementById('new_debit_account').value = '';
-                document.getElementById('new_credit_account').value = '';
-                document.getElementById('new_amount').value = '0';
-                document.getElementById('new_description').value = '';
-                document.getElementById('new_counterparty_name').value = '';
-                document.getElementById('new_operation_date').value = new Date().toISOString().split('T')[0];
-                loadEntries();
-                showNotification('✅ Проводка создана!', 'success');
+        if (response.ok) {
+            // ✅ УСПЕШНО - ЗАКРЫВАЕМ МОДАЛКУ
+            const modalElement = document.getElementById('addEntryModal');
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) {
+                modal.hide();
             } else {
-                const error = await response.json();
-                showNotification('❌ Ошибка: ' + (error.error || 'Не удалось создать'), 'error');
+                // Если модалка не найдена - скрываем вручную
+                modalElement.classList.remove('show');
+                document.querySelector('.modal-backdrop')?.remove();
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
             }
-        } catch (error) {
-            showNotification('❌ Ошибка: ' + error.message, 'error');
-        }
-    }
-
-    function editEntryDirect(id, debitAccount, creditAccount, amount, description, counterpartyName, docNumber, operationDate) {
-        console.log('Редактирование проводки ID:', id);
-        
-        document.getElementById('edit_entry_id').value = id;
-        document.getElementById('edit_operation_date').value = operationDate || '';
-        document.getElementById('edit_document_number').value = docNumber || '';
-        document.getElementById('edit_debit_account').value = debitAccount || '';
-        document.getElementById('edit_credit_account').value = creditAccount || '';
-        document.getElementById('edit_counterparty_name').value = counterpartyName || '';
-        document.getElementById('edit_amount').value = amount || 0;
-        document.getElementById('edit_description').value = description || '';
-        
-        const modal = new bootstrap.Modal(document.getElementById('editEntryModal'));
-        modal.show();
-    }
-
-    async function updateEntry() {
-        const id = document.getElementById('edit_entry_id').value;
-        const entry = {
-            operation_date: document.getElementById('edit_operation_date').value,
-            document_number: document.getElementById('edit_document_number').value,
-            counterparty_name: document.getElementById('edit_counterparty_name').value,
-            debit_account: document.getElementById('edit_debit_account').value,
-            credit_account: document.getElementById('edit_credit_account').value,
-            debit_amount: parseFloat(document.getElementById('edit_amount').value) || 0,
-            credit_amount: 0,
-            description: document.getElementById('edit_description').value
-        };
-        
-        try {
-            const response = await fetch(`/api/journal-entries/${id}`, {
-                method: 'PUT',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + token
-                },
-                body: JSON.stringify(entry)
-            });
             
-            if (response.ok) {
-                bootstrap.Modal.getInstance(document.getElementById('editEntryModal')).hide();
-                loadEntries();
-                showNotification('✅ Проводка обновлена!', 'success');
-            } else {
-                const error = await response.json();
-                showNotification('❌ Ошибка: ' + (error.error || 'Не удалось обновить'), 'error');
-            }
-        } catch (error) {
-            showNotification('❌ Ошибка: ' + error.message, 'error');
+            // Очищаем форму
+            document.getElementById('new_document_number').value = '';
+            document.getElementById('new_debit_account').value = '';
+            document.getElementById('new_credit_account').value = '';
+            document.getElementById('new_debit_amount').value = '0';
+            document.getElementById('new_credit_amount').value = '0';
+            document.getElementById('new_description').value = '';
+            document.getElementById('new_counterparty_name').value = '';
+            document.getElementById('new_operation_date').value = new Date().toISOString().split('T')[0];
+            
+            loadEntries();
+            showNotification('✅ Проводка создана!', 'success');
+
+// ✅ PUSH-УВЕДОМЛЕНИЕ О НОВОЙ ПРОВОДКЕ
+if ('Notification' in window && Notification.permission === 'granted') {
+    const notification = new Notification(`📝 ${companyName} — Новая проводка`, {
+        body: `💳 ${entry.debit_account} → ${entry.credit_account}\n` +
+              `💰 ${entry.debit_amount.toLocaleString()} ₽\n` +
+              `🏢 ${entry.counterparty_name || 'Без партнера'}`,
+        icon: '/favicon.svg',
+        silent: false,
+        tag: 'new-entry',
+        requireInteraction: true
+    });
+    
+    // Закрываем через 5 секунд
+    setTimeout(() => notification.close(), 5000);
+}
+        } else {
+            showNotification('❌ Ошибка: ' + (data.error || 'Не удалось создать'), 'error');
+        }
+    } catch (error) {
+        console.error('❌ Ошибка:', error);
+        showNotification('❌ Ошибка: ' + error.message, 'error');
+    } finally {
+        // ✅ ВСЕГДА РАЗБЛОКИРУЕМ КНОПКУ
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Создать проводку';
         }
     }
+}
+  function editEntryDirect(id, debitAccount, creditAccount, amount, description, counterpartyName, docNumber, operationDate) {
+    console.log('Редактирование проводки ID:', id);
+    
+    document.getElementById('edit_entry_id').value = id;
+    document.getElementById('edit_operation_date').value = operationDate || '';
+    document.getElementById('edit_document_number').value = docNumber || '';
+    document.getElementById('edit_debit_account').value = debitAccount || '';
+    document.getElementById('edit_credit_account').value = creditAccount || '';
+    document.getElementById('edit_counterparty_name').value = counterpartyName || '';
+    document.getElementById('edit_debit_amount').value = amount || 0;   // ← ДОБАВИТЬ
+    document.getElementById('edit_credit_amount').value = amount || 0;  // ← ДОБАВИТЬ
+    document.getElementById('edit_description').value = description || '';
+    
+    const modal = new bootstrap.Modal(document.getElementById('editEntryModal'));
+    modal.show();
+}
+
+   async function updateEntry() {
+    const id = document.getElementById('edit_entry_id').value;
+  // Находим оригинальную проводку
+    const originalEntry = allEntries.find(e => e.id === id);
+    if (originalEntry && originalEntry.status === 'posted') {
+        showNotification('❌ Проведённую проводку нельзя редактировать!', 'error');
+        return;
+    }
+    const debitAmount = parseFloat(document.getElementById('edit_debit_amount').value) || 0;
+    const creditAmount = parseFloat(document.getElementById('edit_credit_amount').value) || 0;
+    
+    const entry = {
+        operation_date: document.getElementById('edit_operation_date').value,
+        document_number: document.getElementById('edit_document_number').value,
+        counterparty_name: document.getElementById('edit_counterparty_name').value,
+        debit_account: document.getElementById('edit_debit_account').value,
+        credit_account: document.getElementById('edit_credit_account').value,
+        debit_amount: debitAmount,
+        credit_amount: creditAmount,
+        description: document.getElementById('edit_description').value
+    };
+    
+    try {
+        const response = await fetch(`/api/journal-entries/${id}`, {
+            method: 'PUT',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify(entry)
+        });
+        
+        if (response.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('editEntryModal')).hide();
+            loadEntries();
+            showNotification('✅ Проводка обновлена!', 'success');
+// ✅ PUSH ПРИ РЕДАКТИРОВАНИИ
+if ('Notification' in window && Notification.permission === 'granted') {
+    const notification = new Notification(`✏️ ${companyName} — Проводка обновлена`, {
+        body: `💳 ${entry.debit_account} → ${entry.credit_account}\n💰 ${entry.debit_amount.toLocaleString()} ₽`,
+        icon: '/favicon.svg',
+        silent: true,
+        tag: 'update-entry'
+    });
+    setTimeout(() => notification.close(), 5000);
+}
+        } else {
+            const error = await response.json();
+            showNotification('❌ Ошибка: ' + (error.error || 'Не удалось обновить'), 'error');
+        }
+    } catch (error) {
+        showNotification('❌ Ошибка: ' + error.message, 'error');
+    }
+}
 
     async function deleteEntry(id) {
+  // Находим оригинальную проводку
+    const originalEntry = allEntries.find(e => e.id === id);
+    if (originalEntry && originalEntry.status === 'posted') {
+        showNotification('❌ Проведённую проводку нельзя удалить! Сначала отмените проведение.', 'error');
+        return;
+    }
         if (!confirm('⚠️ Удалить эту проводку? Действие нельзя отменить!')) return;
         
         try {
@@ -802,6 +1315,15 @@
             if (response.ok) {
                 loadEntries();
                 showNotification('✅ Проводка удалена!', 'success');
+// ✅ PUSH ПРИ УДАЛЕНИИ
+if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification(`🗑️ ${companyName} — Проводка удалена`, {
+        body: `ID: ${id}`,
+        icon: '/favicon.svg',
+        silent: true,
+        tag: 'delete-entry'
+    });
+}
             } else {
                 showNotification('❌ Ошибка при удалении', 'error');
             }
@@ -1061,7 +1583,9 @@
                             <tbody>
                                 ${tableHtml}
                             </tbody>
-                        </table>
+
+                           <tfoot>
+                       </table>
                     </div>
                     <div class="report-footer">
                         <p>© ${new Date().getFullYear()} FinCore - Бухгалтерский учёт и аналитика</p>
@@ -1083,17 +1607,65 @@
         showNotification('📄 Отчёт открыт. Нажмите "Печать"', 'success');
     }
 
-    function showNotification(msg, type) {
-        const toast = document.createElement('div');
-        toast.className = 'update-toast';
-        toast.style.cssText = `position:fixed; bottom:20px; right:20px; background:${type === 'success' ? '#10b981' : '#ef4444'}; color:white; padding:12px 24px; border-radius:12px; z-index:10001; font-weight:500;`;
-        toast.innerHTML = msg;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
-    }
+  function showNotification(msg, type = 'info') {
+    const icons = {
+        success: '✅',
+        error: '❌',
+        info: 'ℹ️',
+        warning: '⚠️'
+    };
+    
+    const colors = {
+        success: 'linear-gradient(135deg, #10b981, #059669)',
+        error: 'linear-gradient(135deg, #ef4444, #dc2626)',
+        info: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+        warning: 'linear-gradient(135deg, #f59e0b, #d97706)'
+    };
+    
+    const toast = document.createElement('div');
+    toast.className = `update-toast ${type}`;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        padding: 16px 28px;
+        border-radius: 16px;
+        z-index: 10001;
+        font-weight: 600;
+        font-size: 15px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        animation: slideUp 0.3s ease-out, fadeOut 0.5s ease-in 3s forwards;
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255,255,255,0.1);
+        max-width: 500px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: ${colors[type] || colors.info};
+        color: white;
+    `;
+    
+    toast.innerHTML = `
+        <div class="toast-icon">${icons[type] || '📢'}</div>
+        <div class="toast-text">${msg}</div>
+        <div class="toast-close" onclick="this.parentElement.remove()">✕</div>
+    `;
+    
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
 
 // ========== ФИКС: Пересчёт акта из проводок ==========
 async function recalcActFromTransactions(actId) {
+    const tenantId = localStorage.getItem('tenant_id');
+    
+    if (!tenantId) {
+        showNotification('❌ Ошибка: компания не определена, войдите заново', 'error');
+        window.location.href = '/login';
+        return;
+    }
+    
     showNotification('🔄 Пересчёт акта из проводок...', 'info');
     
     try {
@@ -1102,7 +1674,7 @@ async function recalcActFromTransactions(actId) {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + token,
-                'X-Tenant-ID': localStorage.getItem('tenant_id') || '11111111-1111-1111-1111-111111111111'
+                'X-Tenant-ID': tenantId
             },
             body: JSON.stringify({ recalc: true })
         });
@@ -1126,7 +1698,6 @@ async function recalcActFromTransactions(actId) {
         showNotification('❌ Ошибка сети: ' + e.message, 'error');
     }
 }
-
 // Запрос разрешения на push-уведомления при загрузке
 function requestNotificationPermission() {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -1138,14 +1709,1092 @@ function requestNotificationPermission() {
     }
 }
 
-   document.addEventListener('DOMContentLoaded', function() {
+ document.addEventListener('DOMContentLoaded', async function() {
+    await loadCompanyName(); // ← СНАЧАЛА загружаем название компании!
+ // ✅ ЕСЛИ НЕ ЗАГРУЗИЛОСЬ - ПРОБУЕМ ЕЩЁ РАЗ
+    if (companyName === 'FinCore' || companyName === '') {
+        console.log('🔄 Повторная загрузка компании...');
+        await loadCompanyName();
+    }
     document.getElementById('new_operation_date').value = new Date().toISOString().split('T')[0];
     loadEntries();
     setInterval(loadEntries, 60000);
     
-    // ✅ Запрос разрешения на уведомления
-    requestNotificationPermission();
-});
-</script>
+    // ✅ Запрос разрешения на уведомления (только если ещё не запрашивали)
+    if ('Notification' in window && Notification.permission === 'default') {
+        requestNotificationPermission();
+    }
+
+// Приветственное уведомление (автоматически закрывается через 5 секунд)
+setTimeout(() => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+        // Создаём уведомление
+        const notification = new Notification('👋 Добро пожаловать в FinCore', {
+            body: '📒 Журнал проводок готов к работе!\n💡 Нажмите кнопку "Новая проводка" для создания',
+            icon: '/favicon.svg',
+            silent: true,
+            tag: 'welcome'
+        });
+        
+        // ✅ АВТОМАТИЧЕСКИ ЗАКРЫВАЕМ ЧЕРЕЗ 5 СЕКУНД
+        setTimeout(() => {
+            notification.close();
+        }, 5000);
+    }
+}, 1500);});
+
+
+function setQuickFilter(period) {
+    const today = new Date();
+    let from = new Date();
+    let to = new Date();
+    
+    switch(period) {
+        case 'today':
+            from = new Date(today);
+            to = new Date(today);
+            break;
+        case 'week':
+            from = new Date(today);
+            from.setDate(today.getDate() - 7);
+            to = new Date(today);
+            break;
+        case 'month':
+            from = new Date(today.getFullYear(), today.getMonth(), 1);
+            to = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            break;
+        case 'quarter':
+            const quarter = Math.floor(today.getMonth() / 3);
+            from = new Date(today.getFullYear(), quarter * 3, 1);
+            to = new Date(today.getFullYear(), quarter * 3 + 3, 0);
+            break;
+        case 'year':
+            from = new Date(today.getFullYear(), 0, 1);
+            to = new Date(today.getFullYear(), 11, 31);
+            break;
+        default: return;
+    }
+    
+    document.getElementById('filterDateFrom').value = from.toISOString().split('T')[0];
+    document.getElementById('filterDateTo').value = to.toISOString().split('T')[0];
+    applyFilters();
+    showNotification(`📅 Период: ${period}`, 'success');
+}
+
+async function copyEntry(id) {
+    const entry = allEntries.find(e => e.id === id);
+    if (!entry) {
+        showNotification('❌ Не найдено', 'error');
+        return;
+    }
+    
+   const today = new Date();
+const year = today.getFullYear();
+const month = String(today.getMonth() + 1).padStart(2, '0');
+const day = String(today.getDate()).padStart(2, '0');
+document.getElementById('new_operation_date').value = `${year}-${month}-${day}`;
+    document.getElementById('new_document_number').value = (entry.document_number || '') + ' (копия)';
+    document.getElementById('new_debit_account').value = entry.debit_account || '';
+    document.getElementById('new_credit_account').value = entry.credit_account || '';
+    document.getElementById('new_counterparty_name').value = entry.counterparty_name || '';
+    document.getElementById('new_amount').value = entry.amount || (entry.debit_amount + entry.credit_amount) || 0;
+    document.getElementById('new_description').value = (entry.description || '') + ' (копия)';
+    
+    new bootstrap.Modal(document.getElementById('addEntryModal')).show();
+    showNotification('📋 Проводка скопирована, измените дату и сохраните', 'success');
+}
+
+async function postEntry(id) {
+    if (!confirm('✅ Провести эту проводку? После проведения изменить будет нельзя!')) return;
+    
+    try {
+        const response = await fetch(`/api/journal-entries/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ status: 'posted' })
+        });
+        
+        if (response.ok) {
+            showNotification('✅ Проводка проведена!', 'success');
+            loadEntries(); // Обновляем список
+        } else {
+            const error = await response.json();
+            showNotification('❌ Ошибка: ' + (error.error || 'Не удалось провести'), 'error');
+        }
+    } catch (error) {
+        showNotification('❌ Ошибка: ' + error.message, 'error');
+    }
+}
+
+// ========== АРХИВ ==========
+async function moveToArchive(id) {
+    if (!confirm('📦 Переместить проводку в архив?\n\nПосле перемещения она будет доступна в разделе "Архив журнала".')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/journal/archive/move/${id}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('✅ Проводка перемещена в архив', 'success');
+            loadEntries();
+        } else {
+            showNotification('❌ Ошибка: ' + (data.error || 'Не удалось переместить'), 'error');
+        }
+    } catch (error) {
+        showNotification('❌ Ошибка: ' + error.message, 'error');
+    }
+}
+
+
+
+// ========== МАССОВЫЕ ОПЕРАЦИИ ==========
+
+// Обновить счетчик выбранных
+function updateSelectedCount() {
+    const checkboxes = document.querySelectorAll('.entry-checkbox:checked');
+    const count = checkboxes.length;
+    document.getElementById('selectedCount').innerText = count;
+    
+    const panel = document.getElementById('bulkActionsPanel');
+    if (count > 0) {
+        panel.style.display = 'flex';
+    } else {
+        panel.style.display = 'none';
+    }
+    
+    const selectAll = document.getElementById('selectAllCheckbox');
+    if (selectAll) {
+        const allCheckboxes = document.querySelectorAll('.entry-checkbox');
+        selectAll.checked = allCheckboxes.length > 0 && allCheckboxes.length === checkboxes.length;
+    }
+}
+
+// Выбрать все
+function selectAllEntries() {
+    const checkboxes = document.querySelectorAll('.entry-checkbox');
+    const selectAll = document.getElementById('selectAllCheckbox');
+    const isChecked = selectAll.checked;
+    
+    checkboxes.forEach(cb => {
+        cb.checked = isChecked;
+    });
+    updateSelectedCount();
+}
+
+// Переключить выделение всех
+function toggleSelectAll() {
+    selectAllEntries();
+}
+
+// Массовое проведение
+async function massPostEntries() {
+    const checkboxes = document.querySelectorAll('.entry-checkbox:checked');
+    if (checkboxes.length === 0) {
+        showNotification('❌ Не выбрано ни одной проводки', 'error');
+        return;
+    }
+    
+    // Проверяем, что все выбранные - черновики
+    const postedIds = [];
+    for (let cb of checkboxes) {
+        if (cb.dataset.status === 'posted') {
+            postedIds.push(cb.dataset.id);
+        }
+    }
+    
+    if (postedIds.length > 0) {
+        showNotification(`❌ Проведённые проводки нельзя провести повторно (${postedIds.length} шт.)`, 'error');
+        return;
+    }
+    
+    if (!confirm(`✅ Провести ${checkboxes.length} проводок?`)) return;
+    
+    const ids = Array.from(checkboxes).map(cb => cb.dataset.id);
+    
+    try {
+        const res = await fetch('/api/journal-entries/mass-post', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ ids: ids })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            showNotification(data.message, 'success');
+            loadEntries();
+        } else {
+            showNotification('❌ Ошибка: ' + data.error, 'error');
+        }
+    } catch (e) {
+        showNotification('❌ Ошибка: ' + e.message, 'error');
+    }
+}
+
+// Массовое перемещение в архив
+async function massArchiveEntries() {
+    const checkboxes = document.querySelectorAll('.entry-checkbox:checked');
+    if (checkboxes.length === 0) {
+        showNotification('❌ Не выбрано ни одной проводки', 'error');
+        return;
+    }
+    
+    if (!confirm(`📦 Переместить ${checkboxes.length} проводок в архив?`)) return;
+    
+    const ids = Array.from(checkboxes).map(cb => cb.dataset.id);
+    
+    try {
+        const res = await fetch('/api/journal-entries/mass-archive', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ ids: ids })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            showNotification(data.message, 'success');
+            loadEntries();
+        } else {
+            showNotification('❌ Ошибка: ' + data.error, 'error');
+        }
+    } catch (e) {
+        showNotification('❌ Ошибка: ' + e.message, 'error');
+    }
+}
+
+// Массовое удаление
+async function massDeleteEntries() {
+    const checkboxes = document.querySelectorAll('.entry-checkbox:checked');
+    if (checkboxes.length === 0) {
+        showNotification('❌ Не выбрано ни одной проводки', 'error');
+        return;
+    }
+    
+    // Проверяем, что все выбранные - черновики
+    const postedIds = [];
+    for (let cb of checkboxes) {
+        if (cb.dataset.status === 'posted') {
+            postedIds.push(cb.dataset.id);
+        }
+    }
+    
+    if (postedIds.length > 0) {
+        showNotification(`❌ Проведённые проводки нельзя удалить (${postedIds.length} шт.)`, 'error');
+        return;
+    }
+    
+    if (!confirm(`⚠️ Удалить ${checkboxes.length} проводок? Действие нельзя отменить!`)) return;
+    
+    const ids = Array.from(checkboxes).map(cb => cb.dataset.id);
+    
+    try {
+        const res = await fetch('/api/journal-entries/mass-delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ ids: ids })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            showNotification(data.message, 'success');
+            loadEntries();
+        } else {
+            showNotification('❌ Ошибка: ' + data.error, 'error');
+        }
+    } catch (e) {
+        showNotification('❌ Ошибка: ' + e.message, 'error');
+    }
+}
+// ========== СПРАВКА (ДОБАВИТЬ ЭТУ ФУНКЦИЮ) ==========
+function showHelpModal() {
+    const modal = new bootstrap.Modal(document.getElementById('helpModal'));
+    modal.show();
+}
+
+// ========== ШАБЛОНЫ ПРОВОДОК ==========
+
+// Сохранить текущую проводку как шаблон
+async function saveCurrentAsTemplate() {
+    const name = prompt('Введите название шаблона:', 'Мой шаблон');
+    if (!name) return;
+    
+    const debitAccount = document.getElementById('new_debit_account').value;
+    const creditAccount = document.getElementById('new_credit_account').value;
+    const amount = parseFloat(document.getElementById('new_debit_amount').value) || 0;
+    const description = document.getElementById('new_description').value;
+    const counterpartyName = document.getElementById('new_counterparty_name').value;
+    
+    if (!debitAccount || !creditAccount) {
+        showNotification('❌ Сначала заполните поля проводки', 'error');
+        return;
+    }
+    
+    const templateData = {
+        name: name,
+        debit_account: debitAccount,
+        credit_account: creditAccount,
+        amount: amount,
+        counterparty_name: counterpartyName,
+        description: description
+    };
+    
+    console.log('📤 Отправляем шаблон:', templateData);
+    showNotification('💾 Сохраняем шаблон...', 'info');
+    
+    try {
+        const res = await fetch('/api/fincore/template-posting', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify(templateData)
+        });
+        const data = await res.json();
+        console.log('📥 Ответ сервера:', data);
+        
+        if (data.success) {
+            showNotification(`✅ Шаблон "${name}" сохранён!`, 'success');
+            // Проверяем, что шаблон действительно появился
+            setTimeout(() => {
+                checkTemplatesCount();
+            }, 500);
+        } else {
+            showNotification('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'), 'error');
+        }
+    } catch(e) {
+        console.error('❌ Ошибка сохранения:', e);
+        showNotification('❌ Ошибка: ' + e.message, 'error');
+    }
+}
+
+// Проверка количества шаблонов
+async function checkTemplatesCount() {
+    try {
+        const res = await fetch('/api/fincore/templates', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        console.log('📊 Всего шаблонов в БД:', data.templates?.length || 0);
+        if (data.templates && data.templates.length > 0) {
+            showNotification(`📋 Найдено ${data.templates.length} шаблонов`, 'info');
+        }
+    } catch(e) {
+        console.error('Ошибка проверки:', e);
+    }
+}
+// Показать модальное окно с шаблонами
+async function showTemplatesModal() {
+    const modal = new bootstrap.Modal(document.getElementById('templatesModal'));
+    const container = document.getElementById('templatesList');
+    container.innerHTML = `
+        <div class="text-center py-5">
+            <i class="fas fa-spinner fa-spin fa-3x" style="color: #667eea;"></i>
+            <p class="mt-3" style="color: #94a3b8;">Загрузка шаблонов...</p>
+        </div>
+    `;
+    modal.show();
+    
+    try {
+        const res = await fetch('/api/fincore/templates', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        console.log('📋 Шаблоны:', data);
+        
+        if (data.templates && data.templates.length > 0) {
+            let html = `
+                <div class="mb-3 text-muted small">Найдено шаблонов: ${data.templates.length}</div>
+                <div class="row g-3">
+            `;
+            for (let t of data.templates) {
+                const amountStr = (t.amount || 0).toLocaleString();
+                html += `
+                    <div class="col-md-6">
+                        <div class="template-card" style="background: rgba(26,26,46,0.8); border: 1px solid rgba(102,126,234,0.3); border-radius: 16px; padding: 16px; cursor: pointer; transition: all 0.3s;" 
+                             onclick="applyTemplate('${t.id}')"
+                             onmouseover="this.style.borderColor='#667eea'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(102,126,234,0.3)'"
+                             onmouseout="this.style.borderColor='rgba(102,126,234,0.3)'; this.style.transform='none'; this.style.boxShadow='none'">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div style="flex:1;">
+                                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                        <i class="fas fa-copy" style="color: #667eea;"></i>
+                                        <strong style="color: #fff; font-size: 16px;">${t.name}</strong>
+                                    </div>
+                                    <div style="display: flex; gap: 15px; flex-wrap: wrap; font-size: 13px; color: #94a3b8;">
+                                        <span><span style="color: #10b981;">Дт</span> ${t.debit_account}</span>
+                                        <span><span style="color: #ef4444;">Кт</span> ${t.credit_account}</span>
+                                        <span style="color: #a5b4fc;">${amountStr} ₽</span>
+                                    </div>
+                                    <div style="font-size: 12px; color: #64748b; margin-top: 6px;">${t.description || '—'}</div>
+                                </div>
+                                <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); deleteTemplate('${t.id}')" 
+                                        style="background: rgba(239,68,68,0.2); border: none; color: #ef4444; border-radius: 8px; padding: 6px 10px;"
+                                        onmouseover="this.style.background='rgba(239,68,68,0.4)'"
+                                        onmouseout="this.style.background='rgba(239,68,68,0.2)'"
+                                        title="Удалить шаблон">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            html += `</div>`;
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox" style="font-size: 48px; color: #475569;"></i>
+                    <h4 style="color: #94a3b8; margin-top: 16px;">Нет сохранённых шаблонов</h4>
+                    <p style="color: #64748b; font-size: 14px;">Создайте проводку и сохраните как шаблон</p>
+                    <button class="btn-gradient mt-3" onclick="bootstrap.Modal.getInstance(document.getElementById('templatesModal')).hide(); document.getElementById('addEntryModal').show();">
+                        <i class="fas fa-plus"></i> Создать проводку
+                    </button>
+                </div>
+            `;
+        }
+    } catch(e) {
+        console.error('Ошибка загрузки шаблонов:', e);
+        container.innerHTML = `
+            <div class="text-center py-5">
+                <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: #f59e0b;"></i>
+                <h4 style="color: #94a3b8; margin-top: 16px;">Ошибка загрузки</h4>
+                <p style="color: #64748b; font-size: 14px;">${e.message}</p>
+                <button class="btn-gradient mt-3" onclick="showTemplatesModal()">
+                    <i class="fas fa-sync-alt"></i> Повторить
+                </button>
+            </div>
+        `;
+    }
+}
+// Применить шаблон
+async function applyTemplate(templateId) {
+    showNotification('📋 Применяем шаблон...', 'info');
+    try {
+        const res = await fetch('/api/fincore/templates', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        const template = data.templates.find(t => t.id === templateId);
+        
+        if (template) {
+            document.getElementById('new_debit_account').value = template.debit_account || '';
+            document.getElementById('new_credit_account').value = template.credit_account || '';
+            document.getElementById('new_debit_amount').value = template.amount || 0;
+            document.getElementById('new_credit_amount').value = template.amount || 0;
+            document.getElementById('new_description').value = template.description || '';
+            document.getElementById('new_counterparty_name').value = template.counterparty_name || '';
+            
+            bootstrap.Modal.getInstance(document.getElementById('templatesModal')).hide();
+            
+            // Открываем модальное окно создания
+            const addModal = new bootstrap.Modal(document.getElementById('addEntryModal'));
+            addModal.show();
+            
+            showNotification(`✅ Шаблон "${template.name}" применён!`, 'success');
+        } else {
+            showNotification('❌ Шаблон не найден', 'error');
+        }
+    } catch(e) {
+        console.error('applyTemplate error:', e);
+        showNotification('❌ Ошибка: ' + e.message, 'error');
+    }
+}
+// Удалить шаблон
+async function deleteTemplate(templateId) {
+    // Находим имя шаблона
+    try {
+        const res = await fetch('/api/fincore/templates', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        const template = data.templates.find(t => t.id === templateId);
+        const name = template ? template.name : 'шаблон';
+        
+        if (!confirm(`🗑️ Удалить шаблон "${name}"?`)) return;
+        
+       const delRes = await fetch(`/api/fincore/template/${templateId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const delData = await delRes.json();
+        
+        if (delData.success) {
+            showNotification(`✅ Шаблон "${name}" удалён`, 'success');
+            showTemplatesModal(); // Обновляем список
+        } else {
+            showNotification('❌ Ошибка удаления: ' + (delData.error || 'Неизвестная ошибка'), 'error');
+        }
+    } catch(e) {
+        console.error('deleteTemplate error:', e);
+        showNotification('❌ Ошибка: ' + e.message, 'error');
+    }
+}
+// ========== AI-ГЕНЕРАЦИЯ ==========
+
+let lastAIResult = null;
+
+function showAIGenerateModal() {
+    document.getElementById('aiPrompt').value = '';
+    document.getElementById('aiResult').style.display = 'none';
+    new bootstrap.Modal(document.getElementById('aiModal')).show();
+}
+
+async function generateFromAI() {
+    const prompt = document.getElementById('aiPrompt').value;
+    if (!prompt) {
+        showNotification('❌ Введите описание операции', 'error');
+        return;
+    }
+    
+    showNotification('🤖 AI анализирует запрос...', 'info');
+    
+    try {
+        const res = await fetch('/api/ai/consultant', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ message: prompt })
+        });
+        const data = await res.json();
+        
+        const response = data.response || data.message || '';
+        const lowerPrompt = prompt.toLowerCase();
+        
+        // Определяем счета
+        let debitAccount = '51';
+        let creditAccount = '62';
+        let amount = 0;
+        let partnerName = '';
+        
+        // Извлекаем название партнёра
+        const partnerMatch = prompt.match(/(?:ООО|ИП|ЗАО|ПАО|ОАО)\s+["']?([А-Яа-я\s]+)/i);
+        if (partnerMatch) {
+            partnerName = partnerMatch[0];
+        }
+        
+        // Определяем тип операции
+        if (lowerPrompt.includes('поставщик') || lowerPrompt.includes('оплатили поставщику')) {
+            debitAccount = '60';
+            creditAccount = '51';
+        } else if (lowerPrompt.includes('покупатель') || lowerPrompt.includes('аванс от покупателя')) {
+            debitAccount = '51';
+            creditAccount = '62';
+        } else if (lowerPrompt.includes('зарплат') || lowerPrompt.includes('выдали зарплату')) {
+            debitAccount = '70';
+            creditAccount = '50';
+        } else if (lowerPrompt.includes('налог') || lowerPrompt.includes('уплатили налог')) {
+            debitAccount = '68';
+            creditAccount = '51';
+        }
+        
+        // Извлекаем сумму
+        const amountMatch = prompt.match(/(\d+[\d\s]*)(?:руб|₽)/i);
+        if (amountMatch) {
+            amount = parseFloat(amountMatch[1].replace(/\s/g, ''));
+        }
+        
+        if (amount === 0) {
+            showNotification('⚠️ Не удалось распознать сумму, укажите её вручную', 'warning');
+            return;
+        }
+        
+        // Сохраняем результат
+        lastAIResult = {
+            debit_account: debitAccount,
+            credit_account: creditAccount,
+            amount: amount,
+            description: prompt,
+            partner_name: partnerName
+        };
+        
+        // Показываем результат
+        const accountNames = {
+            '51': 'Расчётный счёт',
+            '60': 'Поставщики',
+            '62': 'Покупатели',
+            '70': 'Зарплата',
+            '50': 'Касса',
+            '68': 'Налоги'
+        };
+        
+        document.getElementById('aiResultContent').innerHTML = `
+            <div class="mb-2"><strong>Дебет счёт:</strong> ${lastAIResult.debit_account} (${accountNames[lastAIResult.debit_account] || '—'})</div>
+            <div class="mb-2"><strong>Кредит счёт:</strong> ${lastAIResult.credit_account} (${accountNames[lastAIResult.credit_account] || '—'})</div>
+            <div class="mb-2"><strong>Сумма:</strong> ${lastAIResult.amount.toLocaleString()} ₽</div>
+            <div class="mb-2"><strong>Партнер:</strong> ${lastAIResult.partner_name || '—'}</div>
+            <div class="mb-2"><strong>Описание:</strong> ${lastAIResult.description}</div>
+        `;
+        document.getElementById('aiResult').style.display = 'block';
+        showNotification('✅ AI сгенерировал проводку, нажмите "Создать"', 'success');
+        
+    } catch(e) {
+        console.error('AI Error:', e);
+        showNotification('❌ Ошибка AI: ' + e.message, 'error');
+    }
+}
+
+
+// Создать проводку из AI результата
+async function createFromAIResult() {
+    if (!lastAIResult) {
+        showNotification('❌ Нет результата AI', 'error');
+        return;
+    }
+    
+    // Локальная сегодняшняя дата
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`;
+    
+    // СНАЧАЛА заполняем форму (на всякий случай)
+    document.getElementById('new_operation_date').value = todayStr;
+    document.getElementById('new_debit_account').value = lastAIResult.debit_account;
+    document.getElementById('new_credit_account').value = lastAIResult.credit_account;
+    document.getElementById('new_debit_amount').value = lastAIResult.amount;
+    document.getElementById('new_credit_amount').value = lastAIResult.amount;
+    document.getElementById('new_description').value = lastAIResult.description;
+    document.getElementById('new_counterparty_name').value = lastAIResult.partner_name || '';
+    
+    // Теперь создаём проводку через API
+    const entry = {
+        operation_date: todayStr,
+        document_number: 'AI-' + Date.now(),
+        document_type: 'Проводка',
+        counterparty_name: lastAIResult.partner_name || '',
+        debit_account: lastAIResult.debit_account,
+        credit_account: lastAIResult.credit_account,
+        debit_amount: lastAIResult.amount,
+        credit_amount: lastAIResult.amount,
+        description: lastAIResult.description
+    };
+    
+    console.log('📤 Отправляем:', entry);
+    showNotification('📝 Создаём проводку...', 'info');
+    
+    try {
+        const res = await fetch('/api/journal-entries', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify(entry)
+        });
+        
+        const data = await res.json();
+        console.log('📥 Ответ:', data);
+        
+        if (res.ok && (data.id || data.success)) {
+            bootstrap.Modal.getInstance(document.getElementById('aiModal')).hide();
+            showNotification(`✅ Проводка создана от ${todayStr}!`, 'success');
+            loadEntries();
+            lastAIResult = null;
+        } else {
+            showNotification('❌ Ошибка: ' + (data.error || data.message || 'Неизвестная ошибка'), 'error');
+        }
+    } catch(e) {
+        console.error('❌ Ошибка:', e);
+        showNotification('❌ Ошибка: ' + e.message, 'error');
+    }
+}
+function applyAIResult() {
+    if (lastAIResult) {
+        // Устанавливаем сегодняшнюю дату
+        const today = new Date();
+const year = today.getFullYear();
+const month = String(today.getMonth() + 1).padStart(2, '0');
+const day = String(today.getDate()).padStart(2, '0');
+const todayStr = `${year}-${month}-${day}`;
+        
+        document.getElementById('new_operation_date').value = todayStr;
+        document.getElementById('new_debit_account').value = lastAIResult.debit_account;
+        document.getElementById('new_credit_account').value = lastAIResult.credit_account;
+        document.getElementById('new_debit_amount').value = lastAIResult.amount;
+        document.getElementById('new_credit_amount').value = lastAIResult.amount;
+        document.getElementById('new_description').value = lastAIResult.description;
+        
+        // Извлекаем название ПАРТНЕРА из описания
+        let partnerName = '';
+        const description = lastAIResult.description;
+        const partnerMatch = description.match(/(?:ООО|ИП|ЗАО|ПАО|ОАО)\s+["']?([А-Яа-я\s]+)/i);
+        if (partnerMatch) {
+            partnerName = partnerMatch[0];
+        }
+        document.getElementById('new_counterparty_name').value = partnerName;
+        
+        bootstrap.Modal.getInstance(document.getElementById('aiModal')).hide();
+        
+        showNotification('✅ Поля заполнены, нажмите "Создать проводку"', 'success');
+    }
+}
+
+// ========== ШАБЛОНЫ ПРОВОДОК (ДОПОЛНИТЕЛЬНЫЕ ФУНКЦИИ) ==========
+
+// Применить шаблон
+async function applyTemplate(templateId) {
+    try {
+        const res = await fetch('/api/fincore/templates', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        const template = data.templates.find(t => t.id === templateId);
+        
+        if (template) {
+            // Заполняем поля формы
+            document.getElementById('new_debit_account').value = template.debit_account || '';
+            document.getElementById('new_credit_account').value = template.credit_account || '';
+            document.getElementById('new_debit_amount').value = template.amount || 0;
+            document.getElementById('new_credit_amount').value = template.amount || 0;
+            document.getElementById('new_description').value = template.description || '';
+            document.getElementById('new_counterparty_name').value = template.counterparty_name || '';
+            
+            // Закрываем окно шаблонов
+            bootstrap.Modal.getInstance(document.getElementById('templatesModal')).hide();
+            // Открываем окно новой проводки
+            new bootstrap.Modal(document.getElementById('addEntryModal')).show();
+            showNotification('✅ Шаблон применён', 'success');
+        } else {
+            showNotification('❌ Шаблон не найден', 'error');
+        }
+    } catch(e) {
+        console.error('applyTemplate error:', e);
+        showNotification('❌ Ошибка: ' + e.message, 'error');
+    }
+}
+
+// Удалить шаблон
+async function deleteTemplate(templateId) {
+    if (!confirm('🗑️ Удалить шаблон?')) return;
+    
+    try {
+        // ✅ ПРАВИЛЬНЫЙ URL с учетом группы fincoreExtra
+        const response = await fetch(`/api/fincore/extra/template/${templateId}`, {
+            method: 'DELETE',
+            headers: { 
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        });
+        
+        // Проверяем ответ
+        if (!response.ok) {
+            const text = await response.text();
+            console.error('❌ Ошибка:', response.status, text);
+            showNotification(`❌ Ошибка ${response.status}: ${text.substring(0, 50)}`, 'error');
+            return;
+        }
+        
+        // Проверяем, что ответ — JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error('❌ Сервер вернул HTML:', text.substring(0, 200));
+            showNotification('❌ Ошибка сервера', 'error');
+            return;
+        }
+        
+        const data = await response.json();
+        console.log('📥 Ответ сервера:', data);
+        
+        if (data.success) {
+            showNotification(data.message || '✅ Шаблон удалён', 'success');
+            // Обновляем список шаблонов
+            await showTemplatesModal();
+        } else {
+            showNotification('❌ ' + (data.error || 'Неизвестная ошибка'), 'error');
+        }
+    } catch(e) {
+        console.error('❌ Ошибка удаления:', e);
+        showNotification('❌ Ошибка: ' + e.message, 'error');
+    }
+}
+</script>  
+</body>
+</html>
+
+
+<!-- ========== ШИКАРНОЕ МОДАЛЬНОЕ ОКНО-СПРАВКА ========== -->
+<div class="modal fade" id="helpModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content help-modal-content">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(102,126,234,0.3);">
+                <h5 class="modal-title">
+                    <i class="fas fa-graduation-cap" style="color: #a5b4fc;"></i> 
+                    Справочник по журналу проводок
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding: 30px; max-height: 70vh; overflow-y: auto;">
+                
+                <!-- СТАТИСТИКА -->
+                <div class="help-section">
+                    <h4><i class="fas fa-chart-line"></i> Статистика вверху страницы</h4>
+                    <div class="help-item">
+                        <div class="help-icon"><i class="fas fa-chart-line" style="color: #667eea;"></i></div>
+                        <div class="help-text">
+                            <strong>ВСЕГО ПРОВОДОК</strong>
+                            <span>Общее количество всех проводок в журнале (включая черновики и проведённые)</span>
+                        </div>
+                    </div>
+                    <div class="help-item">
+                        <div class="help-icon"><i class="fas fa-arrow-trend-up" style="color: #10b981;"></i></div>
+                        <div class="help-text">
+                            <strong>ДЕБЕТ</strong>
+                            <span>Сумма всех операций по дебету счетов. Дебет — это приход, поступление средств на счёт</span>
+                        </div>
+                        <div class="help-badge">Актив</div>
+                    </div>
+                    <div class="help-item">
+                        <div class="help-icon"><i class="fas fa-arrow-trend-down" style="color: #ef4444;"></i></div>
+                        <div class="help-text">
+                            <strong>КРЕДИТ</strong>
+                            <span>Сумма всех операций по кредиту счетов. Кредит — это расход, списание средств со счёта</span>
+                        </div>
+                        <div class="help-badge">Пассив</div>
+                    </div>
+                    <div class="help-item">
+                        <div class="help-icon"><i class="fas fa-scale-balanced" style="color: #a5b4fc;"></i></div>
+                        <div class="help-text">
+                            <strong>БАЛАНС</strong>
+                            <span>Разница между дебетом и кредитом. Если баланс = 0 — всё корректно</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ПОЛЯ ПРОВОДКИ -->
+                <div class="help-section">
+                    <h4><i class="fas fa-table-list"></i> Поля таблицы проводок</h4>
+                    <div class="help-item">
+                        <div class="help-icon"><i class="fas fa-calendar-day"></i></div>
+                        <div class="help-text">
+                            <strong>Дата</strong>
+                            <span>Дата совершения хозяйственной операции</span>
+                        </div>
+                    </div>
+                    <div class="help-item">
+                        <div class="help-icon"><i class="fas fa-file-invoice"></i></div>
+                        <div class="help-text">
+                            <strong>№ документа</strong>
+                            <span>Номер первичного документа (счёт, акт, накладная и т.д.)</span>
+                        </div>
+                    </div>
+                    <div class="help-item">
+                        <div class="help-icon"><span style="color:#10b981; font-weight:bold;">Дт</span></div>
+                        <div class="help-text">
+                            <strong>Дебет счёт</strong>
+                            <span>Счёт-получатель. Например: 51 — расчётный счёт, 50 — касса, 10 — материалы</span>
+                        </div>
+                        <div class="help-badge">Куда</div>
+                    </div>
+                    <div class="help-item">
+                        <div class="help-icon"><span style="color:#ef4444; font-weight:bold;">Кт</span></div>
+                        <div class="help-text">
+                            <strong>Кредит счёт</strong>
+                            <span>Счёт-источник. Например: 62 — покупатель, 60 — поставщик, 70 — зарплата</span>
+                        </div>
+                        <div class="help-badge">Откуда</div>
+                    </div>
+                    <div class="help-item">
+                        <div class="help-icon"><i class="fas fa-building"></i></div>
+                        <div class="help-text">
+                            <strong>Партнер</strong>
+                            <span>Контрагент (покупатель, поставщик, подрядчик)</span>
+                        </div>
+                    </div>
+                    <div class="help-item">
+                        <div class="help-icon"><i class="fas fa-ruble-sign"></i></div>
+                        <div class="help-text">
+                            <strong>Сумма</strong>
+                            <span>Сумма операции. Зелёным выделен приход (дебет), красным — расход (кредит)</span>
+                        </div>
+                    </div>
+                    <div class="help-item">
+                        <div class="help-icon"><i class="fas fa-info-circle"></i></div>
+                        <div class="help-text">
+                            <strong>Статус</strong>
+                            <span>📝 Черновик — можно редактировать и удалить. ✅ Проведена — завершённая операция</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ПОПУЛЯРНЫЕ СЧЕТА -->
+                <div class="help-section">
+                    <h4><i class="fas fa-book"></i> Популярные счета</h4>
+                    <div class="help-item">
+                        <div class="help-icon"><code>51</code></div>
+                        <div class="help-text"><strong>Расчётный счёт</strong><span>Безналичные деньги в банке</span></div>
+                    </div>
+                    <div class="help-item">
+                        <div class="help-icon"><code>50</code></div>
+                        <div class="help-text"><strong>Касса</strong><span>Наличные деньги в кассе</span></div>
+                    </div>
+                    <div class="help-item">
+                        <div class="help-icon"><code>60</code></div>
+                        <div class="help-text"><strong>Поставщики</strong><span>Расчёты с поставщиками и подрядчиками</span></div>
+                    </div>
+                    <div class="help-item">
+                        <div class="help-icon"><code>62</code></div>
+                        <div class="help-text"><strong>Покупатели</strong><span>Расчёты с покупателями и заказчиками</span></div>
+                    </div>
+                    <div class="help-item">
+                        <div class="help-icon"><code>70</code></div>
+                        <div class="help-text"><strong>Зарплата</strong><span>Расчёты с персоналом по оплате труда</span></div>
+                    </div>
+                    <div class="help-item">
+                        <div class="help-icon"><code>68</code></div>
+                        <div class="help-text"><strong>Налоги</strong><span>Расчёты с бюджетом по налогам и сборам</span></div>
+                    </div>
+                    <div class="help-item">
+                        <div class="help-icon"><code>90</code></div>
+                        <div class="help-text"><strong>Продажи</strong><span>Доходы от основной деятельности</span></div>
+                    </div>
+                </div>
+
+                <!-- КНОПКИ ДЕЙСТВИЙ -->
+                <div class="help-section">
+                    <h4><i class="fas fa-hand-pointer"></i> Кнопки действий</h4>
+                    <div class="help-item">
+                        <div class="help-icon"><i class="fas fa-edit" style="color: #f59e0b;"></i></div>
+                        <div class="help-text"><strong>Редактировать</strong><span>Изменить проводку. Доступно только для черновиков</span></div>
+                    </div>
+                    <div class="help-item">
+                        <div class="help-icon"><i class="fas fa-copy" style="color: #10b981;"></i></div>
+                        <div class="help-text"><strong>Копировать</strong><span>Создать копию проводки с новыми реквизитами</span></div>
+                    </div>
+                    <div class="help-item">
+                        <div class="help-icon"><i class="fas fa-archive" style="color: #f59e0b;"></i></div>
+                        <div class="help-text"><strong>В архив</strong><span>Переместить проводку в архив, чтобы не захламлять журнал</span></div>
+                    </div>
+                    <div class="help-item">
+                        <div class="help-icon"><i class="fas fa-check-circle" style="color: #3b82f6;"></i></div>
+                        <div class="help-text"><strong>Провести</strong><span>Подтвердить операцию. После проведения нельзя редактировать</span></div>
+                    </div>
+                    <div class="help-item">
+                        <div class="help-icon"><i class="fas fa-trash" style="color: #ef4444;"></i></div>
+                        <div class="help-text"><strong>Удалить</strong><span>Полностью удалить проводку. Только для черновиков</span></div>
+                    </div>
+                </div>
+
+                <!-- ФИЛЬТРЫ -->
+                <div class="help-section">
+                    <h4><i class="fas fa-filter"></i> Фильтрация данных</h4>
+                    <div class="help-item">
+                        <div class="help-icon"><i class="fas fa-calendar-alt"></i></div>
+                        <div class="help-text"><strong>Фильтр по дате</strong><span>Выберите период и нажмите "Найти"</span></div>
+                    </div>
+                    <div class="help-item">
+                        <div class="help-icon"><i class="fas fa-search"></i></div>
+                        <div class="help-text"><strong>Поиск по описанию</strong><span>Ищет по тексту в поле "Описание"</span></div>
+                    </div>
+                    <div class="help-item">
+                        <div class="help-icon"><i class="fas fa-chart-simple"></i></div>
+                        <div class="help-text"><strong>Фильтр по счету</strong><span>Показать проводки только по выбранному счёту</span></div>
+                    </div>
+                    <div class="help-item">
+                        <div class="help-icon"><i class="fas fa-bolt"></i></div>
+                        <div class="help-text"><strong>Быстрые фильтры</strong><span>Сегодня, неделя, месяц, квартал, год — одним нажатием</span></div>
+                    </div>
+                </div>
+
+                <!-- ЗОЛОТОЕ ПРАВИЛО -->
+                <div class="help-tip">
+                    <i class="fas fa-lightbulb"></i>
+                    <p><strong>Золотое правило бухгалтерии:</strong> Сумма дебета всегда должна равняться сумме кредита!<br>
+                    В каждой проводке должно быть: Дт = Кт. Если суммы не совпадают — проверьте данные.</p>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid rgba(102,126,234,0.3);">
+                <button type="button" class="btn-gradient" data-bs-dismiss="modal">
+                    <i class="fas fa-check"></i> Понятно, спасибо!
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно шаблонов -->
+<div class="modal fade" id="templatesModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-copy me-2"></i>Мои шаблоны проводок</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="templatesList" class="row g-3">
+                    <div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Загрузка...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-outline" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно AI-генерации -->
+<div class="modal fade" id="aiModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-robot me-2"></i>AI-генерация проводки</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Опишите операцию словами:</label>
+                    <textarea id="aiPrompt" class="form-control" rows="3" placeholder="Например: оплатили поставщику ООО Ромашка 50000 рублей с расчётного счёта"></textarea>
+                    <div class="mt-2">
+                        <button class="btn-gradient" onclick="generateFromAI()">
+                            <i class="fas fa-magic"></i> Сгенерировать
+                        </button>
+                    </div>
+                </div>
+                <div id="aiResult" style="display: none;">
+                    <hr>
+                    <h6><i class="fas fa-check-circle text-success"></i> Результат:</h6>
+                    <div id="aiResultContent" class="p-3" style="background: rgba(0,0,0,0.3); border-radius: 12px;"></div>
+                    <div class="mt-3">
+                        <button class="btn-gradient" onclick="applyAIResult()">
+                            <i class="fas fa-check"></i> Применить
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-outline" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 </body>
 </html>

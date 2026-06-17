@@ -172,3 +172,10 @@ func UploadCompanyStamp(c *gin.Context) {
         "message":   "Печать загружена",
     })
 }
+// GetCompanyNameFromContextHandler - возвращает название компании из контекста (для пуш-уведомлений)
+func GetCompanyNameFromContextHandler(c *gin.Context) {
+    companyName := middleware.GetCompanyNameFromContext(c)
+    c.JSON(http.StatusOK, gin.H{
+        "company_name": companyName,
+    })
+}

@@ -2,410 +2,549 @@
 <html lang="ru">
 <head>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">    
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Оплата подписки | Business Stack</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        
+
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0b1e;
             min-height: 100vh;
-            padding: 40px 20px;
+            color: white;
+            position: relative;
+            overflow-x: hidden;
         }
-        
+
+        /* Динамический фон */
+        .bg-gradient {
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at 20% 50%, #1a1f4e 0%, transparent 60%),
+                        radial-gradient(ellipse at 80% 20%, #2d1b69 0%, transparent 50%),
+                        radial-gradient(ellipse at 50% 80%, #1a3a5c 0%, transparent 50%);
+            z-index: 0;
+            animation: bgFloat 20s ease-in-out infinite;
+        }
+
+        @keyframes bgFloat {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(5deg) scale(1.1); }
+        }
+
+        /* Частицы */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 50%;
+            animation: floatParticle 15s infinite linear;
+        }
+        .particle:nth-child(1) { left: 10%; animation-duration: 18s; }
+        .particle:nth-child(2) { left: 30%; animation-duration: 22s; animation-delay: 2s; width: 6px; height: 6px; }
+        .particle:nth-child(3) { left: 50%; animation-duration: 16s; animation-delay: 4s; }
+        .particle:nth-child(4) { left: 70%; animation-duration: 20s; animation-delay: 1s; }
+        .particle:nth-child(5) { left: 90%; animation-duration: 24s; animation-delay: 3s; width: 5px; height: 5px; }
+
+        @keyframes floatParticle {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+        }
+
         .container {
-            max-width: 800px;
+            position: relative;
+            z-index: 1;
+            max-width: 600px;
             margin: 0 auto;
+            padding: 30px 20px 60px;
         }
-        
-        /* Навигационное меню */
+
+        /* Навигация */
         .navbar {
-            background: white;
-            border-radius: 50px;
-            padding: 15px 30px;
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 12px 20px;
             margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-        
-        .nav-links {
+            border: 1px solid rgba(255,255,255,0.06);
             display: flex;
             justify-content: center;
-            gap: 30px;
             flex-wrap: wrap;
+            gap: 8px;
         }
-        
+
         .nav-link {
             text-decoration: none;
-            color: #666;
+            color: rgba(255,255,255,0.6);
             font-weight: 500;
-            padding: 5px 10px;
-            border-radius: 20px;
+            font-size: 13px;
+            padding: 6px 14px;
+            border-radius: 30px;
             transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 5px;
         }
-        
+
         .nav-link:hover {
-            color: #667eea;
-            background: #f0f3ff;
+            color: white;
+            background: rgba(255,255,255,0.08);
         }
-        
+
         .nav-link.active {
             color: white;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, rgba(129,140,248,0.2), rgba(192,132,252,0.2));
         }
-        
+
         /* Хлебные крошки */
         .breadcrumbs {
             display: flex;
             justify-content: center;
-            gap: 3rem;
-            margin-bottom: 2rem;
-            color: rgba(255,255,255,0.8);
-        }
-        
-        .breadcrumb-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.9rem;
-        }
-        
-        .breadcrumb-item.active {
-            color: white;
-            font-weight: 600;
-        }
-        
-        .breadcrumb-item .number {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .breadcrumb-item.active .number {
-            background: white;
-            color: #667eea;
-        }
-        
-        /* Основная карточка */
-        .payment-card {
-            background: white;
-            border-radius: 30px;
-            padding: 40px;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.3);
-            animation: slideUp 0.5s ease;
-        }
-        
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        h1 {
-            font-size: 28px;
-            margin-bottom: 20px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-align: center;
-        }
-        
-        /* Информация о тарифе */
-        .plan-info {
-            background: linear-gradient(135deg, #f0f3ff, #f9f9ff);
-            border-radius: 20px;
-            padding: 25px;
+            gap: 2rem;
             margin-bottom: 30px;
-            text-align: center;
-            border: 1px solid rgba(102,126,234,0.2);
+            color: rgba(255,255,255,0.5);
+            font-size: 13px;
         }
-        
-        .plan-name {
-            font-size: 28px;
-            font-weight: 700;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 5px;
-        }
-        
-        .plan-price {
-            font-size: 36px;
-            font-weight: 800;
-            color: #333;
-        }
-        
-        .plan-price small {
-            font-size: 16px;
-            color: #666;
-            font-weight: normal;
-        }
-        
-        .yearly-save {
-            background: #48bb78;
-            color: white;
-            display: inline-block;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-            margin-top: 10px;
-        }
-        
-        h2 {
-            font-size: 18px;
-            color: #333;
-            margin-bottom: 15px;
+
+        .breadcrumb-item {
             display: flex;
             align-items: center;
             gap: 8px;
         }
-        
-        /* Способы оплаты */
-        .payment-methods {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 10px;
-            margin-bottom: 30px;
-        }
-        
-        .payment-method {
-            background: #f8f9fa;
-            border: 2px solid #e2e8f0;
-            border-radius: 15px;
-            padding: 15px 5px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .payment-method:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(102,126,234,0.2);
-        }
-        
-        .payment-method.selected {
-            border-color: #667eea;
-            background: #ebf4ff;
-            transform: scale(1.02);
-        }
-        
-        .method-icon {
-            font-size: 24px;
-        }
-        
-        .method-name {
-            font-weight: 600;
-            color: #333;
-            font-size: 12px;
-        }
-        
-        /* Детали оплаты */
-        .payment-details {
-            background: #f8f9fa;
-            border-radius: 20px;
-            padding: 25px;
-            margin: 20px 0;
-            animation: fadeIn 0.3s ease;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        .detail-row {
-            margin-bottom: 20px;
-        }
-        
-        .detail-label {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .detail-value {
-            font-size: 16px;
-            padding: 15px;
-            background: white;
-            border-radius: 12px;
-            border: 2px solid #e2e8f0;
-            width: 100%;
-            transition: border-color 0.3s;
-        }
-        
-        .detail-value:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        
-        .crypto-address {
-            word-break: break-all;
-            font-family: monospace;
-            background: #2d3748;
-            color: #48bb78;
-            padding: 15px;
-            border-radius: 10px;
-            font-size: 14px;
-            border: none;
-        }
-        
-        .qr-code {
-            text-align: center;
-            margin: 20px 0;
-        }
-        
-        .qr-code img {
-            width: 200px;
-            height: 200px;
-            border-radius: 15px;
-            padding: 10px;
-            background: white;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        
-        .copy-btn {
-            background: white;
-            color: #667eea;
-            border: 2px solid #667eea;
-            border-radius: 10px;
-            padding: 10px 20px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            width: 100%;
-            margin-top: 10px;
-        }
-        
-        .copy-btn:hover {
-            background: #667eea;
-            color: white;
-        }
-        
-        /* Итого */
-        .total {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-        
-        .total-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            color: #666;
-        }
-        
-        .total-row.final {
-            font-size: 20px;
-            font-weight: 700;
-            color: #333;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 2px solid #e2e8f0;
-        }
-        
-        /* Кнопка оплаты */
-        .pay-button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 15px;
-            padding: 18px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 20px;
-            transition: all 0.3s;
-        }
-        
-        .pay-button:hover:not(:disabled) {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(102,126,234,0.4);
-        }
-        
-        .pay-button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        
-        .secure-badge {
-            text-align: center;
-            margin-top: 20px;
-            color: #999;
-            font-size: 14px;
+
+        .breadcrumb-item .number {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.06);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 5px;
+            font-weight: 700;
+            font-size: 12px;
+            transition: 0.3s;
         }
-        
-        .back-link {
-            display: block;
-            text-align: center;
-            margin-top: 20px;
+
+        .breadcrumb-item.active .number {
+            background: linear-gradient(135deg, #818cf8, #c084fc);
             color: white;
-            text-decoration: none;
+            box-shadow: 0 0 20px rgba(129,140,248,0.3);
+        }
+
+        .breadcrumb-item.active {
+            color: white;
+        }
+
+        /* Основная карточка */
+        .payment-card {
+            background: rgba(255,255,255,0.04);
+            backdrop-filter: blur(30px);
+            border-radius: 28px;
+            padding: 35px;
+            border: 1px solid rgba(255,255,255,0.06);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.3);
+            animation: slideUp 0.6s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .payment-card h1 {
+            font-size: 26px;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 5px;
+            background: linear-gradient(135deg, #fff, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .payment-card .subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.4);
             font-size: 14px;
-            opacity: 0.9;
+            margin-bottom: 25px;
         }
-        
-        .back-link:hover {
-            opacity: 1;
-            text-decoration: underline;
+
+        /* Информация о тарифе */
+        .plan-info {
+            background: linear-gradient(135deg, rgba(129,140,248,0.08), rgba(192,132,252,0.08));
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
+            text-align: center;
+            border: 1px solid rgba(129,140,248,0.1);
         }
-        
+
+        .plan-name {
+            font-size: 26px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .plan-price {
+            font-size: 40px;
+            font-weight: 900;
+            color: #ffd700;
+            margin: 8px 0;
+        }
+
+        .plan-price small {
+            font-size: 16px;
+            color: rgba(255,255,255,0.4);
+            font-weight: 400;
+        }
+
+        .yearly-save {
+            display: inline-block;
+            background: rgba(52,211,153,0.15);
+            color: #34d399;
+            padding: 6px 18px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid rgba(52,211,153,0.1);
+        }
+
+        /* Способы оплаты */
+        .section-label {
+            font-size: 15px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .payment-methods {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .payment-method {
+            background: rgba(255,255,255,0.04);
+            border: 2px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            padding: 14px 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .payment-method:hover {
+            background: rgba(255,255,255,0.08);
+            transform: translateY(-2px);
+        }
+
+        .payment-method.selected {
+            border-color: #818cf8;
+            background: rgba(129,140,248,0.1);
+            box-shadow: 0 0 30px rgba(129,140,248,0.05);
+        }
+
+        .payment-method .method-icon {
+            font-size: 28px;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .payment-method .method-name {
+            font-size: 12px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.7);
+        }
+
+        .payment-method.selected .method-name {
+            color: white;
+        }
+
+        /* Детали оплаты */
+        .payment-details {
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.04);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .detail-row {
+            margin-bottom: 14px;
+        }
+
+        .detail-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-value {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            color: white;
+            font-size: 15px;
+            transition: 0.3s;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .detail-value:focus {
+            outline: none;
+            border-color: #818cf8;
+            background: rgba(255,255,255,0.08);
+            box-shadow: 0 0 0 3px rgba(129,140,248,0.1);
+        }
+
+        .detail-value::placeholder {
+            color: rgba(255,255,255,0.3);
+        }
+
+        .crypto-address {
+            background: rgba(0,0,0,0.3);
+            color: #34d399;
+            font-family: monospace;
+            font-size: 14px;
+            word-break: break-all;
+            border: 1px solid rgba(52,211,153,0.1);
+        }
+
         .row {
             display: grid;
             grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .qr-code {
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .qr-code img {
+            width: 180px;
+            height: 180px;
+            border-radius: 16px;
+            background: white;
+            padding: 10px;
+        }
+
+        .copy-btn {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.3s;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+
+        /* Итого */
+        .total {
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.04);
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            color: rgba(255,255,255,0.6);
+            font-size: 14px;
+        }
+
+        .total-row.final {
+            font-size: 20px;
+            font-weight: 700;
+            color: white;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            padding-top: 12px;
+            margin-top: 4px;
+        }
+
+        .total-row.final .amount {
+            color: #ffd700;
+        }
+
+        /* Кнопка оплаты */
+        .pay-button {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #818cf8, #c084fc);
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             gap: 10px;
         }
-        
+
+        .pay-button:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 16px 40px rgba(129,140,248,0.3);
+        }
+
+        .pay-button:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        .pay-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .secure-badge {
+            text-align: center;
+            margin-top: 16px;
+            color: rgba(255,255,255,0.3);
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 16px;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+
+        .back-link:hover {
+            color: rgba(255,255,255,0.7);
+        }
+
+        /* Адаптив */
         @media (max-width: 600px) {
             .payment-card { padding: 20px; }
-            .breadcrumbs { gap: 1rem; }
+            .payment-methods { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+            .payment-method { padding: 12px 6px; }
+            .payment-method .method-icon { font-size: 22px; }
+            .payment-method .method-name { font-size: 10px; }
+            .breadcrumbs { gap: 1rem; font-size: 12px; }
+            .row { grid-template-columns: 1fr; }
+            .plan-price { font-size: 32px; }
+            .navbar { padding: 10px 15px; gap: 4px; }
+            .nav-link { font-size: 11px; padding: 4px 10px; }
+        }
+
+        @media (max-width: 400px) {
             .payment-methods { grid-template-columns: repeat(2, 1fr); }
-            .nav-links { gap: 10px; }
-            .nav-link { font-size: 12px; }
+        }
+
+        /* Бейдж скидки */
+        .discount-badge {
+            display: inline-block;
+            background: rgba(255,215,0,0.15);
+            color: #ffd700;
+            padding: 4px 16px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 700;
+            border: 1px solid rgba(255,215,0,0.1);
+            margin-bottom: 12px;
+        }
+
+        .discount-badge i {
+            margin-right: 4px;
         }
     </style>
 </head>
 <body>
+
+    <!-- Фон -->
+    <div class="bg-gradient"></div>
+
+    <!-- Частицы -->
+    <div class="particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
     <div class="container">
-        <!-- Навигационное меню -->
+        <!-- Навигация -->
         <div class="navbar">
-            <div class="nav-links">
-                <a href="/" class="nav-link">🏠 Главная</a>
-                <a href="/pricing" class="nav-link">💰 Тарифы</a>
-                <a href="/ai" class="nav-link">🤖 AI чат</a>
-                <a href="/ai-settings" class="nav-link">⚙️ Настройки AI</a>
-                <a href="/dashboard-stats" class="nav-link">📊 Статистика</a>
-                <a href="/security" class="nav-link">🔐 Безопасность</a>
-                <a href="/trusted-devices" class="nav-link">📱 Устройства</a>
-            </div>
+            <a href="/" class="nav-link">🏠 Главная</a>
+            <a href="/pricing" class="nav-link active">💰 Тарифы</a>
+            <a href="/crm" class="nav-link">📊 CRM</a>
+            <a href="/finance" class="nav-link">💰 FinCore</a>
+            <a href="/ai" class="nav-link">🤖 AI чат</a>
+            <a href="/profile" class="nav-link">👤 Профиль</a>
         </div>
-        
+
         <!-- Хлебные крошки -->
         <div class="breadcrumbs">
             <div class="breadcrumb-item">
@@ -421,19 +560,27 @@
                 <span>Подтверждение</span>
             </div>
         </div>
-        
+
         <!-- Основная карточка -->
         <div class="payment-card">
-            <h1>💰 Оплата подписки</h1>
-            
+            <h1>💳 Оформление подписки</h1>
+            <p class="subtitle">Заполните данные и выберите способ оплаты</p>
+
             <!-- Информация о тарифе -->
             <div class="plan-info" id="planInfo">
-                <div class="plan-name" id="planName">Базовый</div>
-                <div class="plan-price" id="planPrice">990 <small>₽/мес</small></div>
-                <div class="yearly-save" id="yearlySave">-20% при годовой оплате</div>
+                <div class="plan-name" id="planName">💼 БИЗНЕС</div>
+                <div class="plan-price" id="planPrice">19 900 <small>₽/мес</small></div>
+                <div class="yearly-save" id="yearlySave">💰 Экономия 19 900 ₽ при годовой оплате</div>
+                <div style="margin-top: 10px;">
+                    <span class="discount-badge" id="discountBadge" style="display:none;">
+                        🔥 Скидка 40% для первых 10 клиентов
+                    </span>
+                </div>
             </div>
-            
-            <h2>🔸 Выберите способ оплаты</h2>
+
+            <div class="section-label">
+                <i class="fas fa-credit-card"></i> Выберите способ оплаты
+            </div>
             <div class="payment-methods" id="paymentMethods">
                 <div class="payment-method selected" data-method="card" onclick="selectMethod('card')">
                     <span class="method-icon">💳</span>
@@ -456,128 +603,149 @@
                     <span class="method-name">CryptoBot</span>
                 </div>
             </div>
-            
-            <!-- Динамическая область с деталями оплаты -->
+
+            <!-- Детали оплаты -->
             <div id="paymentDetails"></div>
-            
-            <!-- Итого (только для card) -->
+
+            <!-- Итого -->
             <div class="total" id="totalSection">
                 <div class="total-row">
-                    <span>Тариф <span id="summaryPlanName">Базовый</span></span>
-                    <span id="summaryPrice">990 ₽</span>
+                    <span id="summaryPlanName">💼 БИЗНЕС</span>
+                    <span id="summaryPrice">19 900 ₽</span>
                 </div>
-                <div class="total-row">
-                    <span>НДС</span>
-                    <span>0 ₽</span>
+                <div class="total-row" id="discountRow" style="display:none;">
+                    <span style="color:#ffd700;">🔥 Скидка 40%</span>
+                    <span style="color:#ffd700;" id="discountAmount">-7 960 ₽</span>
                 </div>
                 <div class="total-row final">
                     <span>Итого к оплате</span>
-                    <span id="totalAmount">990 ₽</span>
+                    <span class="amount" id="totalAmount">11 940 ₽</span>
                 </div>
             </div>
-            
+
             <!-- Кнопка оплаты -->
             <button class="pay-button" onclick="processPayment()" id="payBtn">
-                💳 Оплатить
+                💳 Оплатить 11 940 ₽
             </button>
-            
+
             <div class="secure-badge">
-                <span>🔒</span> Безопасная оплата · Данные защищены
+                <i class="fas fa-lock"></i> Безопасная оплата · Данные защищены
             </div>
-            
+
             <a href="/pricing" class="back-link">← Вернуться к тарифам</a>
         </div>
     </div>
-    
+
     <script>
-        // Данные тарифов (4 тарифа + годовые цены)
+        // ===== НОВЫЕ ЦЕНЫ (5 модулей) =====
         const plans = {
-            basic: { 
-                name: 'Базовый', 
-                monthly: 990, 
-                yearly: 9900,
-                usdt: 11.00, 
-                btc: 0.00022,
-                features: '👤 1 пользователь · 🤖 10 AI/день'
+            '🚀 старт': {
+                name: '🚀 СТАРТ',
+                monthly: 9900,
+                yearly: 99000,
+                usdt: 110,
+                btc: 0.0022,
+                features: '🤝 SalesHub (CRM)'
             },
-            family: { 
-                name: 'Семейный', 
-                monthly: 2490, 
-                yearly: 24900,
-                usdt: 27.67, 
-                btc: 0.00055,
-                features: '👥 5 пользователей · 🤖 50 AI/день'
+            '💼 бизнес': {
+                name: '💼 БИЗНЕС',
+                monthly: 19900,
+                yearly: 199000,
+                usdt: 221,
+                btc: 0.0044,
+                features: '💰 FinCore · 🤝 CRM · 📦 Склад'
             },
-            pro: { 
-                name: 'Профессиональный', 
-                monthly: 2990, 
-                yearly: 29900,
-                usdt: 33.22, 
-                btc: 0.00066,
-                features: '👥 1000 пользователей · 🤖 100 AI/день'
+            '🏆 профи': {
+                name: '🏆 ПРОФИ',
+                monthly: 29900,
+                yearly: 299000,
+                usdt: 332,
+                btc: 0.0066,
+                features: '💰 FinCore · 🤝 CRM · 📦 Склад · 🔒 VPN · ☁️ Облако'
             },
-            enterprise: { 
-                name: 'Корпоративный', 
-                monthly: 9990, 
-                yearly: 99900,
-                usdt: 111.00, 
-                btc: 0.00222,
-                features: '👥 ∞ · 🤖 1000 AI/день'
+            '👑 корпорация': {
+                name: '👑 КОРПОРАЦИЯ',
+                monthly: 49900,
+                yearly: 499000,
+                usdt: 554,
+                btc: 0.0111,
+                features: 'Все модули · White Label · SLA 99.9%'
             }
         };
-        
+
         // Адреса для крипты
         const USDTAddress = "TXmRt1UqWqfJ1XxqZQk3yL7vFhKpDnA2jB";
         const BTCAddress = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa";
-        
+
         // Получаем параметры из URL
         const urlParams = new URLSearchParams(window.location.search);
-        const planCode = urlParams.get('plan') || 'basic';
+        const planParam = urlParams.get('plan') || '💼 бизнес';
         const period = urlParams.get('period') || 'monthly';
-        
-        // Текущие значения
-        let selectedMethod = 'card';
-        let currentPlan = plans[planCode] || plans.basic;
-        let isYearly = period === 'yearly';
-        
-        // Цена в зависимости от периода
-        const currentPrice = isYearly ? currentPlan.yearly : currentPlan.monthly;
-        const priceText = isYearly ? '₽/год' : '₽/мес';
-        
-        // Обновляем информацию на странице
-        document.getElementById('planName').textContent = currentPlan.name;
-        document.getElementById('planPrice').innerHTML = `${currentPrice.toLocaleString()} <small>${priceText}</small>`;
-        document.getElementById('summaryPlanName').textContent = currentPlan.name;
-        document.getElementById('summaryPrice').textContent = `${currentPrice.toLocaleString()} ₽`;
-        document.getElementById('totalAmount').textContent = `${currentPrice.toLocaleString()} ₽`;
-        document.getElementById('payBtn').innerHTML = `💳 Оплатить ${currentPrice.toLocaleString()} ₽`;
-        
-        if (isYearly) {
-            const monthlyPrice = currentPlan.monthly;
-            const yearlyPrice = currentPlan.yearly;
-            const saveAmount = monthlyPrice * 12 - yearlyPrice;
-            document.getElementById('yearlySave').innerHTML = `💰 Экономия ${saveAmount.toLocaleString()} ₽ в год`;
+        const discount = urlParams.get('discount') === '40';
+
+        // Нормализуем название тарифа
+        let planKey = '💼 бизнес';
+        if (planParam) {
+            const decoded = decodeURIComponent(planParam).toLowerCase();
+            if (decoded.includes('старт') || decoded.includes('start')) planKey = '🚀 старт';
+            else if (decoded.includes('бизнес') || decoded.includes('business')) planKey = '💼 бизнес';
+            else if (decoded.includes('профи') || decoded.includes('profi')) planKey = '🏆 профи';
+            else if (decoded.includes('корпорац') || decoded.includes('corp')) planKey = '👑 корпорация';
         }
-        
-        // Выбор метода оплаты
+
+        // Текущий план
+        const currentPlan = plans[planKey] || plans['💼 бизнес'];
+        const isYearly = period === 'yearly';
+
+        // Базовая цена
+        const basePrice = isYearly ? currentPlan.yearly : currentPlan.monthly;
+
+        // Применяем скидку
+        const hasDiscount = discount;
+        const discountPercent = 40;
+        const discountAmount = Math.round(basePrice * discountPercent / 100);
+        const finalPrice = basePrice - discountAmount;
+
+        const priceText = isYearly ? '₽/год' : '₽/мес';
+
+        // Обновляем интерфейс
+        document.getElementById('planName').textContent = currentPlan.name;
+        document.getElementById('planPrice').innerHTML = `${basePrice.toLocaleString()} <small>${priceText}</small>`;
+        document.getElementById('summaryPlanName').textContent = currentPlan.name;
+        document.getElementById('summaryPrice').textContent = `${basePrice.toLocaleString()} ₽`;
+        document.getElementById('totalAmount').textContent = `${finalPrice.toLocaleString()} ₽`;
+        document.getElementById('payBtn').innerHTML = `💳 Оплатить ${finalPrice.toLocaleString()} ₽`;
+
+        // Показываем скидку
+        if (hasDiscount) {
+            document.getElementById('discountBadge').style.display = 'inline-block';
+            document.getElementById('discountRow').style.display = 'flex';
+            document.getElementById('discountAmount').textContent = `-${discountAmount.toLocaleString()} ₽`;
+        }
+
+        // Экономия при годовой оплате
+        if (isYearly) {
+            const monthlyTotal = currentPlan.monthly * 12;
+            const save = monthlyTotal - currentPlan.yearly;
+            document.getElementById('yearlySave').innerHTML = `💰 Экономия ${save.toLocaleString()} ₽ в год`;
+        }
+
+        let selectedMethod = 'card';
+
         window.selectMethod = function(method) {
             selectedMethod = method;
-            
-            document.querySelectorAll('.payment-method').forEach(el => {
-                el.classList.remove('selected');
-            });
+            document.querySelectorAll('.payment-method').forEach(el => el.classList.remove('selected'));
             document.querySelector(`[data-method="${method}"]`).classList.add('selected');
-            
             updatePaymentDetails();
         };
-        
-        // Обновление деталей оплаты
+
         function updatePaymentDetails() {
             const detailsDiv = document.getElementById('paymentDetails');
             const totalSection = document.getElementById('totalSection');
-            
+            const displayPrice = hasDiscount ? finalPrice : basePrice;
+
             let html = '';
-            
+
             switch(selectedMethod) {
                 case 'card':
                     totalSection.style.display = 'block';
@@ -604,27 +772,28 @@
                         </div>
                     `;
                     break;
-                    
+
                 case 'sbp':
                     totalSection.style.display = 'none';
                     html = `
                         <div class="payment-details">
                             <div class="qr-code">
-                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=СБП-${currentPrice}" alt="QR-код СБП">
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=СБП-${displayPrice}" alt="QR-код СБП">
                             </div>
                             <div class="detail-row">
                                 <div class="detail-label">Сумма к оплате</div>
-                                <div class="detail-value">${currentPrice.toLocaleString()} ₽</div>
+                                <div class="detail-value">${displayPrice.toLocaleString()} ₽</div>
                             </div>
-                            <button class="copy-btn" onclick="copyText('${currentPrice}')">
+                            <button class="copy-btn" onclick="copyText('${displayPrice}')">
                                 📋 Скопировать сумму
                             </button>
                         </div>
                     `;
                     break;
-                    
+
                 case 'usdt':
                     totalSection.style.display = 'none';
+                    const usdtAmount = (displayPrice / 90).toFixed(2);
                     html = `
                         <div class="payment-details">
                             <div class="detail-row">
@@ -636,14 +805,15 @@
                             </div>
                             <div class="detail-row">
                                 <div class="detail-label">Сумма к оплате</div>
-                                <div class="detail-value">${(currentPrice / 90).toFixed(2)} USDT</div>
+                                <div class="detail-value">${usdtAmount} USDT</div>
                             </div>
                         </div>
                     `;
                     break;
-                    
+
                 case 'btc':
                     totalSection.style.display = 'none';
+                    const btcAmount = (displayPrice / 4500000).toFixed(6);
                     html = `
                         <div class="payment-details">
                             <div class="detail-row">
@@ -655,43 +825,43 @@
                             </div>
                             <div class="detail-row">
                                 <div class="detail-label">Сумма к оплате</div>
-                                <div class="detail-value">${(currentPrice / 4500000).toFixed(6)} BTC</div>
+                                <div class="detail-value">${btcAmount} BTC</div>
                             </div>
                         </div>
                     `;
                     break;
-                    
+
                 case 'crypto':
                     totalSection.style.display = 'none';
                     html = `
                         <div class="payment-details" style="text-align: center;">
                             <div style="font-size: 48px; margin-bottom: 15px;">🤖</div>
-                            <h3 style="margin-bottom: 10px;">Оплата через CryptoBot</h3>
-                            <p style="color: #666; margin-bottom: 20px;">Нажмите кнопку для перехода в Telegram</p>
-                            <button class="copy-btn" onclick="window.open('https://t.me/CryptoBot', '_blank')">
+                            <h3 style="margin-bottom: 8px; color: white;">Оплата через CryptoBot</h3>
+                            <p style="color: rgba(255,255,255,0.5); margin-bottom: 20px;">Нажмите кнопку для перехода в Telegram</p>
+                            <button class="copy-btn" onclick="window.open('https://t.me/CryptoBot', '_blank')" style="background: linear-gradient(135deg, #818cf8, #c084fc); color: white; border: none;">
                                 🚀 Перейти в CryptoBot
                             </button>
                         </div>
                     `;
                     break;
             }
-            
+
             detailsDiv.innerHTML = html;
-            
+
             // Форматирование полей карты
             if (selectedMethod === 'card') {
                 setTimeout(() => {
                     const cardNumber = document.getElementById('cardNumber');
                     const cardExpiry = document.getElementById('cardExpiry');
                     const cardCvc = document.getElementById('cardCvc');
-                    
+
                     if (cardNumber) {
                         cardNumber.addEventListener('input', (e) => {
                             let v = e.target.value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ');
                             e.target.value = v;
                         });
                     }
-                    
+
                     if (cardExpiry) {
                         cardExpiry.addEventListener('input', (e) => {
                             let v = e.target.value.replace(/\D/g, '');
@@ -699,7 +869,7 @@
                             e.target.value = v;
                         });
                     }
-                    
+
                     if (cardCvc) {
                         cardCvc.addEventListener('input', (e) => {
                             e.target.value = e.target.value.replace(/\D/g, '');
@@ -708,87 +878,32 @@
                 }, 100);
             }
         }
-        
-        // Копирование текста
+
         window.copyText = function(text) {
             navigator.clipboard.writeText(text).then(() => {
                 alert('✅ Скопировано в буфер обмена');
             });
         };
-        
-        // Обработка платежа
+
         window.processPayment = function() {
             const btn = document.getElementById('payBtn');
             btn.innerHTML = '⏳ Обработка...';
             btn.disabled = true;
-            
+
             setTimeout(() => {
                 if (selectedMethod === 'crypto') {
                     window.open('https://t.me/CryptoBot', '_blank');
                 } else {
-                    alert(`✅ Платёж на сумму ${currentPrice.toLocaleString()} ₽ создан`);
+                    alert(`✅ Платёж на сумму ${finalPrice.toLocaleString()} ₽ создан`);
                 }
-                
-                btn.innerHTML = `💳 Оплатить ${currentPrice.toLocaleString()} ₽`;
+
+                btn.innerHTML = `💳 Оплатить ${finalPrice.toLocaleString()} ₽`;
                 btn.disabled = false;
             }, 1500);
         };
-        
+
         // Инициализация
         updatePaymentDetails();
-        
-        // Маска для ввода карты
-        setTimeout(() => {
-            const cardInput = document.getElementById('cardNumber');
-            if (cardInput) {
-                cardInput.addEventListener('input', function(e) {
-                    let v = e.target.value.replace(/\D/g, '');
-                    v = v.replace(/(\d{4})(?=\d)/g, '$1 ');
-                    e.target.value = v;
-                });
-            }
-        }, 100);
     </script>
-<style>
-.back-button {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    transition: all 0.3s;
-    z-index: 1000;
-    cursor: pointer;
-}
-.back-button:hover {
-    transform: scale(1.1);
-    background: linear-gradient(135deg, #764ba2, #667eea);
-    color: white;
-}
-</style>
-<a href="javascript:history.back()" class="back-button" title="Go Back">
-    <i class="fas fa-arrow-left fa-lg"></i>
-</a>
-<div class="ai-floating-widget">
-    <div class="ai-widget-button" onclick="openAIAssistant()">
-        🤖
-        <div class="ai-widget-badge">●</div>
-    </div>
-    <div class="ai-widget-tooltip">💬 Спросить AI ассистента</div>
-</div>
-<script>
-function openAIAssistant() {
-    window.open('/ai-assistant', '_blank', 'width=500,height=700,left=' + (screen.width - 520) + ',top=100');
-}
-</script>
 </body>
 </html>
-

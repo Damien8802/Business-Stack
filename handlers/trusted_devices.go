@@ -23,54 +23,58 @@ func TrustedDevicesHandler(c *gin.Context) {
     })
 }
 
-// AddTrustedDevice добавляет устройство в доверенные
 func AddTrustedDevice(c *gin.Context) {
-    var req struct {
-        UserID     string `json:"user_id"`
-        DeviceID   string `json:"device_id"`
-        DeviceName string `json:"device_name"`
-        IP         string `json:"ip"`
+    userID := c.GetString("user_id")
+    if userID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+        return
     }
+
+    var req struct {
+        DeviceID   string `json:"device_id" binding:"required"`
+        DeviceName string `json:"device_name" binding:"required"`
+    }
+
     if err := c.ShouldBindJSON(&req); err != nil {
         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
         return
     }
 
-    expiresAt := time.Now().AddDate(0, 0, 30) // 30 дней
+    // ✅ Генерируем ID для устройства если не передан
+    if req.DeviceID == "" {
+        req.DeviceID = uuid.New().String()
+    }
+
+    expiresAt := time.Now().AddDate(0, 0, 30)
 
     _, err := database.Pool.Exec(c.Request.Context(),
-        `INSERT INTO trusted_devices (user_id, device_id, device_name, ip_address, user_agent, expires_at)
-         VALUES ($1, $2, $3, $4, $5, $6)
+        `INSERT INTO trusted_devices (id, user_id, device_id, device_name, ip_address, user_agent, expires_at, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
          ON CONFLICT (user_id, device_id) DO UPDATE 
-         SET expires_at = $6, last_used_at = NOW()`,
-        req.UserID, req.DeviceID, req.DeviceName, c.ClientIP(), c.GetHeader("User-Agent"), expiresAt)
+         SET expires_at = $7, last_used_at = NOW()`,
+        uuid.New().String(), userID, req.DeviceID, req.DeviceName, c.ClientIP(), c.GetHeader("User-Agent"), expiresAt)
 
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add device"})
         return
     }
 
-    // Конвертируем userID в UUID для уведомления
-    userUUID, _ := uuid.Parse(req.UserID)
-    
-    // ОТПРАВЛЯЕМ УВЕДОМЛЕНИЕ
-    go LogAndNotify(c, userUUID, NotifDeviceTrusted, map[string]interface{}{
-        "device": req.DeviceName,
-        "ip":     c.ClientIP(),
-        "time":   time.Now().Format("02.01.2006 15:04"),
-    })
-
     c.JSON(http.StatusOK, gin.H{
         "success":    true,
         "message":    "Device added to trusted",
         "expires_at": expiresAt,
+        "device_id":  req.DeviceID,
     })
 }
 
-// RevokeTrustedDevice отзывает доверенное устройство
 func RevokeTrustedDevice(c *gin.Context) {
+    userID := c.GetString("user_id")
+    if userID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+        return
+    }
+
     var req struct {
-        UserID   string `json:"user_id" binding:"required"`
         DeviceID string `json:"device_id" binding:"required"`
     }
 
@@ -79,53 +83,38 @@ func RevokeTrustedDevice(c *gin.Context) {
         return
     }
 
-    // Получаем имя устройства перед удалением
-    var deviceName string
-    database.Pool.QueryRow(c.Request.Context(),
-        "SELECT device_name FROM trusted_devices WHERE user_id = $1 AND device_id = $2",
-        req.UserID, req.DeviceID).Scan(&deviceName)
-
+    // ✅ ИСПРАВЛЕНО: удаляем по device_id (а не по id)
     _, err := database.Pool.Exec(c.Request.Context(),
-        "DELETE FROM trusted_devices WHERE user_id = $1 AND device_id = $2",
-        req.UserID, req.DeviceID)
+        "DELETE FROM trusted_devices WHERE device_id = $1 AND user_id = $2",
+        req.DeviceID, userID)
 
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to revoke device"})
         return
     }
 
-    // Конвертируем userID в UUID для уведомления
-    userUUID, _ := uuid.Parse(req.UserID)
-    
-    // ОТПРАВЛЯЕМ УВЕДОМЛЕНИЕ
-    go LogAndNotify(c, userUUID, NotifDeviceRevoked, map[string]interface{}{
-        "device": deviceName,
-        "time":   time.Now().Format("02.01.2006 15:04"),
-    })
-
     c.JSON(http.StatusOK, gin.H{
         "success": true,
         "message": "Device access revoked",
     })
 }
-
 // GetTrustedDevices возвращает список доверенных устройств
 func GetTrustedDevices(c *gin.Context) {
-    userID := c.Query("user_id")
+    userID := c.GetString("user_id")
     if userID == "" {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "user_id required"})
+        c.JSON(http.StatusOK, gin.H{"devices": []interface{}{}, "success": true})
         return
     }
 
-    rows, err := database.Pool.Query(c.Request.Context(),
-        `SELECT device_id, device_name, ip_address, user_agent, expires_at, last_used_at 
-         FROM trusted_devices 
-         WHERE user_id = $1 AND expires_at > NOW()
-         ORDER BY last_used_at DESC`,
-        userID)
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT device_id, device_name, ip_address, user_agent, created_at, expires_at, last_used_at
+        FROM trusted_devices 
+        WHERE user_id = $1
+        ORDER BY created_at DESC
+    `, userID)
 
     if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+        c.JSON(http.StatusOK, gin.H{"devices": []interface{}{}, "success": true})
         return
     }
     defer rows.Close()
@@ -133,21 +122,25 @@ func GetTrustedDevices(c *gin.Context) {
     var devices []gin.H
     for rows.Next() {
         var deviceID, deviceName, ipAddress, userAgent string
-        var expiresAt, lastUsedAt time.Time
-        rows.Scan(&deviceID, &deviceName, &ipAddress, &userAgent, &expiresAt, &lastUsedAt)
-        
+        var createdAt, expiresAt, lastUsedAt time.Time
+
+        err := rows.Scan(&deviceID, &deviceName, &ipAddress, &userAgent, &createdAt, &expiresAt, &lastUsedAt)
+        if err != nil {
+            continue
+        }
+
         devices = append(devices, gin.H{
-            "device_id":   deviceID,
-            "device_name": deviceName,
-            "ip_address":  ipAddress,
-            "user_agent":  userAgent,
-            "expires_at":  expiresAt,
-            "last_used":   lastUsedAt,
+            "device_id":    deviceID,   // ← ЭТО ID для удаления
+            "device_name":  deviceName,
+            "ip_address":   ipAddress,
+            "user_agent":   userAgent,
+            "created_at":   createdAt,
+            "expires_at":   expiresAt,
+            "last_used_at": lastUsedAt,
+            "browser":      parseBrowser(userAgent),
+            "os":           parseOS(userAgent),
         })
     }
 
-    c.JSON(http.StatusOK, gin.H{
-        "success": true,
-        "devices": devices,
-    })
+    c.JSON(http.StatusOK, gin.H{"devices": devices, "success": true})
 }

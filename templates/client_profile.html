@@ -9,7 +9,35 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* ===== БАЗОВЫЕ СТИЛИ ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        /* ===== КАРДИНАЛЬНО УБИРАЕМ ВСЕ КОНТУРЫ ===== */
+        *:focus,
+        *:focus-visible,
+        *:active,
+        *:focus-within,
+        input:focus,
+        textarea:focus,
+        select:focus,
+        button:focus,
+        #orderModal,
+        #orderModal *,
+        #orderModal *:focus {
+            outline: none !important;
+            outline: 0 !important;
+            outline-color: transparent !important;
+            outline-style: none !important;
+            box-shadow: none !important;
+            -webkit-box-shadow: none !important;
+            -moz-box-shadow: none !important;
+        }
+        input:focus,
+        textarea:focus,
+        select:focus {
+            border-color: rgba(79, 70, 229, 0.4) !important;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, #0a0a1a 0%, #0f0f23 50%, #0a0a1a 100%);
@@ -206,6 +234,7 @@
         .badge-active { background: rgba(16,185,129,0.2); color: #34d399; }
         .badge-expired { background: rgba(239,68,68,0.2); color: #f87171; }
         
+        /* ===== МОДАЛЬНОЕ ОКНО ===== */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -219,6 +248,9 @@
             justify-content: center;
             align-items: center;
         }
+        .modal-overlay.active {
+            display: flex !important;
+        }
         .modal-content {
             background: rgba(10, 10, 26, 0.98);
             border-radius: 32px;
@@ -226,6 +258,10 @@
             max-width: 500px;
             width: 90%;
             border: 1px solid rgba(79,70,229,0.4);
+            max-height: 90vh;
+            overflow-y: auto;
+            margin: auto;
+            position: relative;
         }
         .modal-content h3 { color: white; margin-bottom: 24px; }
         .modal-content input, .modal-content textarea {
@@ -243,6 +279,35 @@
         .tab-content { display: none; padding: 0 30px 30px 30px; }
         .tab-content.active { display: block; }
         
+        .password-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        .password-wrapper input {
+            width: 100%;
+            padding: 10px 45px 10px 16px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(79,70,229,0.3);
+            border-radius: 12px;
+            color: white;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        .password-wrapper .toggle-eye {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: rgba(255,255,255,0.3);
+            transition: color 0.3s;
+            font-size: 16px;
+            z-index: 5;
+        }
+        .password-wrapper .toggle-eye:hover {
+            color: #818cf8;
+        }
+        
         @media (max-width: 768px) {
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
             .dashboard-row { grid-template-columns: 1fr; }
@@ -252,7 +317,444 @@
         }
         input[type="date"] { color-scheme: dark; }
         input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+
+        /* ===== МОДАЛЬНОЕ ОКНО ЗАЯВКИ ===== */
+        #orderModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(15px);
+            z-index: 99999;
+            justify-content: center;
+            align-items: center;
+        }
+        #orderModal.active {
+            display: flex !important;
+        }
+        #orderModal .modal-content {
+            background: #0f0f23;
+            border: 1px solid rgba(79, 70, 229, 0.4);
+            border-radius: 32px;
+            padding: 32px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            position: relative;
+            margin: auto;
+            box-shadow: 0 0 80px rgba(79, 70, 229, 0.2);
+        }
+      #orderModal .modal-content input,
+#orderModal .modal-content textarea,
+#orderModal .modal-content select {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(79, 70, 229, 0.15) !important; /* ← сделали более прозрачным */
+    border-radius: 12px;
+    color: #ffffff;
+    padding: 12px;
+    width: 100%;
+    outline: none !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+}
+
+#orderModal .modal-content input:focus,
+#orderModal .modal-content textarea:focus,
+#orderModal .modal-content select:focus {
+    outline: none !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    border-color: rgba(79, 70, 229, 0.3) !important; /* ← тёмный, почти незаметный */
+}
+        #orderModal select option:checked,
+        #orderModal select option:hover {
+            background: #4f46e5 !important;
+        }
+        #orderModal label {
+            color: rgba(255, 255, 255, 0.7) !important;
+        }
+        #orderModal .modal-buttons .btn-cancel {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        #orderModal .modal-buttons .btn-cancel:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        #orderModal .modal-buttons .btn-submit {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            border: none;
+            border-radius: 50px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        #orderModal .modal-buttons .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+        }
+
+        /* ===== ПЛЕЙСХОЛДЕРЫ ===== */
+        #orderModal input::placeholder,
+        #orderModal textarea::placeholder,
+        .modal-content input::placeholder,
+        .modal-content textarea::placeholder {
+            color: rgba(255, 255, 255, 0.4) !important;
+            opacity: 1 !important;
+        }
+        input::placeholder,
+        textarea::placeholder {
+            color: rgba(255, 255, 255, 0.4) !important;
+            opacity: 1 !important;
+        }
+
+        /* ===== ОСТАЛЬНЫЕ СТИЛИ ===== */
+        .create-order-btn {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            border: none;
+            border-radius: 50px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .create-order-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(79,70,229,0.4);
+        }
+        .delete-btn {
+            background: rgba(239,68,68,0.2) !important;
+            color: #f87171 !important;
+            border: 1px solid rgba(239,68,68,0.3) !important;
+            border-radius: 8px !important;
+            padding: 4px 10px !important;
+            cursor: pointer !important;
+            font-size: 12px !important;
+            transition: all 0.3s !important;
+        }
+        .delete-btn:hover {
+            background: rgba(239,68,68,0.4) !important;
+        }
+        .progress-bar {
+            background: rgba(255,255,255,0.1) !important;
+            border-radius: 10px !important;
+            height: 6px !important;
+            overflow: hidden !important;
+        }
+        .progress-fill {
+            background: linear-gradient(90deg, #4f46e5, #7c3aed) !important;
+            height: 100% !important;
+            border-radius: 10px !important;
+            transition: width 0.3s !important;
+        }
+        body.no-scroll {
+            overflow: hidden !important;
+            position: fixed !important;
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+/* ===== КНОПКА ОБНОВЛЕНИЯ ===== */
+.refresh-btn-wrapper {
+    grid-column: span 4;
+    display: flex;
+    justify-content: center;
+    padding: 5px 0;
+}
+.refresh-btn {
+    padding: 12px 40px;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    border: none;
+    border-radius: 50px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    box-shadow: 0 4px 15px rgba(79,70,229,0.3);
+}
+.refresh-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(79,70,229,0.5);
+}
+.refresh-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+.refresh-btn .fa-spin {
+    animation: fa-spin 1s infinite linear;
+}
+@keyframes fa-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+/* ===== СТИЛИ ДЛЯ ИДЕЙ ===== */
+.idea-card {
+    background: rgba(255,255,255,0.08) !important;
+    border-radius: 16px !important;
+    padding: 16px 20px !important;
+    margin-bottom: 12px !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    transition: all 0.3s !important;
+}
+.idea-card:hover {
+    background: rgba(255,255,255,0.12) !important;
+    border-color: rgba(79,70,229,0.4) !important;
+    transform: translateY(-2px) !important;
+}
+.idea-title {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    font-size: 16px !important;
+}
+.idea-description {
+    color: rgba(255,255,255,0.8) !important;
+    font-size: 14px !important;
+    margin-top: 6px !important;
+    line-height: 1.5 !important;
+}
+.idea-meta {
+    color: rgba(255,255,255,0.5) !important;
+    font-size: 12px !important;
+    margin-top: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+}
+.idea-priority-high {
+    background: rgba(239,68,68,0.2) !important;
+    color: #f87171 !important;
+    padding: 2px 12px !important;
+    border-radius: 20px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+}
+.idea-priority-medium {
+    background: rgba(245,158,11,0.2) !important;
+    color: #fbbf24 !important;
+    padding: 2px 12px !important;
+    border-radius: 20px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+}
+.idea-priority-low {
+    background: rgba(16,185,129,0.2) !important;
+    color: #34d399 !important;
+    padding: 2px 12px !important;
+    border-radius: 20px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+}
+.idea-status-new {
+    background: rgba(59,130,246,0.2) !important;
+    color: #60a5fa !important;
+    padding: 2px 12px !important;
+    border-radius: 20px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+}
+.idea-status-done {
+    background: rgba(16,185,129,0.2) !important;
+    color: #34d399 !important;
+    padding: 2px 12px !important;
+    border-radius: 20px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+}
+.idea-status-rejected {
+    background: rgba(239,68,68,0.2) !important;
+    color: #f87171 !important;
+    padding: 2px 12px !important;
+    border-radius: 20px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+}
+.idea-status-in_progress {
+    background: rgba(139,92,246,0.2) !important;
+    color: #a78bfa !important;
+    padding: 2px 12px !important;
+    border-radius: 20px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+}
+.idea-empty {
+    text-align: center !important;
+    padding: 40px 20px !important;
+    color: rgba(255,255,255,0.5) !important;
+}
+.idea-empty-icon {
+    font-size: 48px !important;
+    margin-bottom: 16px !important;
+}
+.idea-empty-title {
+    color: #ffffff !important;
+    font-size: 18px !important;
+    margin-bottom: 8px !important;
+}
+.idea-empty-text {
+    color: rgba(255,255,255,0.5) !important;
+    font-size: 14px !important;
+}
+/* ===== СТИЛИ ДЛЯ SELECT ===== */
+select {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+}
+select option {
+    color: #ffffff !important;
+    background: #1a1a2e !important;
+    padding: 8px !important;
+}
+select option[value="low"] {
+    color: #34d399 !important;
+}
+select option[value="medium"] {
+    color: #fbbf24 !important;
+}
+select option[value="high"] {
+    color: #f87171 !important;
+}
+/* Для тёмных тем браузера */
+select option:checked,
+select option:hover {
+    background: #4f46e5 !important;
+    color: #ffffff !important;
+}
+/* ===== КНОПКА ЗАКРЫТЬ В МОДАЛКЕ ===== */
+#orderModal .modal-buttons .btn-cancel {
+    background: rgba(255, 255, 255, 0.05);
+    color: #94a3b8;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 12px 24px;
+    border-radius: 40px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+#orderModal .modal-buttons .btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+#orderModal .modal-buttons .btn-submit {
+    padding: 12px 30px;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    border: none;
+    border-radius: 50px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+#orderModal .modal-buttons .btn-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+}
+/* ===== ЯРКИЕ ГЛАЗКИ ДЛЯ ПОЛЕЙ ПАРОЛЯ ===== */
+
+/* Основной цвет глазков - делаем их фиолетовыми/синими */
+.password-wrapper .toggle-eye {
+    color: #818cf8 !important;
+    opacity: 0.8 !important;
+    font-size: 18px !important;
+    transition: all 0.3s !important;
+}
+
+.password-wrapper .toggle-eye i {
+    color: #818cf8 !important;
+    font-size: 18px !important;
+}
+
+.password-wrapper .toggle-eye:hover {
+    color: #a78bfa !important;
+    opacity: 1 !important;
+    transform: translateY(-50%) scale(1.1) !important;
+}
+
+.password-wrapper .toggle-eye:hover i {
+    color: #a78bfa !important;
+}
+
+/* Когда пароль виден (глаз перечеркнут) */
+.password-wrapper .toggle-eye i.fa-eye-slash {
+    color: #f472b6 !important;
+}
+
+.password-wrapper .toggle-eye:hover i.fa-eye-slash {
+    color: #f472b6 !important;
+    opacity: 1 !important;
+}
+
+/* Добавляем свечение для глазков */
+.password-wrapper .toggle-eye {
+    text-shadow: 0 0 15px rgba(129, 140, 248, 0.3) !important;
+}
+
+.password-wrapper .toggle-eye:hover {
+    text-shadow: 0 0 25px rgba(129, 140, 248, 0.6) !important;
+}
+
+/* ===== TOGGLE SWITCH ДЛЯ УВЕДОМЛЕНИЙ ===== */
+.toggle-switch {
+    position: relative;
+    width: 50px;
+    height: 28px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.toggle-switch input {
+    display: none;
+}
+.toggle-switch .track {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.15);
+    border-radius: 14px;
+    transition: 0.3s;
+}
+.toggle-switch .thumb {
+    position: absolute;
+    left: 2px;
+    top: 2px;
+    width: 24px;
+    height: 24px;
+    background: #64748b;
+    border-radius: 50%;
+    transition: 0.3s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.toggle-switch input:checked ~ .track {
+    background: rgba(79, 70, 229, 0.6);
+}
+.toggle-switch input:checked ~ .thumb {
+    left: 24px;
+    background: #818cf8;
+}
+
     </style>
+<!-- QRCode.js для генерации QR-кодов -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 <div class="container">
@@ -283,6 +785,7 @@
             <button class="tab-btn active" onclick="showTab('overview')"><i class="fas fa-user"></i> Обзор</button>
             <button class="tab-btn" onclick="showTab('profile')"><i class="fas fa-edit"></i> Личные данные</button>
             <button class="tab-btn" onclick="showTab('orders')"><i class="fas fa-clipboard-list"></i> Мои заявки</button>
+            <button class="tab-btn" onclick="showTab('module-requests')"><i class="fas fa-code-branch"></i> Заявки на модули</button>
             <button class="tab-btn" onclick="showTab('features')"><i class="fas fa-lightbulb"></i> Мои идеи</button>
             <button class="tab-btn" onclick="showTab('security')"><i class="fas fa-shield-alt"></i> Безопасность</button>
             <button class="tab-btn" onclick="showTab('documents')"><i class="fas fa-file-pdf"></i> Документы</button>
@@ -294,6 +797,12 @@
                 <div class="stat-card"><div class="stat-number" id="statOrders">0</div><div class="stat-label">📋 Заявок</div></div>
                 <div class="stat-card"><div class="stat-number" id="statIdeas">0</div><div class="stat-label">💡 Идей</div></div>
                 <div class="stat-card"><div class="stat-number" id="statDays">0</div><div class="stat-label">📅 Дней с нами</div></div>
+ <div class="refresh-btn-wrapper">
+        <button class="refresh-btn" id="refreshBtn" onclick="refreshAllData()">
+            <i class="fas fa-sync-alt" id="refreshIcon"></i>
+            <span id="refreshText">Обновить данные</span>
+        </button>
+    </div>
             </div>
 
             <div style="margin: 0 30px 20px 30px;">
@@ -340,11 +849,11 @@
 
         <div id="documentsTab" class="tab-content">
             <div class="dashboard-card">
-                <h3><i class="fas fa-file-pdf"></i> Акт сверки с контрагентом</h3>
-                <p style="color: #94a3b8; margin-bottom: 20px;">Сформируйте PDF-документ о взаиморасчётах с контрагентом.</p>
+                <h3><i class="fas fa-file-pdf"></i> Акт сверки с партнёром</h3>
+                <p style="color: #94a3b8; margin-bottom: 20px;">Сформируйте PDF-документ о взаиморасчётах с партнёром.</p>
                 
                 <div style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 8px; color: #a5b4fc;">📋 Контрагент *</label>
+                    <label style="display: block; margin-bottom: 8px; color: #a5b4fc;">📋 Партнёр *</label>
                     <input type="text" id="recCounterpartyName" placeholder="ООО Ромашка" style="width:100%; padding: 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(79,70,229,0.3); border-radius: 12px; color: white;">
                 </div>
                 <div style="margin-bottom: 15px;">
@@ -383,35 +892,398 @@
         <div id="ordersTab" class="tab-content">
             <div id="userOrdersList">Загрузка...</div>
         </div>
+
+<div id="module-requestsTab" class="tab-content">
+    <div id="myModuleRequestsList" style="padding: 10px;">
+        <div style="text-align:center; padding:20px; color:#94a3b8;">Загрузка...</div>
+    </div>
+</div>
         
-        <div id="featuresTab" class="tab-content">
-            <div class="dashboard-card">
-                <h3><i class="fas fa-plus"></i> Предложить идею</h3>
-                <input type="text" id="ideaTitle" placeholder="Название идеи" style="width:100%; margin-bottom:10px; padding:12px; background:rgba(255,255,255,0.08); border:1px solid rgba(79,70,229,0.3); border-radius:12px; color:white;">
-                <textarea id="ideaDesc" rows="3" placeholder="Описание идеи..." style="width:100%; margin-bottom:10px; padding:12px; background:rgba(255,255,255,0.08); border:1px solid rgba(79,70,229,0.3); border-radius:12px; color:white;"></textarea>
-                <select id="ideaPriority" style="width:100%; margin-bottom:10px; padding:12px; background:rgba(255,255,255,0.08); border:1px solid rgba(79,70,229,0.3); border-radius:12px; color:white;">
-                    <option value="low">🟢 Низкий приоритет</option>
-                    <option value="medium">🟡 Средний приоритет</option>
-                    <option value="high">🔴 Высокий приоритет</option>
-                </select>
-                <button class="btn-action btn-save" onclick="submitIdea()"><i class="fas fa-paper-plane"></i> Отправить идею</button>
-            </div>
-            <div style="margin-top: 20px;" id="userIdeasList">Загрузка...</div>
+        <!-- Модальное окно создания заявки -->
+        <div class="modal-overlay" id="orderModal">
+            <div class="modal-content" style="max-width: 600px;">
+                <h3><i class="fas fa-plus-circle"></i> Новая заявка</h3>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="color: rgba(255,255,255,0.8); display: block; margin-bottom: 5px;">📋 Название проекта *</label>
+                    <input type="text" id="orderName" placeholder="Например: Разработка интернет-магазина" style="width:100%; padding:12px; background:rgba(255,255,255,0.08); border:1px solid rgba(79,70,229,0.3); border-radius:12px; color:white;">
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="color: rgba(255,255,255,0.8); display: block; margin-bottom: 5px;">📞 Контакт *</label>
+                    <input type="text" id="orderContact" placeholder="Email или телефон" style="width:100%; padding:12px; background:rgba(255,255,255,0.08); border:1px solid rgba(79,70,229,0.3); border-radius:12px; color:white;">
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="color: rgba(255,255,255,0.8); display: block; margin-bottom: 5px;">🛠️ Тип услуги</label>
+                    <select id="orderService" style="width:100%; padding:12px; background:rgba(255,255,255,0.08); border:1px solid rgba(79,70,229,0.3); border-radius:12px; color:white;">
+                        <option value="Разработка сайта">🌐 Разработка сайта</option>
+                        <option value="Мобильное приложение">📱 Мобильное приложение</option>
+                        <option value="Дизайн">🎨 Дизайн</option>
+                        <option value="Маркетинг">📈 Маркетинг</option>
+                        <option value="Консалтинг">💼 Консалтинг</option>
+                        <option value="Другое">📌 Другое</option>
+                    </select>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="color: rgba(255,255,255,0.8); display: block; margin-bottom: 5px;">📅 Срок выполнения</label>
+                    <input type="date" id="orderDeadline" style="width:100%; padding:12px; background:rgba(255,255,255,0.08); border:1px solid rgba(79,70,229,0.3); border-radius:12px; color:white;">
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="color: rgba(255,255,255,0.8); display: block; margin-bottom: 5px;">💰 Бюджет (₽)</label>
+                    <input type="number" id="orderBudget" placeholder="Например: 100000" style="width:100%; padding:12px; background:rgba(255,255,255,0.08); border:1px solid rgba(79,70,229,0.3); border-radius:12px; color:white;">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="color: rgba(255,255,255,0.8); display: block; margin-bottom: 5px;">📝 Описание *</label>
+                    <textarea id="orderDesc" rows="4" placeholder="Опишите подробно, что нужно сделать..." style="width:100%; padding:12px; background:rgba(255,255,255,0.08); border:1px solid rgba(79,70,229,0.3); border-radius:12px; color:white;"></textarea>
+                </div>
+                
+<div class="modal-buttons">
+    <button class="btn-cancel" onclick="closeOrderModal()">✕ Закрыть</button>
+    <button class="btn-submit" onclick="createOrder()">
+        <i class="fas fa-paper-plane"></i> Отправить заявку
+    </button>
+</div>
+   </div>
         </div>
+        
+      <div id="featuresTab" class="tab-content">
+    <div class="dashboard-card">
+        <h3><i class="fas fa-plus"></i> Предложить идею</h3>
+        <input type="text" id="ideaTitle" placeholder="Название идеи" style="width:100%; margin-bottom:10px; padding:12px; background:rgba(255,255,255,0.08); border:1px solid rgba(79,70,229,0.3); border-radius:12px; color:white;">
+        <textarea id="ideaDesc" rows="3" placeholder="Описание идеи..." style="width:100%; margin-bottom:10px; padding:12px; background:rgba(255,255,255,0.08); border:1px solid rgba(79,70,229,0.3); border-radius:12px; color:white;"></textarea>
+      <select id="ideaPriority" style="width:100%; margin-bottom:10px; padding:12px; background:rgba(255,255,255,0.08); border:1px solid rgba(79,70,229,0.3); border-radius:12px; color:white;">
+    <option value="low" style="color: #34d399; background: #1a1a2e;">🟢 Низкий приоритет</option>
+    <option value="medium" style="color: #fbbf24; background: #1a1a2e;">🟡 Средний приоритет</option>
+    <option value="high" style="color: #f87171; background: #1a1a2e;">🔴 Высокий приоритет</option>
+</select>
+        <button class="btn-action btn-save" onclick="submitIdea()"><i class="fas fa-paper-plane"></i> Отправить идею</button>
+    </div>
+    <div style="margin-top: 20px;" id="userIdeasList"></div>
+</div>
         
         <div id="securityTab" class="tab-content">
             <div class="dashboard-card">
                 <h3><i class="fas fa-key"></i> Смена пароля</h3>
-                <div class="info-row"><div class="info-label">Текущий пароль</div><div class="info-value"><input type="password" id="currentPassword" placeholder="******" style="background:rgba(255,255,255,0.08); border:1px solid rgba(79,70,229,0.3); border-radius:12px; color:white; padding:10px; width:100%;"></div></div>
-                <div class="info-row"><div class="info-label">Новый пароль</div><div class="info-value"><input type="password" id="newPassword" placeholder="******" style="background:rgba(255,255,255,0.08); border:1px solid rgba(79,70,229,0.3); border-radius:12px; color:white; padding:10px; width:100%;"></div></div>
-                <div class="info-row"><div class="info-label">Подтверждение</div><div class="info-value"><input type="password" id="confirmPassword" placeholder="******" style="background:rgba(255,255,255,0.08); border:1px solid rgba(79,70,229,0.3); border-radius:12px; color:white; padding:10px; width:100%;"></div></div>
-                <div style="margin-top: 20px;"><button class="btn-action btn-save" onclick="changePassword()"><i class="fas fa-save"></i> Сменить пароль</button></div>
+                
+                <div class="info-row">
+                    <div class="info-label">Текущий пароль</div>
+                    <div class="info-value">
+                        <div class="password-wrapper">
+                            <input type="password" id="currentPassword" placeholder="Введите текущий пароль">
+                            <span class="toggle-eye" onclick="togglePassword('currentPassword', this)">
+                                <i class="fas fa-eye"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-label">Новый пароль</div>
+                    <div class="info-value">
+                        <div class="password-wrapper">
+                            <input type="password" id="newPassword" placeholder="Введите новый пароль (мин. 6 символов)">
+                            <span class="toggle-eye" onclick="togglePassword('newPassword', this)">
+                                <i class="fas fa-eye"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-label">Подтверждение</div>
+                    <div class="info-value">
+                        <div class="password-wrapper">
+                            <input type="password" id="confirmPassword" placeholder="Повторите новый пароль">
+                            <span class="toggle-eye" onclick="togglePassword('confirmPassword', this)">
+                                <i class="fas fa-eye"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <button class="btn-action btn-save" onclick="changePassword()">
+                        <i class="fas fa-save"></i> Сменить пароль
+                    </button>
+                </div>
             </div>
-            <div class="dashboard-card" style="margin-top: 20px;">
-                <h3><i class="fas fa-trash"></i> Удалить аккаунт</h3>
-                <p style="color: #f87171; margin-bottom: 15px;">⚠️ Внимание! Это действие необратимо.</p>
-                <button class="btn-action" style="background: rgba(239,68,68,0.2); color: #f87171;" onclick="deleteAccount()"><i class="fas fa-trash"></i> Удалить аккаунт</button>
+            
+
+            
+            
+<!-- ===== 2FA ===== -->
+<div class="dashboard-card" style="margin-top: 20px; text-align: center;">
+    <h3 style="text-align: left;"><i class="fas fa-shield-alt" style="color: #818cf8;"></i> Двухфакторная аутентификация (2FA)</h3>
+  <!-- ===== ПАМЯТКА С ОБЪЯСНЕНИЕМ 2FA ===== -->
+    <div style="background: linear-gradient(135deg, rgba(79,70,229,0.1), rgba(124,58,237,0.1)); border-radius: 16px; padding: 20px; margin: 16px 0; border: 1px solid rgba(79,70,229,0.2);">
+        <div style="display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap;">
+            <div style="font-size: 32px; flex-shrink: 0;">🛡️</div>
+            <div style="flex: 1; min-width: 200px;">
+                <h4 style="color: #a5b4fc; margin: 0 0 6px 0; font-size: 18px;">Защитите свой аккаунт с 2FA</h4>
+                <p style="color: rgba(255,255,255,0.7); margin: 0 0 14px 0; font-size: 14px; line-height: 1.5;">
+                    Двухфакторная аутентификация добавляет дополнительный уровень безопасности.
+                    Даже если злоумышленник узнает ваш пароль, он не сможет войти без кода из вашего телефона.
+                </p>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px;">
+                    <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 14px 16px; border: 1px solid rgba(79,70,229,0.15);">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 20px;">🔒</span>
+                            <div>
+                                <div style="color: #34d399; font-weight: 600; font-size: 13px;">Максимальная защита</div>
+                                <div style="color: rgba(255,255,255,0.4); font-size: 12px;">Ваш аккаунт в безопасности</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 14px 16px; border: 1px solid rgba(79,70,229,0.15);">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 20px;">💳</span>
+                            <div>
+                                <div style="color: #fbbf24; font-weight: 600; font-size: 13px;">Скидка 5%</div>
+                                <div style="color: rgba(255,255,255,0.4); font-size: 12px;">При включении 2FA</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 14px 16px; border: 1px solid rgba(79,70,229,0.15);">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 20px;">⚡</span>
+                            <div>
+                                <div style="color: #60a5fa; font-weight: 600; font-size: 13px;">Быстрая настройка</div>
+                                <div style="color: rgba(255,255,255,0.4); font-size: 12px;">Всего 2 минуты</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button onclick="toggle2FADetails()" style="background: rgba(79,70,229,0.15); border: 1px solid rgba(79,70,229,0.3); border-radius: 30px; padding: 8px 20px; color: #a5b4fc; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.3s; display: inline-flex; align-items: center; gap: 8px;" onmouseover="this.style.background='rgba(79,70,229,0.25)'" onmouseout="this.style.background='rgba(79,70,229,0.15)'">
+                    <i class="fas fa-chevron-down" id="faqArrow"></i> Подробнее о 2FA
+                </button>
+                
+                <!-- Скрытый блок с инструкцией и FAQ -->
+                <div id="twofaDetails" style="display: none; margin-top: 16px; padding: 16px; background: rgba(0,0,0,0.3); border-radius: 12px; border-left: 3px solid #4f46e5;">
+                    <div style="color: rgba(255,255,255,0.8); font-size: 14px; line-height: 1.6;">
+                        <p style="margin-bottom: 12px;"><strong style="color: #a5b4fc;">📱 Как включить 2FA:</strong></p>
+                        <ol style="padding-left: 20px; margin-bottom: 16px; color: rgba(255,255,255,0.7);">
+                            <li style="margin-bottom: 6px;">Нажмите кнопку <strong style="color: #34d399;">"Включить 2FA"</strong> ниже</li>
+                            <li style="margin-bottom: 6px;">Скачайте приложение <strong style="color: #fbbf24;">Google Authenticator</strong> или <strong style="color: #fbbf24;">Microsoft Authenticator</strong></li>
+                            <li style="margin-bottom: 6px;">Отсканируйте QR-код или введите секретный ключ вручную</li>
+                            <li style="margin-bottom: 6px;">Введите 6-значный код из приложения для подтверждения</li>
+                            <li>✅ Готово! Ваш аккаунт защищён</li>
+                        </ol>
+                        
+                        <p style="margin-bottom: 12px;"><strong style="color: #a5b4fc;">❓ Часто задаваемые вопросы:</strong></p>
+                        
+                        <div style="margin-bottom: 10px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                            <details>
+                                <summary style="cursor: pointer; color: rgba(255,255,255,0.6); font-weight: 500; font-size: 13px;">Что делать, если я потеряю доступ к приложению?</summary>
+                                <p style="color: rgba(255,255,255,0.5); font-size: 13px; margin-top: 8px; padding-left: 8px;">
+                                    Используйте <strong style="color: #fbbf24;">резервные коды</strong> — они отображаются ниже после включения 2FA.
+                                    Сохраните их в надёжном месте (например, в менеджере паролей).
+                                    Каждый код можно использовать только один раз.
+                                </p>
+                            </details>
+                        </div>
+                        
+                        <div style="margin-bottom: 10px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                            <details>
+                                <summary style="cursor: pointer; color: rgba(255,255,255,0.6); font-weight: 500; font-size: 13px;">Можно ли отключить 2FA?</summary>
+                                <p style="color: rgba(255,255,255,0.5); font-size: 13px; margin-top: 8px; padding-left: 8px;">
+                                    Да. Нажмите кнопку <strong style="color: #f87171;">"Отключить 2FA"</strong> и введите текущий код из приложения
+                                    для подтверждения. Рекомендуем держать 2FA включённой для максимальной безопасности.
+                                </p>
+                            </details>
+                        </div>
+                        
+                        <div style="margin-bottom: 10px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                            <details>
+                                <summary style="cursor: pointer; color: rgba(255,255,255,0.6); font-weight: 500; font-size: 13px;">Какие приложения поддерживаются?</summary>
+                                <p style="color: rgba(255,255,255,0.5); font-size: 13px; margin-top: 8px; padding-left: 8px;">
+                                    ✅ Google Authenticator<br>
+                                    ✅ Microsoft Authenticator<br>
+                                    ✅ Authy<br>
+                                    ✅ LastPass Authenticator<br>
+                                    ✅ Любое другое приложение, поддерживающее TOTP (RFC 6238)
+                                </p>
+                            </details>
+                        </div>
+                        
+                        <div style="margin-top: 12px; padding: 10px; background: rgba(239,68,68,0.08); border-radius: 8px; border-left: 3px solid #ef4444;">
+                            <p style="color: rgba(255,255,255,0.5); font-size: 12px; margin: 0;">
+                                <i class="fas fa-exclamation-triangle" style="color: #f87171; margin-right: 6px;"></i>
+                                <strong style="color: #f87171;">Важно:</strong> Сохраните резервные коды!
+                                Без них восстановить доступ будет сложнее.
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
+        </div>
+    </div>
+    <div id="twofaStatus">
+        <p style="color: rgba(255,255,255,0.6);"><i class="fas fa-spinner fa-spin"></i> Загрузка...</p>
+    </div>
+
+<!-- ===== ИНФОРМАЦИЯ О СКИДКЕ ЗА 2FA ===== -->
+<div id="twofaDiscountInfo" style="display: none; margin-top: 15px; padding: 15px; background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(5,150,105,0.1)); border-radius: 12px; border: 1px solid rgba(16,185,129,0.3);">
+    <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+        <div style="font-size: 32px;">🎁</div>
+        <div style="flex: 1;">
+            <h4 style="color: #34d399; margin: 0 0 4px 0;">Скидка 5% активирована!</h4>
+            <p style="color: rgba(255,255,255,0.7); margin: 0; font-size: 14px;">
+                <span id="discountStatus">⏳ Будет доступна с завтрашнего дня</span>
+            </p>
+            <p style="color: rgba(255,255,255,0.4); font-size: 12px; margin-top: 4px;">
+                <i class="fas fa-info-circle"></i> 
+                Скидка действует при оформлении подписки в течение месяца
+            </p>
+        </div>
+        <span id="discountBadge" style="background: rgba(16,185,129,0.2); color: #34d399; padding: 4px 16px; border-radius: 30px; font-weight: 700; font-size: 18px;">-5%</span>
+    </div>
+</div>
+
+    <!-- БЛОК РЕЗЕРВНЫХ КОДОВ -->
+    <div id="twofaBackupCodes" style="margin-top: 15px; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 12px; border: 1px solid rgba(79,70,229,0.2);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <p style="color: #34d399; margin: 0; font-weight: 600;">
+                <i class="fas fa-key"></i> Резервные коды
+                <span style="font-size: 11px; color: rgba(255,255,255,0.4); font-weight: 400; margin-left: 8px;">
+                    (сохраните в надёжном месте)
+                </span>
+            </p>
+            <button onclick="toggleBackupCodes()" class="btn-action" style="padding: 4px 12px; font-size: 12px; background: rgba(79,70,229,0.2); color: #818cf8; border: none; border-radius: 20px; cursor: pointer;">
+                <i class="fas fa-eye" id="backupEyeIcon"></i> <span id="backupVisibilityText">Показать</span>
+            </button>
+        </div>
+        
+        <!-- СЕТКА ДЛЯ КОДОВ -->
+        <div id="backupCodesDisplay" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 10px; font-family: 'Courier New', monospace; min-height: 30px;">
+            <span style="color: rgba(255,255,255,0.3); grid-column: 1 / -1; text-align: center;">••••••••••</span>
+        </div>
+        
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 12px; flex-wrap: wrap;">
+            <button onclick="copyBackupCodes()" class="btn-action" style="padding: 8px 20px; background: rgba(16,185,129,0.2); color: #34d399; border: none; border-radius: 30px; cursor: pointer; font-weight: 500; transition: all 0.3s;">
+                <i class="fas fa-copy"></i> Скопировать все
+            </button>
+            <button onclick="generateNewBackupCodes()" class="btn-action" style="padding: 8px 20px; background: rgba(79,70,229,0.2); color: #818cf8; border: none; border-radius: 30px; cursor: pointer; font-weight: 500; transition: all 0.3s;">
+                <i class="fas fa-sync-alt"></i> Сгенерировать новые
+            </button>
+        </div>
+    </div>
+    
+    <div id="twofaSetup" style="display: none; margin-top: 15px;">
+        <p style="color: #a78bfa; text-align: center;">📱 Отсканируйте QR-код в приложении</p>
+        
+        <div class="text-center" style="margin: 15px 0;">
+            <div style="position: relative; display: inline-block; background: white; padding: 10px; border-radius: 16px; box-shadow: 0 0 30px rgba(79,70,229,0.2);">
+                <img id="twofaQRImage" src="" alt="QR Code" 
+                     style="width: 200px; height: 200px; display: block; border-radius: 8px; background: white; padding: 10px;">
+                <!-- Логотип поверх QR -->
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                            width: 44px; height: 44px; 
+                            background: rgba(255, 255, 255, 0.92); 
+                            border-radius: 12px; 
+                            display: flex; 
+                            align-items: center; 
+                            justify-content: center; 
+                            border: 2px solid rgba(79, 70, 229, 0.25);
+                            box-shadow: 0 0 20px rgba(79, 70, 229, 0.15);
+                            pointer-events: none;">
+                    <span style="font-size: 22px; font-weight: 900; 
+                                background: linear-gradient(135deg, #4f46e5, #7c3aed); 
+                                -webkit-background-clip: text; 
+                                -webkit-text-fill-color: transparent;
+                                font-family: 'Inter', sans-serif;">
+                        В
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ✅ КНОПКА ОБНОВЛЕНИЯ QR - ВНИЗУ ПОД QR-КОДОМ -->
+        <div style="text-align: center; margin: 10px 0;">
+            <button onclick="refreshQRCode()" 
+                    style="padding: 10px 30px; 
+                           background: rgba(79,70,229,0.2); 
+                           border: 1px solid rgba(79,70,229,0.3); 
+                           border-radius: 50px; 
+                           color: #a5b4fc; 
+                           font-weight: 500; 
+                           cursor: pointer; 
+                           font-size: 14px; 
+                           display: inline-flex; 
+                           align-items: center; 
+                           gap: 10px; 
+                           transition: all 0.3s;">
+                <i class="fas fa-sync-alt"></i> Обновить QR-код
+            </button>
+        </div>
+        
+        <div class="secret-box" style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; text-align: center; margin: 15px 0; border: 1px solid rgba(99,102,241,0.3); cursor: pointer;" onclick="copySecretKey()">
+            <code id="secretText" style="color: #fbbf24; font-size: 14px; word-break: break-all;">загрузка...</code>
+            <div style="color: rgba(255,255,255,0.2); font-size: 10px; margin-top: 4px;">👆 Нажмите, чтобы скопировать секрет</div>
+        </div>
+        
+        <div style="max-width: 280px; margin: 0 auto;">
+            <p style="color: rgba(255,255,255,0.4); font-size: 12px; text-align: center; margin-bottom: 8px;">Введите 6-значный код из приложения</p>
+            <input type="text" id="twofaCode" placeholder="000000" maxlength="6" 
+                   style="width:100%; padding: 14px; background:rgba(255,255,255,0.06); 
+                          border: 2px solid rgba(79,70,229,0.3); border-radius: 14px; 
+                          color:white; font-size: 24px; text-align:center; letter-spacing: 6px;
+                          font-family: 'Courier New', monospace;">
+        </div>
+        
+        <div style="display: flex; gap: 12px; justify-content: center; margin-top: 20px;">
+            <button onclick="verifyTwoFA()" class="btn-action btn-save" style="padding: 12px 36px; font-size: 15px; border-radius: 50px;">
+                <i class="fas fa-check"></i> Подтвердить
+            </button>
+            <button onclick="cancelTwoFASetup()" class="btn-cancel" style="padding: 12px 30px; font-size: 15px; border-radius: 50px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; cursor: pointer;">
+                Отмена
+            </button>
+        </div>
+        
+        <p style="color: rgba(255,255,255,0.25); font-size: 11px; text-align: center; margin-top: 15px; line-height: 1.6;">
+            Используйте Google Authenticator, Microsoft Authenticator,<br>
+            Authy или любой другой TOTP-клиент
+        </p>
+    </div>
+</div>
+<!-- ===== КНОПКА ОТКЛЮЧЕНИЯ 2FA ===== -->
+<div style="margin-top: 20px; text-align: center;">
+    <button id="twofaToggleBtn" onclick="toggleTwoFA()" style="padding: 14px 40px; font-size: 16px; font-weight: 700; border-radius: 50px; cursor: pointer; border: none; background: #ef4444; color: white; box-shadow: 0 4px 20px rgba(239,68,68,0.4); min-width: 200px; transition: all 0.3s;">
+        <span id="twofaToggleText">Отключить 2FA</span>
+    </button>
+</div>
+    
+       <!-- ===== ДОВЕРЕННЫЕ УСТРОЙСТВА ===== -->
+<div class="dashboard-card" style="margin-top: 20px;">
+    <h3><i class="fas fa-laptop" style="color: #60a5fa;"></i> Доверенные устройства</h3>
+    <div id="trustedDevicesList">
+        <p style="color: rgba(255,255,255,0.5);">Загрузка...</p>
+    </div>
+</div>
+
+<!-- ===== АКТИВНЫЕ СЕССИИ ===== -->
+<div class="dashboard-card" style="margin-top: 20px;">
+    <h3><i class="fas fa-history" style="color: #f59e0b;"></i> Активные сессии</h3>
+    <div id="sessionsList">
+        <p style="color: rgba(255,255,255,0.5);">Загрузка...</p>
+    </div>
+    <button class="btn-action" style="background: rgba(239,68,68,0.2); color: #f87171; margin-top: 10px;" onclick="terminateAllSessions()">
+        <i class="fas fa-power-off"></i> Завершить все сессии
+    </button>
+</div>
+
+<!-- ===== ИСТОРИЯ ВХОДОВ ===== -->
+<div class="dashboard-card" style="margin-top: 20px;">
+    <h3><i class="fas fa-list" style="color: #a78bfa;"></i> История входов</h3>
+    <div id="loginHistoryList" style="max-height: 250px; overflow-y: auto;">
+        <p style="color: rgba(255,255,255,0.5);">Загрузка...</p>
+    </div>
+</div>
         </div>
     </div>
 </div>
@@ -428,7 +1300,7 @@
         <label>ИНН</label>
         <input type="text" id="editInn" placeholder="ИНН организации">
         <div class="modal-buttons">
-            <button class="btn-cancel" onclick="closeEditProfileModal()">Отмена</button>
+            <button class="btn-cancel" onclick="closeEditProfileModal()">Закрыть</button>
             <button class="btn-save" onclick="saveProfile()">Сохранить</button>
         </div>
     </div>
@@ -437,19 +1309,373 @@
 <script>
     let currentUser = null;
     let currentAvatarUrl = '';
+    let allOrders = [];
+
+   function getToken() {
+    return localStorage.getItem('token');
+}
+
+// ✅ ДОБАВЬ ЭТИ ФУНКЦИИ ПОСЛЕ getToken()
+function getTenantId() {
+    if (currentUser?.tenant_id) return currentUser.tenant_id;
+    if (currentUser?.tenantId) return currentUser.tenantId;
+    try {
+        const token = getToken();
+        if (token) {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            if (payload.tenant_id) return payload.tenant_id;
+            if (payload.tenantId) return payload.tenantId;
+        }
+    } catch(e) {
+        console.warn('⚠️ Не удалось получить tenant_id из токена');
+    }
+    return null;
+}
+
+function getAuthHeaders() {
+    const token = getToken();
+    const tenantId = getTenantId();
+    const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    };
+    if (tenantId) {
+        headers['X-Tenant-ID'] = tenantId;
+    }
+    return headers;
+}
+
+    function togglePassword(inputId, element) {
+        const input = document.getElementById(inputId);
+        const icon = element.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.className = 'fas fa-eye-slash';
+            element.style.color = '#818cf8';
+        } else {
+            input.type = 'password';
+            icon.className = 'fas fa-eye';
+            element.style.color = 'rgba(255,255,255,0.3)';
+        }
+    }
+
+async function loadUserData() {
+    const token = getToken();
+    if (!token) {
+        window.location.href = '/login';
+        return;
+    }
+
+  // ✅ ПРОВЕРКА 2FA ПРИ ВХОДЕ В ПРОФИЛЬ
+    const canProceed = await check2FAForProfile();
+    if (!canProceed) return; // Ждем подтверждения 2FA
+    try {
+        // ✅ ИСПОЛЬЗУЕМ /api/client/data - он возвращает projects_count
+        const response = await fetch('/api/client/data', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            const data = await response.json();
+            // /api/client/data возвращает данные напрямую
+            const user = data;
+            
+            // ✅ ДОПОЛНИТЕЛЬНО загружаем проекты через /api/my-projects
+            let projectsCount = user.projects_count || 0;
+            try {
+                const projectsResp = await fetch('/api/my-projects', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (projectsResp.ok) {
+                    const projectsData = await projectsResp.json();
+                    if (projectsData.count !== undefined) {
+                        projectsCount = projectsData.count;
+                        console.log('✅ Проектов из /api/my-projects:', projectsCount);
+                    }
+                }
+            } catch(e) {
+                console.warn('⚠️ Не удалось загрузить проекты отдельно:', e);
+            }
+            
+            // ✅ ПРАВИЛЬНЫЙ РАСЧЕТ ДНЕЙ (добавляем эту логику)
+            let daysWithUs = user.days_with_us || 1;
+            if (user.created_at) {
+                const regDate = new Date(user.created_at);
+                const now = new Date();
+                const diffTime = Math.abs(now - regDate);
+                const calculatedDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                if (calculatedDays > 0) {
+                    daysWithUs = calculatedDays;
+                    console.log('📅 Дней с нами (рассчитано):', daysWithUs, 'с', regDate);
+                }
+            }
+            
+            currentUser = {
+                name: user.name || user.user_name || user.email?.split('@')[0] || 'Клиент',
+                email: user.email || '—',
+                user_id: user.user_id || user.id,
+                tenant_id: user.tenant_id || user.tenantId || null,
+                role: user.role || 'client',
+                phone: user.phone || '',
+                organization_name: user.organization_name || '',
+                organization_inn: user.organization_inn || '',
+                created_at: user.created_at || new Date().toISOString(),
+                projects_count: projectsCount, // ← ИСПОЛЬЗУЕМ ИЗ /api/my-projects
+                orders_count: user.orders_count || 0,
+                ideas_count: user.ideas_count || 0,
+                days_with_us: daysWithUs // ← ИСПРАВЛЕНО
+            };
+            updateUI();
+            loadAvatar();
+            loadUserOrders();
+            loadUserIdeas();
+            return;
+        }
+        // Если /api/client/data не работает - пробуем /api/user/profile
+        const response2 = await fetch('/api/user/profile', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response2.ok) {
+            const data = await response2.json();
+            const user = data.user || data;
+            
+            // ✅ ДОПОЛНИТЕЛЬНО загружаем проекты через /api/my-projects
+            let projectsCount = user.projects_count || 0;
+            try {
+                const projectsResp = await fetch('/api/my-projects', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (projectsResp.ok) {
+                    const projectsData = await projectsResp.json();
+                    if (projectsData.count !== undefined) {
+                        projectsCount = projectsData.count;
+                        console.log('✅ Проектов из /api/my-projects:', projectsCount);
+                    }
+                }
+            } catch(e) {
+                console.warn('⚠️ Не удалось загрузить проекты отдельно:', e);
+            }
+            
+            // ✅ ПРАВИЛЬНЫЙ РАСЧЕТ ДНЕЙ (добавляем эту логику)
+            let daysWithUs = user.days_with_us || 1;
+            if (user.created_at) {
+                const regDate = new Date(user.created_at);
+                const now = new Date();
+                const diffTime = Math.abs(now - regDate);
+                const calculatedDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                if (calculatedDays > 0) {
+                    daysWithUs = calculatedDays;
+                    console.log('📅 Дней с нами (рассчитано из /api/user/profile):', daysWithUs, 'с', regDate);
+                }
+            }
+            
+            currentUser = {
+                name: user.name || user.user_name || user.email?.split('@')[0] || 'Клиент',
+                email: user.email || '—',
+                user_id: user.id || user.user_id,
+               tenant_id: user.tenant_id || user.tenantId || null,
+                role: user.role || 'client',
+                phone: user.phone || '',
+                organization_name: user.organization_name || '',
+                organization_inn: user.organization_inn || '',
+                created_at: user.created_at || new Date().toISOString(),
+                projects_count: projectsCount, // ← ИСПОЛЬЗУЕМ ИЗ /api/my-projects
+                orders_count: user.orders_count || 0,
+                ideas_count: user.ideas_count || 0,
+                days_with_us: daysWithUs // ← ИСПРАВЛЕНО
+            };
+            updateUI();
+            loadAvatar();
+            loadUserOrders();
+            loadUserIdeas();
+            return;
+        }
+        // Если оба API не работают - берем из токена
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        currentUser = {
+            name: payload.user_name || payload.name || payload.email?.split('@')[0] || 'Клиент',
+            email: payload.email || '—',
+            user_id: payload.user_id || payload.sub,
+            role: payload.role || 'client',
+            phone: '',
+            organization_name: '',
+            organization_inn: '',
+            created_at: new Date().toISOString(),
+            projects_count: 0,
+            orders_count: 0,
+            ideas_count: 0,
+            days_with_us: 1
+        };
+        updateUI();
+        loadAvatar();
+        loadUserOrders();
+        loadUserIdeas();
+    } catch(e) { 
+        console.error('loadUserData error:', e);
+        document.getElementById('userName').innerText = 'Клиент';
+    }
+}
+// ===== ФУНКЦИЯ ОБНОВЛЕНИЯ ВСЕХ ДАННЫХ =====
+async function refreshAllData() {
+    const btn = document.getElementById('refreshBtn');
+    const icon = document.getElementById('refreshIcon');
+    const text = document.getElementById('refreshText');
     
+    if (btn) {
+        btn.disabled = true;
+    }
+    if (icon) {
+        icon.className = 'fas fa-sync-alt fa-spin';
+    }
+    if (text) {
+        text.textContent = 'Обновление...';
+    }
+    
+    try {
+        console.log('🔄 Начинаем обновление данных...');
+        
+        // Обновляем все данные последовательно
+        await loadUserData();
+        await loadUserOrders();
+        await loadUserIdeas();
+        await loadMyReconciliationActs();
+        
+        console.log('✅ Все данные успешно обновлены!');
+        
+        // Показываем уведомление об успехе
+        showToast('✅ Все данные обновлены', 'success');
+        
+    } catch(e) {
+        console.error('❌ Ошибка при обновлении:', e);
+        showToast('❌ Ошибка обновления данных', 'error');
+    } finally {
+        // Возвращаем кнопку в исходное состояние
+        if (btn) {
+            btn.disabled = false;
+        }
+        if (icon) {
+            setTimeout(() => {
+                icon.className = 'fas fa-sync-alt';
+            }, 500);
+        }
+        if (text) {
+            text.textContent = 'Обновить данные';
+        }
+    }
+}
+
+// ===== ФУНКЦИЯ ДЛЯ УВЕДОМЛЕНИЙ (TOAST) =====
+function showToast(message, type) {
+    // Удаляем старые уведомления
+    const oldToasts = document.querySelectorAll('.toast-notification');
+    oldToasts.forEach(t => t.remove());
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        padding: 16px 24px;
+        border-radius: 12px;
+        color: white;
+        font-weight: 500;
+        font-size: 14px;
+        z-index: 999999;
+        background: ${type === 'success' ? 'rgba(16, 185, 129, 0.95)' : 'rgba(239, 68, 68, 0.95)'};
+        backdrop-filter: blur(10px);
+        border: 1px solid ${type === 'success' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'};
+        box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+        animation: slideInUp 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        max-width: 400px;
+    `;
+    toast.innerHTML = `
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}" style="font-size: 20px;"></i>
+        <span>${message}</span>
+    `;
+    document.body.appendChild(toast);
+    
+    // Удаляем через 3 секунды
+    setTimeout(() => {
+        toast.style.animation = 'slideOutDown 0.3s ease';
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+    }, 3000);
+}
+
+// Добавляем CSS анимации для уведомлений (если еще нет)
+(function addToastStyles() {
+    if (document.getElementById('toastStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'toastStyles';
+    style.textContent = `
+        @keyframes slideInUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes slideOutDown {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(30px); opacity: 0; }
+        }
+        .toast-notification {
+            font-family: 'Inter', sans-serif;
+        }
+    `;
+    document.head.appendChild(style);
+})();
+
+   function updateUI() {
+    const userName = currentUser?.name || 'Клиент';
+    document.getElementById('userName').innerText = userName;
+    document.getElementById('infoName').innerText = userName;
+    document.getElementById('userEmail').innerText = currentUser?.email || '—';
+    document.getElementById('infoEmail').innerText = currentUser?.email || '—';
+    const orgHtml = currentUser?.organization_name 
+        ? `<i class="fas fa-building"></i> ${currentUser.organization_name}`
+        : '';
+    document.getElementById('userOrganization').innerHTML = orgHtml;
+    document.getElementById('infoOrganization').innerText = currentUser?.organization_name || 'Не указана';
+    document.getElementById('infoInn').innerText = currentUser?.organization_inn || '—';
+    document.getElementById('infoPhone').innerText = currentUser?.phone || '—';
+    const roleMap = { 'owner': '👑 Владелец', 'admin': '🛠️ Администратор', 'developer': '💻 Разработчик', 'client': '👤 Клиент' };
+    const roleText = roleMap[currentUser?.role] || '👤 Клиент';
+    document.getElementById('userRole').innerText = roleText;
+    document.getElementById('infoRole').innerText = roleText;
+    document.getElementById('infoRegDate').innerText = currentUser?.created_at?.slice(0,10) || '—';
+    
+    // ✅ ОБНОВЛЯЕМ ВСЕ СЧЕТЧИКИ
+    document.getElementById('statProjects').innerHTML = currentUser?.projects_count || 0;
+    document.getElementById('statOrders').innerHTML = currentUser?.orders_count || 0;
+    document.getElementById('statIdeas').innerHTML = currentUser?.ideas_count || 0;
+    document.getElementById('statDays').innerHTML = currentUser?.days_with_us || 0;
+    
+    if (currentUser?.name) {
+        const avatarDiv = document.getElementById('avatarDisplay');
+        if (!currentAvatarUrl) {
+            avatarDiv.innerHTML = `<span id="avatarInitial" style="font-size: 40px;">${currentUser.name.charAt(0).toUpperCase()}</span>`;
+        }
+    }
+}
+
+    // Функция для обновления статистики
+    function updateStats(ordersCount, ideasCount) {
+        document.getElementById('statOrders').innerHTML = ordersCount || 0;
+        document.getElementById('statIdeas').innerHTML = ideasCount || 0;
+    }
+
     async function uploadAvatar(file) {
         const formData = new FormData();
         formData.append('avatar', file);
-        
         try {
             const response = await fetch('/api/avatar/upload', {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+                headers: { 'Authorization': `Bearer ${getToken()}` },
                 body: formData
             });
             const data = await response.json();
-            
             if (data.success) {
                 currentAvatarUrl = data.avatar_url;
                 updateAvatarDisplay(currentAvatarUrl);
@@ -462,7 +1688,7 @@
             alert('Ошибка загрузки');
         }
     }
-    
+
     function updateAvatarDisplay(url) {
         const avatarDiv = document.getElementById('avatarDisplay');
         if (url && url !== '') {
@@ -472,11 +1698,10 @@
             avatarDiv.innerHTML = `<span id="avatarInitial" style="font-size: 40px;">${name.charAt(0).toUpperCase()}</span>`;
         }
     }
-    
+
     async function loadAvatar() {
-        const token = localStorage.getItem('token');
+        const token = getToken();
         if (!token) return;
-        
         try {
             const payload = JSON.parse(atob(token.split('.')[1]));
             const response = await fetch(`/api/avatar/${payload.user_id}`, {
@@ -489,256 +1714,54 @@
             }
         } catch(e) {}
     }
-    
+
     document.getElementById('avatarInput').addEventListener('change', function(e) {
         if (this.files && this.files[0]) {
             uploadAvatar(this.files[0]);
         }
     });
-    
-    // ИСПРАВЛЕННАЯ ЗАГРУЗКА ДАННЫХ ПОЛЬЗОВАТЕЛЯ
-    async function loadUserData() {
+
+    async function saveProfile() {
+        const name = document.getElementById('editName').value;
+        const phone = document.getElementById('editPhone').value;
+        const organization = document.getElementById('editOrganization').value;
+        const inn = document.getElementById('editInn').value;
         const token = localStorage.getItem('token');
         if (!token) {
+            alert('❌ Вы не авторизованы');
             window.location.href = '/login';
             return;
         }
-        
+        const email = localStorage.getItem('user_email') || currentUser?.email || 'NEOMAR@mail.ru';
         try {
-            // Пробуем /api/current-user (он точно работает)
-            const response = await fetch('/api/current-user', {
-                headers: { 'Authorization': `Bearer ${token}` }
+            const response = await fetch('/api/user/profile', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    name: name,
+                    email: email,
+                    phone: phone,
+                    organization_name: organization,
+                    organization_inn: inn
+                })
             });
-            
+            const data = await response.json();
             if (response.ok) {
-                const user = await response.json();
-                currentUser = {
-                    name: user.name || user.user_name || user.email?.split('@')[0] || 'Клиент',
-                    email: user.email || '—',
-                    user_id: user.user_id || user.id,
-                    role: user.role || 'client',
-                    phone: user.phone || '',
-                    organization_name: user.organization_name || '',
-                    organization_inn: user.organization_inn || '',
-                    created_at: user.created_at || new Date().toISOString(),
-                    projects_count: user.projects_count || 0,
-                    orders_count: user.orders_count || 0,
-                    ideas_count: user.ideas_count || 0,
-                    days_with_us: user.days_with_us || 1
-                };
-                updateUI();
-                loadAvatar();
-                loadUserOrders();
-                loadUserIdeas();
-                return;
+                alert('✅ Профиль обновлён!');
+                closeEditProfileModal();
+                loadUserData();
+            } else {
+                alert('❌ Ошибка: ' + (data.error || data.message || 'Статус ' + response.status));
             }
-            
-            // Fallback: данные из токена
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            currentUser = {
-                name: payload.user_name || payload.name || payload.email?.split('@')[0] || 'Клиент',
-                email: payload.email || '—',
-                user_id: payload.user_id || payload.sub,
-                role: payload.role || 'client',
-                phone: '',
-                organization_name: '',
-                organization_inn: '',
-                created_at: new Date().toISOString(),
-                projects_count: 0,
-                orders_count: 0,
-                ideas_count: 0,
-                days_with_us: 1
-            };
-            updateUI();
-            loadAvatar();
-            loadUserOrders();
-            loadUserIdeas();
-            
-        } catch(e) { 
-            console.error('loadUserData error:', e);
-            document.getElementById('userName').innerText = 'Клиент';
-            
-            // Последняя попытка - из токена
-            try {
-                const token = localStorage.getItem('token');
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                document.getElementById('userName').innerText = payload.user_name || payload.name || 'Клиент';
-                document.getElementById('userEmail').innerText = payload.email || '—';
-            } catch(err) {
-                document.getElementById('userName').innerText = 'Клиент';
-            }
+        } catch(e) {
+            console.error('❌ Save error:', e);
+            alert('❌ Ошибка соединения');
         }
     }
-    
-    function updateUI() {
-        const userName = currentUser?.name || currentUser?.user_name || currentUser?.email?.split('@')[0] || 'Клиент';
-        document.getElementById('userName').innerText = userName;
-        document.getElementById('infoName').innerText = userName;
-        
-        document.getElementById('userEmail').innerText = currentUser?.email || '—';
-        document.getElementById('infoEmail').innerText = currentUser?.email || '—';
-        
-        const orgHtml = currentUser?.organization_name 
-            ? `<i class="fas fa-building"></i> ${currentUser.organization_name}`
-            : '';
-        document.getElementById('userOrganization').innerHTML = orgHtml;
-        document.getElementById('infoOrganization').innerText = currentUser?.organization_name || 'Не указана';
-        document.getElementById('infoInn').innerText = currentUser?.organization_inn || '—';
-        document.getElementById('infoPhone').innerText = currentUser?.phone || '—';
-        
-        const roleMap = { 'owner': '👑 Владелец', 'admin': '🛠️ Администратор', 'developer': '💻 Разработчик', 'client': '👤 Клиент' };
-        const roleText = roleMap[currentUser?.role] || '👤 Клиент';
-        document.getElementById('userRole').innerText = roleText;
-        document.getElementById('infoRole').innerText = roleText;
-        
-        document.getElementById('infoRegDate').innerText = currentUser?.created_at?.slice(0,10) || '—';
-        document.getElementById('statProjects').innerHTML = currentUser?.projects_count || 0;
-        document.getElementById('statOrders').innerHTML = currentUser?.orders_count || 0;
-        document.getElementById('statIdeas').innerHTML = currentUser?.ideas_count || 0;
-        document.getElementById('statDays').innerHTML = currentUser?.days_with_us || 0;
-        
-        if (currentUser?.name) {
-            const avatarDiv = document.getElementById('avatarDisplay');
-            if (!currentAvatarUrl) {
-                avatarDiv.innerHTML = `<span id="avatarInitial" style="font-size: 40px;">${currentUser.name.charAt(0).toUpperCase()}</span>`;
-            }
-        }
-    }
-    
-    async function loadUserOrders() {
-        try {
-            const token = localStorage.getItem('token');
-            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-            const res = await fetch('/api/orders/list', { headers });
-            if (!res.ok) throw new Error('HTTP ' + res.status);
-            const orders = await res.json();
-            const userEmail = currentUser?.email;
-            const userOrders = (orders && Array.isArray(orders)) ? orders.filter(o => o.contact?.includes(userEmail) || o.name === currentUser?.name) : [];
-            const container = document.getElementById('userOrdersList');
-            const recentContainer = document.getElementById('recentOrders');
-            
-            if (!userOrders || userOrders.length === 0) {
-                if (container) container.innerHTML = '<div class="dashboard-card" style="text-align:center; padding:40px;">📭 У вас пока нет заявок</div>';
-                if (recentContainer) recentContainer.innerHTML = '<div style="text-align:center; padding:20px;">Нет заявок</div>';
-                return;
-            }
-            
-            if (container) {
-                container.innerHTML = userOrders.map(o => `
-                    <div class="dashboard-card" style="margin-bottom:15px;">
-                        <div style="display:flex; justify-content:space-between; flex-wrap:wrap;">
-                            <div><strong>📋 ${o.name || 'Проект'}</strong></div>
-                            <div><span class="badge ${o.status === 'new' ? 'badge-active' : ''}">${o.status === 'new' ? '🆕 Новая' : '✓ Просмотрена'}</span></div>
-                        </div>
-                        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-top:10px;">
-                            <div><small>⏰ Срок:</small> ${o.deadline || '—'}</div>
-                            <div><small>💰 Бюджет:</small> ${(o.budget || 0).toLocaleString()} ₽</div>
-                            <div><small>📅 Дата:</small> ${o.date || '—'}</div>
-                        </div>
-                        <div class="progress-bar" style="margin-top:10px;"><div class="progress-fill" style="width:${o.work_status === 'completed' ? 100 : 30}%"></div></div>
-                    </div>
-                `).join('');
-            }
-            
-            if (recentContainer && userOrders.length > 0) {
-                recentContainer.innerHTML = userOrders.slice(0,3).map(o => `
-                    <div style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.1);">
-                        <div><strong>${o.name || 'Проект'}</strong></div>
-                        <small>💰 ${(o.budget || 0).toLocaleString()} ₽ | ${o.date || '—'}</small>
-                    </div>
-                `).join('');
-            } else if (recentContainer) {
-                recentContainer.innerHTML = '<div style="text-align:center; padding:20px;">Нет заявок</div>';
-            }
-        } catch(e) { 
-            console.error(e);
-            const container = document.getElementById('userOrdersList');
-            if (container) container.innerHTML = '<div class="dashboard-card" style="text-align:center; padding:40px;">❌ Ошибка загрузки</div>';
-        }
-    }
-    
-    async function loadUserIdeas() {
-        try {
-            const res = await fetch('/api/feature-requests');
-            const ideas = await res.json();
-            const userIdeas = ideas.filter(i => i.user_email === currentUser?.email);
-            const container = document.getElementById('userIdeasList');
-            const recentContainer = document.getElementById('recentIdeas');
-            
-            if (!userIdeas || userIdeas.length === 0) {
-                container.innerHTML = '<div class="dashboard-card" style="text-align:center; padding:40px;">💡 У вас пока нет идей</div>';
-                if (recentContainer) recentContainer.innerHTML = '<div style="text-align:center; padding:20px;">Нет идей</div>';
-                return;
-            }
-            
-            container.innerHTML = userIdeas.map(i => `
-                <div class="dashboard-card" style="margin-bottom:15px;">
-                    <div style="display:flex; justify-content:space-between; flex-wrap:wrap;">
-                        <div><strong>💡 ${i.title}</strong></div>
-                        <div><span class="badge ${i.priority === 'high' ? 'badge-active' : ''}">${i.priority === 'high' ? '🔴 Высокий' : i.priority === 'medium' ? '🟡 Средний' : '🟢 Низкий'}</span></div>
-                    </div>
-                    <p style="margin-top:8px;">${i.description}</p>
-                    <small>📅 ${i.date} | Статус: ${i.status === 'new' ? 'На рассмотрении' : i.status}</small>
-                </div>
-            `).join('');
-            
-            if (recentContainer) {
-                recentContainer.innerHTML = userIdeas.slice(0,3).map(i => `
-                    <div style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.1);">
-                        <div><strong>${i.title}</strong></div>
-                        <small>${i.priority === 'high' ? '🔴 Высокий' : '🟡 Средний'} | ${i.date}</small>
-                    </div>
-                `).join('');
-            }
-        } catch(e) { console.error(e); }
-    }
-    
-    async function submitIdea() {
-        const title = document.getElementById('ideaTitle').value;
-        const description = document.getElementById('ideaDesc').value;
-        const priority = document.getElementById('ideaPriority').value;
-        
-        if (!title || !description) {
-            alert('❌ Заполните название и описание идеи');
-            return;
-        }
-        
-        await fetch('/api/feature-request', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title, description, priority })
-        });
-        
-        document.getElementById('ideaTitle').value = '';
-        document.getElementById('ideaDesc').value = '';
-        alert('✅ Идея отправлена!');
-        loadUserIdeas();
-    }
-    
-    async function changePassword() {
-        const current = document.getElementById('currentPassword').value;
-        const newPass = document.getElementById('newPassword').value;
-        const confirm = document.getElementById('confirmPassword').value;
-        
-        if (newPass !== confirm) { alert('❌ Пароли не совпадают'); return; }
-        if (newPass.length < 6) { alert('❌ Пароль должен быть не менее 6 символов'); return; }
-        
-        const res = await fetch('/api/user/password', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ current_password: current, new_password: newPass })
-        });
-        
-        if (res.ok) {
-            alert('✅ Пароль изменён');
-            document.getElementById('currentPassword').value = '';
-            document.getElementById('newPassword').value = '';
-            document.getElementById('confirmPassword').value = '';
-        } else {
-            alert('❌ Ошибка смены пароля');
-        }
-    }
-    
+
     function openEditProfileModal() {
         document.getElementById('editName').value = currentUser?.name || '';
         document.getElementById('editPhone').value = currentUser?.phone || '';
@@ -746,71 +1769,607 @@
         document.getElementById('editInn').value = currentUser?.organization_inn || '';
         document.getElementById('editProfileModal').style.display = 'flex';
     }
-    
-    function closeEditProfileModal() { document.getElementById('editProfileModal').style.display = 'none'; }
-    
-    async function saveProfile() {
-        const name = document.getElementById('editName').value;
-        const phone = document.getElementById('editPhone').value;
-        const organization = document.getElementById('editOrganization').value;
-        const inn = document.getElementById('editInn').value;
+
+    function closeEditProfileModal() {
+        document.getElementById('editProfileModal').style.display = 'none';
+    }
+
+    function openOrderModal() {
+        const modal = document.getElementById('orderModal');
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+        document.body.classList.add('no-scroll');
         
-        const res = await fetch('/api/user/profile', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, phone, organization_name: organization, organization_inn: inn })
-        });
+        if (currentUser?.email) {
+            document.getElementById('orderContact').value = currentUser.email;
+        }
+        document.getElementById('orderName').value = '';
+        document.getElementById('orderService').value = 'Разработка сайта';
+        document.getElementById('orderDeadline').value = '';
+        document.getElementById('orderBudget').value = '';
+        document.getElementById('orderDesc').value = '';
         
-        if (res.ok) {
-            alert('✅ Профиль обновлён');
-            closeEditProfileModal();
-            loadUserData();
-        } else {
-            alert('❌ Ошибка обновления');
+        setTimeout(function() {
+            modal.blur();
+            if (document.activeElement) {
+                document.activeElement.blur();
+            }
+        }, 10);
+    }
+
+    function closeOrderModal() {
+        const modal = document.getElementById('orderModal');
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+        document.body.classList.remove('no-scroll');
+        
+        document.getElementById('orderName').value = '';
+        document.getElementById('orderContact').value = '';
+        document.getElementById('orderService').value = 'Разработка сайта';
+        document.getElementById('orderDeadline').value = '';
+        document.getElementById('orderBudget').value = '';
+        document.getElementById('orderDesc').value = '';
+        
+        const btn = document.querySelector('#orderModal .btn-submit');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-paper-plane"></i> Отправить заявку';
         }
     }
+
+async function createOrder() {
+    const name = document.getElementById('orderName').value.trim();
+    const contact = document.getElementById('orderContact').value.trim();
+    const service = document.getElementById('orderService').value;
+    const deadline = document.getElementById('orderDeadline').value;
+    const budget = document.getElementById('orderBudget').value;
+    const description = document.getElementById('orderDesc').value.trim();
     
+    if (!name) {
+        alert('❌ Введите название проекта');
+        return;
+    }
+    if (!contact) {
+        alert('❌ Введите контактные данные');
+        return;
+    }
+    if (!description) {
+        alert('❌ Опишите задачу');
+        return;
+    }
+    
+    const token = getToken();
+    if (!token) {
+        alert('❌ Вы не авторизованы');
+        window.location.href = '/login';
+        return;
+    }
+    
+    const btn = document.querySelector('#orderModal .btn-submit');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...';
+    
+    try {
+        // ✅ ПРАВИЛЬНЫЕ ИМЕНА ПОЛЕЙ - ТОЧНО КАК В СТРУКТУРЕ ServiceOrder
+        const response = await fetch('/api/service-order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                name: name,                    // ✅ поле "name"
+                contact: contact,               // ✅ поле "contact"
+                service_type: service,          // ✅ поле "service_type"
+                deadline: deadline,             // ✅ поле "deadline"
+                budget: budget ? String(budget) : '', // ✅ поле "budget" - строка!
+                description: description        // ✅ поле "description"
+            })
+        });
+        
+        if (response.ok) {
+            alert('✅ Заявка успешно создана!');
+            closeOrderModal();
+            setTimeout(() => {
+                loadUserOrders();
+            }, 500);
+        } else {
+            const data = await response.json();
+            alert('❌ Ошибка: ' + (data.error || data.message || 'Неизвестная ошибка'));
+        }
+    } catch(e) {
+        console.error('❌ Create order error:', e);
+        alert('❌ Ошибка соединения. Проверьте интернет и попробуйте снова.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+    async function deleteOrder(orderId) {
+        if (!confirm('❌ Вы уверены, что хотите удалить эту заявку?')) {
+            return;
+        }
+        
+        const token = getToken();
+        if (!token) {
+            alert('❌ Вы не авторизованы');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/orders/${orderId}/delete`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.ok) {
+                alert('✅ Заявка удалена');
+                loadUserOrders();
+            } else {
+                const data = await response.json();
+                alert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+            }
+        } catch(e) {
+            console.error('❌ Delete order error:', e);
+            alert('❌ Ошибка соединения');
+        }
+    }
+
+async function loadUserOrders() {
+    try {
+        const token = getToken();
+        if (!token) return;
+        
+        // ✅ ТОЛЬКО ОДИН ЗАПРОС — /api/orders/list (он уже возвращает всё!)
+        const response = await fetch('/api/orders/list', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        let allOrders = [];
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log('📋 Все заявки:', data);
+            if (Array.isArray(data)) {
+                allOrders = data;
+            }
+        }
+        
+        // Сортируем по дате (новые сверху)
+        allOrders.sort((a, b) => new Date(b.date || b.created_at) - new Date(a.date || a.created_at));
+        
+        console.log('📋 Всего заявок:', allOrders.length);
+        
+        // Обновляем статистику
+        const ideasCount = parseInt(document.getElementById('statIdeas').textContent) || 0;
+        document.getElementById('statOrders').innerHTML = allOrders.length;
+        
+        const container = document.getElementById('userOrdersList');
+        const recentContainer = document.getElementById('recentOrders');
+        
+        let html = `
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
+                <button class="create-order-btn" onclick="openOrderModal()">
+                    <i class="fas fa-plus"></i> Создать заявку
+                </button>
+            </div>
+        `;
+        
+        if (allOrders.length === 0) {
+            html += `
+                <div style="text-align:center; padding:40px 20px;">
+                    <div style="font-size: 48px; margin-bottom: 20px;">📭</div>
+                    <h3 style="color: white; margin-bottom: 10px;">У вас пока нет заявок</h3>
+                    <p style="color: rgba(255,255,255,0.6);">Создайте заявку, и мы свяжемся с вами</p>
+                </div>
+            `;
+        } else {
+            html += allOrders.map(o => {
+                const name = o.name || o.client_name || 'Проект';
+                const contact = o.contact || o.client_contact || '—';
+                const service = o.service || o.service_type || '—';
+                const date = o.date || o.created_at || new Date().toLocaleString();
+                const budget = o.budget || 0;
+                const status = o.status || 'new';
+                const description = o.description || o.additional_info || '';
+                const sourceIcon = o.source_icon || (o.source === 'individual' ? '👤' : '📋');
+                const sourceLabel = o.source === 'individual' ? 'Индивидуальный заказ' : 'Заявка';
+                
+                return `
+                <div class="dashboard-card" style="margin-bottom:15px;">
+                    <div style="display:flex; justify-content:space-between; flex-wrap:wrap; align-items:center;">
+                        <div>
+                            <strong style="color: white;">${sourceIcon} ${name}</strong>
+                            <span style="font-size:11px; color:rgba(255,255,255,0.4); margin-left:8px;">${sourceLabel}</span>
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <span class="badge ${status === 'new' ? 'badge-active' : ''}">${status === 'new' ? '🆕 Новая' : '✓ Просмотрена'}</span>
+                            ${o.source !== 'individual' ? `<button class="delete-btn" onclick="deleteOrder(${o.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>` : ''}
+                        </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-top:10px;">
+                        <div><small style="color: rgba(255,255,255,0.6);">🛠️ Услуга:</small> <span style="color: white;">${service}</span></div>
+                        <div><small style="color: rgba(255,255,255,0.6);">📅 Дата:</small> <span style="color: white;">${date}</span></div>
+                        <div><small style="color: rgba(255,255,255,0.6);">💰 Бюджет:</small> <span style="color: #34d399;">${Number(budget).toLocaleString()} ₽</span></div>
+                    </div>
+                    ${description ? `<div style="margin-top:10px; color: rgba(255,255,255,0.7); font-size: 14px;">${description}</div>` : ''}
+                    ${contact && contact !== '—' ? `<div style="margin-top:5px; color: rgba(255,255,255,0.5); font-size: 12px;">📞 ${contact}</div>` : ''}
+                    <div class="progress-bar" style="margin-top:10px;">
+                        <div class="progress-fill" style="width:${o.work_status === 'completed' ? 100 : 30}%;"></div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+        
+        if (container) container.innerHTML = html;
+        
+        if (recentContainer) {
+            if (allOrders.length === 0) {
+                recentContainer.innerHTML = '<div style="text-align:center; padding:20px; color:rgba(255,255,255,0.5);">Нет заявок</div>';
+            } else {
+                recentContainer.innerHTML = allOrders.slice(0,3).map(o => {
+                    const name = o.name || o.client_name || 'Проект';
+                    const date = o.date || o.created_at || new Date().toLocaleString();
+                    const sourceIcon = o.source_icon || (o.source === 'individual' ? '👤' : '📋');
+                    return `
+                    <div style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.1);">
+                        <div><strong style="color: white;">${sourceIcon} ${name}</strong></div>
+                        <small style="color: rgba(255,255,255,0.6);">${date}</small>
+                    </div>
+                `}).join('');
+            }
+        }
+    } catch(e) {
+        console.error('❌ loadUserOrders error:', e);
+        const container = document.getElementById('userOrdersList');
+        if (container) {
+            container.innerHTML = `
+                <div style="text-align:center; padding:20px; color:#f87171;">
+                    ❌ Ошибка загрузки: ${e.message}
+                </div>
+                <div style="text-align:center; margin-top:20px;">
+                    <button class="create-order-btn" onclick="openOrderModal()">
+                        <i class="fas fa-plus"></i> Создать заявку
+                    </button>
+                </div>
+            `;
+        }
+    }
+}
+  // ===== ИСПРАВЛЕННАЯ ЗАГРУЗКА ИДЕЙ =====
+async function loadUserIdeas() {
+    try {
+        const token = getToken();
+        if (!token) return;
+        
+        const res = await fetch('/api/feature-requests', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const ideas = await res.json();
+        
+        console.log('📋 Все идеи из БД:', ideas);
+        console.log('📧 Email пользователя:', currentUser?.email);
+        
+        // Фильтруем идеи текущего пользователя
+        let userIdeas = [];
+        if (Array.isArray(ideas)) {
+            userIdeas = ideas.filter(i => {
+                const ideaEmail = i.user_email || i.email || '';
+                return ideaEmail.toLowerCase() === currentUser?.email?.toLowerCase();
+            });
+        }
+        
+        console.log('📋 Идеи пользователя:', userIdeas);
+        
+        const container = document.getElementById('userIdeasList');
+        const recentContainer = document.getElementById('recentIdeas');
+        
+        // Обновляем статистику идей
+        updateStats(parseInt(document.getElementById('statOrders').textContent) || 0, userIdeas.length);
+        
+        if (!userIdeas || userIdeas.length === 0) {
+            container.innerHTML = `
+                <div class="idea-empty">
+                    <div class="idea-empty-icon">💡</div>
+                    <div class="idea-empty-title">У вас пока нет идей</div>
+                    <div class="idea-empty-text">Предложите идею, и мы рассмотрим её</div>
+                </div>
+            `;
+            if (recentContainer) {
+                recentContainer.innerHTML = '<div style="text-align:center; padding:20px; color:rgba(255,255,255,0.5);">Нет идей</div>';
+            }
+            return;
+        }
+        
+        // ✅ ИСПОЛЬЗУЕМ НОВЫЕ СТИЛИ ДЛЯ КАРТОЧЕК
+        container.innerHTML = userIdeas.map(i => {
+            const title = i.title || 'Без названия';
+            const description = i.description || '';
+            const priority = i.priority || 'low';
+            const date = i.date || i.created_at || 'Дата неизвестна';
+            const status = i.status || 'new';
+            
+            const priorityClass = priority === 'high' ? 'idea-priority-high' : 
+                                  priority === 'medium' ? 'idea-priority-medium' : 'idea-priority-low';
+            const priorityLabel = priority === 'high' ? '🔴 Высокий' : 
+                                  priority === 'medium' ? '🟡 Средний' : '🟢 Низкий';
+            
+            const statusClass = status === 'new' ? 'idea-status-new' : 
+                                status === 'done' ? 'idea-status-done' : 
+                                status === 'rejected' ? 'idea-status-rejected' : 
+                                status === 'in_progress' ? 'idea-status-in_progress' : 'idea-status-new';
+            const statusLabel = status === 'new' ? 'На рассмотрении' : 
+                                status === 'done' ? '✅ Готово' : 
+                                status === 'rejected' ? '❌ Отклонена' : 
+                                status === 'in_progress' ? '🟣 В работе' : status;
+            
+            return `
+            <div class="idea-card">
+                <div style="display:flex; justify-content:space-between; flex-wrap:wrap; align-items:flex-start; gap:8px;">
+                    <div class="idea-title">💡 ${title}</div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <span class="${priorityClass}">${priorityLabel}</span>
+                        <span class="${statusClass}">${statusLabel}</span>
+                    </div>
+                </div>
+                ${description ? `<div class="idea-description">${description}</div>` : ''}
+                <div class="idea-meta">
+                    <span>📅 ${date}</span>
+                    <span>👤 ${i.user_email || currentUser?.email || '—'}</span>
+                </div>
+            </div>
+        `}).join('');
+        
+        // Обновляем список в правой колонке
+        if (recentContainer) {
+            recentContainer.innerHTML = userIdeas.slice(0,3).map(i => {
+                const title = i.title || 'Без названия';
+                const priority = i.priority || 'low';
+                const date = i.date || i.created_at || '';
+                const priorityLabel = priority === 'high' ? '🔴 Высокий' : 
+                                      priority === 'medium' ? '🟡 Средний' : '🟢 Низкий';
+                return `
+                <div style="padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.06);">
+                    <div style="color:white; font-weight:500;">${title}</div>
+                    <div style="display:flex; gap:10px; margin-top:4px;">
+                        <span style="color:rgba(255,255,255,0.5); font-size:12px;">${priorityLabel}</span>
+                        <span style="color:rgba(255,255,255,0.4); font-size:12px;">${date}</span>
+                    </div>
+                </div>
+            `}).join('');
+        }
+    } catch(e) { 
+        console.error('❌ loadUserIdeas error:', e);
+        const container = document.getElementById('userIdeasList');
+        if (container) {
+            container.innerHTML = `
+                <div style="text-align:center; padding:20px; color:#f87171;">
+                    ❌ Ошибка загрузки идей: ${e.message}
+                </div>
+            `;
+        }
+    }
+}
+    async function loadMyModuleRequests() {
+        const container = document.getElementById('myModuleRequestsList');
+        container.innerHTML = '<div style="text-align:center; padding:20px;">Загрузка...</div>';
+        try {
+            const response = await fetch('/api/client/module-requests', {
+                headers: { 'Authorization': 'Bearer ' + getToken() }
+            });
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            const data = await response.json();
+            if (!data || data.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding:40px;">
+                        <div style="font-size:48px; margin-bottom:20px;">📭</div>
+                        <h3>У вас нет заявок на модули</h3>
+                        <p style="color: rgba(255,255,255,0.6);">
+                            Перейдите в интересующий вас модуль и нажмите "Сообщить о заинтересованности".
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+            const statusLabels = {
+                'new': '🟡 Новая',
+                'interest': '💡 Интерес',
+                'viewed': '🔵 Просмотрена',
+                'in_progress': '🟣 В работе',
+                'done': '🟢 Готово',
+                'resolved': '✅ Решено',
+                'rejected': '🔴 Отклонена'
+            };
+            let html = `<div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse: collapse; color: #e2e8f0;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <th style="padding: 12px; text-align: left;">Модуль</th>
+                            <th style="padding: 12px; text-align: left;">Сообщение</th>
+                            <th style="padding: 12px; text-align: left;">Статус</th>
+                            <th style="padding: 12px; text-align: left;">Дата</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+            data.forEach(item => {
+                html += `<tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <td style="padding: 12px;"><strong>${item.module || '—'}</strong></td>
+                    <td style="padding: 12px;">${item.issue ? item.issue.substring(0, 80) + (item.issue.length > 80 ? '...' : '') : '—'}</td>
+                    <td style="padding: 12px;">${statusLabels[item.status] || item.status}</td>
+                    <td style="padding: 12px; color: #94a3b8;">${item.created_at || '—'}</td>
+                </tr>`;
+            });
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        } catch(err) {
+            console.error('❌ loadMyModuleRequests error:', err);
+            container.innerHTML = '<div style="text-align:center; padding:20px; color:#f87171;">❌ Ошибка загрузки заявок</div>';
+        }
+    }
+
+    async function submitIdea() {
+        const title = document.getElementById('ideaTitle').value.trim();
+        const description = document.getElementById('ideaDesc').value.trim();
+        const priority = document.getElementById('ideaPriority').value;
+        
+        if (!title) {
+            alert('❌ Введите название идеи');
+            return;
+        }
+        if (!description) {
+            alert('❌ Введите описание идеи');
+            return;
+        }
+        
+        const token = getToken();
+        if (!token) {
+            alert('❌ Вы не авторизованы');
+            return;
+        }
+        
+        const btn = document.querySelector('#featuresTab .btn-save');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...';
+        
+        try {
+            const res = await fetch('/api/feature-request', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ 
+                    title, 
+                    description, 
+                    priority,
+                    user_email: currentUser?.email
+                })
+            });
+            
+            if (res.ok) {
+                document.getElementById('ideaTitle').value = '';
+                document.getElementById('ideaDesc').value = '';
+                alert('✅ Идея отправлена!');
+                loadUserIdeas();
+            } else {
+                const data = await res.json();
+                alert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+            }
+        } catch(e) {
+            console.error('❌ Submit idea error:', e);
+            alert('❌ Ошибка соединения');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+
+    async function changePassword() {
+        const current = document.getElementById('currentPassword').value;
+        const newPass = document.getElementById('newPassword').value;
+        const confirm = document.getElementById('confirmPassword').value;
+        if (!current) {
+            alert('❌ Введите текущий пароль');
+            return;
+        }
+        if (newPass !== confirm) {
+            alert('❌ Новый пароль и подтверждение не совпадают');
+            return;
+        }
+        if (newPass.length < 6) {
+            alert('❌ Новый пароль должен быть не менее 6 символов');
+            return;
+        }
+        if (newPass === current) {
+            alert('❌ Новый пароль должен отличаться от текущего');
+            return;
+        }
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('❌ Вы не авторизованы');
+            window.location.href = '/login';
+            return;
+        }
+        try {
+            const response = await fetch('/api/user/password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    old_password: current,
+                    new_password: newPass
+                })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                alert('✅ Пароль успешно изменён!');
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+            } else if (response.status === 401) {
+                alert('❌ Неверный текущий пароль или сессия истекла. Войдите заново.');
+                localStorage.removeItem('token');
+                window.location.href = '/login';
+            } else {
+                alert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка (статус ' + response.status + ')'));
+            }
+        } catch(e) {
+            console.error('❌ Change password error:', e);
+            alert('❌ Ошибка соединения');
+        }
+    }
+
     async function deleteAccount() {
         if (confirm('⚠️ ВНИМАНИЕ! Вы уверены, что хотите удалить аккаунт? Это действие необратимо!')) {
             if (confirm('Ещё раз подтвердите удаление аккаунта')) {
-                const res = await fetch('/api/user/delete', { method: 'DELETE' });
+                const res = await fetch('/api/user/delete', { 
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
                 if (res.ok) {
                     alert('Аккаунт удалён');
-                    window.location.href = '/logout';
+                    localStorage.removeItem('token');
+                    window.location.href = '/';
                 } else {
                     alert('❌ Ошибка удаления');
                 }
             }
         }
     }
-    
-    function showTab(tabName) {
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(tabName + 'Tab').classList.add('active');
-        if (event && event.target) event.target.classList.add('active');
-        if (tabName === 'orders') loadUserOrders();
-        if (tabName === 'features') loadUserIdeas();
-    }
-    
+
     async function generateReconciliationAct() {
-        const token = localStorage.getItem('token');
+        const token = getToken();
+        if (!token) {
+            alert('❌ Вы не авторизованы');
+            return;
+        }
         const counterpartyName = document.getElementById('recCounterpartyName')?.value;
         const counterpartyINN = document.getElementById('recCounterpartyINN')?.value;
         const periodStart = document.getElementById('recPeriodStart')?.value;
         const periodEnd = document.getElementById('recPeriodEnd')?.value;
-        
-        if (!counterpartyName) { alert('❌ Введите название контрагента'); return; }
+        if (!counterpartyName) { alert('❌ Введите название партнёра'); return; }
         if (!periodStart || !periodEnd) { alert('❌ Выберите период'); return; }
-        
         const btn = event.target;
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Формирование...';
-        
         try {
             const response = await fetch('/api/reconciliation/generate', {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({
                     counterparty_name: counterpartyName,
                     counterparty_inn: counterpartyINN,
@@ -818,7 +2377,6 @@
                     period_end: periodEnd
                 })
             });
-            
             if (response.ok) {
                 const blob = await response.blob();
                 const url = URL.createObjectURL(blob);
@@ -830,7 +2388,8 @@
                 alert('✅ Акт сверки сформирован!');
                 loadMyReconciliationActs();
             } else {
-                alert('❌ Ошибка формирования акта');
+                const data = await response.json();
+                alert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
             }
         } catch(e) {
             console.error(e);
@@ -840,28 +2399,25 @@
             btn.innerHTML = '<i class="fas fa-file-pdf"></i> Сформировать PDF';
         }
     }
-    
+
     async function loadMyReconciliationActs() {
-        const token = localStorage.getItem('token');
+        const token = getToken();
+        if (!token) {
+            document.getElementById('myReconciliationActsList').innerHTML = '<div style="text-align:center; padding:20px; color:#f87171;">❌ Не авторизованы</div>';
+            return;
+        }
         const container = document.getElementById('myReconciliationActsList');
-        if (!container) return;
-        
         container.innerHTML = '<div style="text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin"></i> Загрузка...</div>';
-        
         try {
             const response = await fetch('/api/reconciliation/acts', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            
             if (!response.ok) throw new Error('HTTP ' + response.status);
-            
             const data = await response.json();
-            
             if (!data.acts || data.acts.length === 0) {
                 container.innerHTML = '<div style="text-align:center; padding:20px; color:#94a3b8;">📭 Нет сформированных актов сверки</div>';
                 return;
             }
-            
             container.innerHTML = data.acts.map(act => `
                 <div style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1);">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
@@ -882,8 +2438,1138 @@
             container.innerHTML = '<div style="text-align:center; padding:20px; color:#f87171;">❌ Ошибка загрузки</div>';
         }
     }
-    
+
+    function showTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(tabName + 'Tab').classList.add('active');
+        if (event && event.target) event.target.classList.add('active');
+        if (tabName === 'orders') loadUserOrders();
+        if (tabName === 'features') loadUserIdeas();
+        if (tabName === 'module-requests') loadMyModuleRequests();
+    }
+
     loadUserData();
+
+// ============================================================
+// ===== 2FA (ДВУХФАКТОРНАЯ АУТЕНТИФИКАЦИЯ) =====
+// ============================================================
+
+let twofaSecret = '';
+let twofaEnabled = false;
+let backupCodes = [];
+let backupCodesVisible = false;
+
+async function loadTwoFAStatus() {
+    try {
+        const token = getToken();
+        if (!token) return;
+        
+        const res = await fetch('/api/2fa/status', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        
+        twofaEnabled = data.enabled || false;
+        const statusDiv = document.getElementById('twofaStatus');
+        if (!statusDiv) return;
+        
+        if (twofaEnabled) {
+            statusDiv.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="color: #34d399; font-size: 20px;">✅</span>
+                    <span style="color: #34d399;">2FA включена</span>
+                    <span style="color: rgba(255,255,255,0.4); font-size: 13px;">Ваш аккаунт защищён</span>
+                </div>
+            `;
+            const toggleBtn = document.getElementById('twofaToggleBtn');
+            const toggleText = document.getElementById('twofaToggleText');
+            if (toggleBtn) {
+                toggleBtn.style.background = 'rgba(239,68,68,0.2)';
+                toggleBtn.style.color = '#f87171';
+            }
+            if (toggleText) toggleText.textContent = 'Отключить 2FA';
+            await loadAndShowBackupCodes();
+        } else {
+            statusDiv.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="color: #94a3b8; font-size: 20px;">⚪</span>
+                    <span style="color: rgba(255,255,255,0.6);">2FA отключена</span>
+                    <span style="color: rgba(255,255,255,0.4); font-size: 13px;">Рекомендуем включить</span>
+                </div>
+            `;
+            const toggleBtn = document.getElementById('twofaToggleBtn');
+            const toggleText = document.getElementById('twofaToggleText');
+            if (toggleBtn) {
+                toggleBtn.style.background = 'rgba(16,185,129,0.2)';
+                toggleBtn.style.color = '#34d399';
+            }
+            if (toggleText) toggleText.textContent = 'Включить 2FA';
+            const backupBlock = document.getElementById('twofaBackupCodes');
+            if (backupBlock) backupBlock.style.display = 'none';
+        }
+    } catch(e) {
+        console.error('❌ loadTwoFAStatus error:', e);
+        const statusDiv = document.getElementById('twofaStatus');
+        if (statusDiv) {
+            statusDiv.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="color: #f87171;">❌</span>
+                    <span style="color: #f87171;">Ошибка загрузки статуса 2FA</span>
+                </div>
+            `;
+        }
+    }
+  await checkDiscountStatus();
+}
+
+async function loadAndShowBackupCodes() {
+    try {
+        const token = getToken();
+        if (!token) return;
+        
+        const res = await fetch('/api/2fa/backup-codes', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (res.ok) {
+            const data = await res.json();
+            const backupBlock = document.getElementById('twofaBackupCodes');
+            const display = document.getElementById('backupCodesDisplay');
+            
+            if (!backupBlock || !display) return;
+            
+            if (data.codes && data.codes.length > 0) {
+                backupCodes = data.codes;
+                backupBlock.style.display = 'block';
+                display.innerHTML = '<span style="color: rgba(255,255,255,0.3); grid-column: 1 / -1; text-align: center;">••••••••••</span>';
+            } else {
+                backupBlock.style.display = 'block';
+                display.innerHTML = '<span style="color: rgba(255,255,255,0.3); grid-column: 1 / -1; text-align: center;">Нет резервных кодов</span>';
+            }
+        }
+    } catch(e) {
+        console.error('❌ loadAndShowBackupCodes error:', e);
+    }
+}
+
+function toggleBackupCodes() {
+    const display = document.getElementById('backupCodesDisplay');
+    const icon = document.getElementById('backupEyeIcon');
+    const text = document.getElementById('backupVisibilityText');
+    if (!display) return;
+    
+    backupCodesVisible = !backupCodesVisible;
+    
+    if (backupCodesVisible && backupCodes.length > 0) {
+        display.innerHTML = backupCodes.map(code => 
+            `<span style="background: rgba(255,255,255,0.05); padding: 6px 12px; border-radius: 6px; text-align: center; color: #fbbf24; font-size: 14px; letter-spacing: 1px; font-family: 'Courier New', monospace;">${code}</span>`
+        ).join('');
+        if (icon) icon.className = 'fas fa-eye-slash';
+        if (text) text.textContent = 'Скрыть';
+    } else {
+        display.innerHTML = '<span style="color: rgba(255,255,255,0.3); grid-column: 1 / -1; text-align: center;">••••••••••</span>';
+        if (icon) icon.className = 'fas fa-eye';
+        if (text) text.textContent = 'Показать';
+    }
+}
+
+async function generateNewBackupCodes() {
+    if (!confirm('⚠️ Сгенерировать новые резервные коды? Старые станут недействительными.')) {
+        return;
+    }
+    
+    try {
+        const token = getToken();
+        if (!token) {
+            alert('❌ Вы не авторизованы');
+            return;
+        }
+        
+        const res = await fetch('/api/2fa/backup-codes/generate', {
+            method: 'POST',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!res.ok) {
+            const text = await res.text();
+            throw new Error(`HTTP ${res.status}: ${text.substring(0, 100)}`);
+        }
+        
+        const data = await res.json();
+        
+        if (data.codes && data.codes.length > 0) {
+            backupCodes = data.codes;
+            backupCodesVisible = true;
+            
+            const display = document.getElementById('backupCodesDisplay');
+            if (display) {
+                display.innerHTML = backupCodes.map(code => 
+                    `<span style="background: rgba(255,255,255,0.05); padding: 6px 12px; border-radius: 6px; text-align: center; color: #fbbf24; font-size: 14px; letter-spacing: 1px; font-family: 'Courier New', monospace;">${code}</span>`
+                ).join('');
+            }
+            
+            const icon = document.getElementById('backupEyeIcon');
+            const text = document.getElementById('backupVisibilityText');
+            if (icon) icon.className = 'fas fa-eye-slash';
+            if (text) text.textContent = 'Скрыть';
+            
+            alert('✅ Новые резервные коды сгенерированы!\n\n' + backupCodes.join('\n'));
+        } else {
+            alert('❌ Не удалось сгенерировать коды');
+        }
+    } catch(e) {
+        console.error('❌ generateNewBackupCodes error:', e);
+        alert('❌ Ошибка: ' + e.message);
+    }
+}
+
+function copyBackupCodes() {
+    if (!backupCodes || backupCodes.length === 0) {
+        alert('❌ Нет резервных кодов для копирования');
+        return;
+    }
+    
+    const codesText = backupCodes.join('\n');
+    
+    navigator.clipboard.writeText(codesText).then(() => {
+        alert('✅ Резервные коды скопированы!\n\n' + codesText);
+    }).catch(() => {
+        const textarea = document.createElement('textarea');
+        textarea.value = codesText;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        alert('✅ Резервные коды скопированы!\n\n' + codesText);
+    });
+}
+
+async function toggleTwoFA() {
+    if (twofaEnabled) {
+        const code = prompt('Введите код из Google Authenticator для подтверждения:');
+        if (!code || code.length !== 6) {
+            alert('❌ Введите 6-значный код');
+            return;
+        }
+        
+        const userId = getUserId();
+        if (!userId) {
+            alert('❌ Ошибка: пользователь не авторизован');
+            return;
+        }
+        
+        if (!confirm('❌ Вы уверены, что хотите отключить двухфакторную аутентификацию?')) {
+            return;
+        }
+        
+        try {
+            const token = getToken();
+            const res = await fetch('/api/2fa/disable', {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    code: code
+                })
+            });
+            
+            const data = await res.json();
+            if (res.ok && data.success) {
+                alert('✅ 2FA отключена');
+                document.getElementById('twofaSetup').style.display = 'none';
+                document.getElementById('twofaBackupCodes').style.display = 'none';
+                loadTwoFAStatus();
+            } else {
+                alert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+            }
+        } catch(e) {
+            console.error('❌ toggleTwoFA error:', e);
+            alert('❌ Ошибка: ' + e.message);
+        }
+        return;
+    }
+    
+    try {
+        const token = getToken();
+        const res = await fetch('/api/2fa/generate', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        
+        twofaSecret = data.secret || '';
+        console.log('🔐 Секрет получен:', twofaSecret);
+        
+        document.getElementById('twofaSetup').style.display = 'block';
+        document.getElementById('twofaCode').value = '';
+        
+        generateQRCode(twofaSecret);
+        
+    } catch(e) {
+        console.error('❌ toggleTwoFA error:', e);
+        alert('❌ Ошибка генерации QR-кода: ' + e.message);
+    }
+}
+
+// ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====
+function getUserId() {
+    if (currentUser?.user_id) return currentUser.user_id;
+    if (currentUser?.id) return currentUser.id;
+    try {
+        const token = getToken();
+        if (token) {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            if (payload.user_id) return payload.user_id;
+            if (payload.sub) return payload.sub;
+        }
+    } catch(e) {}
+    return null;
+}
+
+function generateQRCode(secret) {
+    const email = currentUser?.email || 'user@example.com';
+    const issuer = 'Business Stack';
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=otpauth://totp/${issuer}:${encodeURIComponent(email)}?secret=${secret}&issuer=${issuer}`;
+    
+    document.getElementById('twofaSetup').style.display = 'block';
+    document.getElementById('secretText').textContent = secret;
+    
+    const img = document.getElementById('twofaQRImage');
+    if (img) {
+        img.src = qrUrl + '&t=' + Date.now();
+        img.style.display = 'block';
+    }
+}
+
+// ===== ОБНОВЛЕНИЕ QR-КОДА =====
+function refreshQRCode() {
+    const secret = document.getElementById('secretText');
+    if (!secret) return;
+    
+    const secretValue = secret.textContent;
+    if (!secretValue || secretValue === 'загрузка...') {
+        showToast('⚠️ Сначала получите секрет', 'error');
+        return;
+    }
+    
+    const email = currentUser?.email || 'user@example.com';
+    const issuer = 'Business Stack';
+    
+    // Создаём новую ссылку с уникальным параметром для обновления кэша
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=otpauth://totp/${issuer}:${encodeURIComponent(email)}?secret=${secretValue}&issuer=${issuer}&t=${Date.now()}`;
+    
+    const img = document.getElementById('twofaQRImage');
+    if (img) {
+        img.src = qrUrl;
+        img.style.display = 'block';
+        showToast('✅ QR-код обновлён', 'success');
+    } else {
+        showToast('❌ Элемент QR-кода не найден', 'error');
+    }
+}
+function copySecretKey() {
+    const secretText = document.getElementById('secretText');
+    const secret = secretText.textContent;
+    if (secret && secret !== 'загрузка...') {
+        navigator.clipboard.writeText(secret).then(() => {
+            showToast('✅ Секрет скопирован!', 'success');
+        }).catch(() => {
+            const textarea = document.createElement('textarea');
+            textarea.value = secret;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast('✅ Секрет скопирован!', 'success');
+        });
+    }
+}
+
+async function verifyTwoFA() {
+    const code = document.getElementById('twofaCode').value.trim();
+    if (!code || code.length !== 6) {
+        alert('❌ Введите 6-значный код из приложения аутентификации');
+        return;
+    }
+    
+    try {
+        const token = getToken();
+        const res = await fetch('/api/2fa/verify', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                code: code,
+                secret: twofaSecret
+            })
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok && data.success) {
+            alert('✅ 2FA успешно включена!');
+            document.getElementById('twofaSetup').style.display = 'none';
+            
+            if (data.backup_codes && data.backup_codes.length > 0) {
+                backupCodes = data.backup_codes;
+                document.getElementById('backupCodesDisplay').textContent = backupCodes.join('  ');
+                document.getElementById('twofaBackupCodes').style.display = 'block';
+            }
+            
+            loadTwoFAStatus();
+        } else {
+            alert('❌ Неверный код: ' + (data.error || 'Попробуйте ещё раз'));
+        }
+    } catch(e) {
+        console.error('❌ verifyTwoFA error:', e);
+        alert('❌ Ошибка: ' + e.message);
+    }
+}
+
+function cancelTwoFASetup() {
+    document.getElementById('twofaSetup').style.display = 'none';
+    document.getElementById('twofaCode').value = '';
+}
+function copyBackupCodes() {
+    if (!backupCodes || backupCodes.length === 0) {
+        alert('❌ Нет резервных кодов для копирования');
+        return;
+    }
+    
+    // Форматируем коды красиво
+    const codesText = backupCodes.join('\n');
+    
+    navigator.clipboard.writeText(codesText).then(() => {
+        alert('✅ Резервные коды скопированы!\n\n' + codesText);
+    }).catch(() => {
+        // Fallback для старых браузеров
+        const textarea = document.createElement('textarea');
+        textarea.value = codesText;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        alert('✅ Резервные коды скопированы!\n\n' + codesText);
+    });
+}
+
+// ===== ДОВЕРЕННЫЕ УСТРОЙСТВА =====
+// ===== ДОВЕРЕННЫЕ УСТРОЙСТВА =====
+// ===== ДОВЕРЕННЫЕ УСТРОЙСТВА =====
+async function loadTrustedDevices() {
+    const container = document.getElementById('trustedDevicesList');
+    if (!container) return;
+    
+    try {
+        const token = getToken();
+        if (!token) {
+            container.innerHTML = '<p style="color: rgba(255,255,255,0.4); text-align: center;">Авторизуйтесь для просмотра устройств</p>';
+            return;
+        }
+        
+        let userId = currentUser?.user_id || currentUser?.id;
+        if (!userId) {
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                userId = payload.user_id || payload.sub;
+            } catch(e) {}
+        }
+        
+        if (!userId) {
+            container.innerHTML = '<p style="color: rgba(255,255,255,0.4); text-align: center;">ID пользователя не найден</p>';
+            return;
+        }
+        
+        const res = await fetch(`/api/auth/trusted-devices/list?user_id=${userId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (res.status === 400 || res.status === 404) {
+            container.innerHTML = '<p style="color: rgba(255,255,255,0.4); text-align: center;">Нет доверенных устройств</p>';
+            return;
+        }
+        
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        
+        const data = await res.json();
+        // ✅ ИСПРАВЛЕНО: проверяем что devices - массив, даже если null
+        const devices = Array.isArray(data.devices) ? data.devices : [];
+        
+        if (devices.length > 0) {
+            container.innerHTML = devices.map(d => {
+                const id = d.id || d.device_id || '';
+                return `
+                <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <i class="fas fa-${d.type === 'mobile' ? 'mobile-alt' : 'laptop'}" style="color: #818cf8;"></i>
+                        <strong>${d.name || 'Устройство'}</strong>
+                        <br><small style="color: rgba(255,255,255,0.4);">${d.browser || ''} • IP: ${d.ip_address || d.ip || '—'}</small>
+                        <br><small style="color: rgba(255,255,255,0.3);">Добавлено: ${d.created_at ? new Date(d.created_at).toLocaleDateString() : '—'}</small>
+                    </div>
+                    <button class="btn-action" style="background: rgba(239,68,68,0.2); color: #f87171; padding: 4px 16px; cursor: pointer; border: none; border-radius: 20px; font-size: 12px;" onclick="revokeDevice('${id}')">Отозвать</button>
+                </div>
+            `}).join('');
+        } else {
+            container.innerHTML = '<p style="color: rgba(255,255,255,0.4); text-align: center;">Нет доверенных устройств</p>';
+        }
+    } catch(e) {
+        console.error('❌ loadTrustedDevices error:', e);
+        container.innerHTML = '<p style="color: rgba(255,255,255,0.4); text-align: center;">Ошибка загрузки устройств</p>';
+    }
+}
+// ===== ОТОЗВАТЬ УСТРОЙСТВО =====
+async function revokeDevice(deviceId) {
+    if (!deviceId) {
+        alert('❌ ID устройства не указан');
+        return;
+    }
+    if (!confirm('Отозвать доверие к этому устройству?')) return;
+    
+    try {
+        const token = getToken();
+        if (!token) {
+            alert('❌ Вы не авторизованы');
+            return;
+        }
+        
+        const res = await fetch('/api/auth/trusted-devices/revoke', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ device_id: deviceId })
+        });
+        
+        const data = await res.json();
+        if (res.ok && data.success) {
+            alert('✅ Устройство отозвано');
+            loadTrustedDevices();
+        } else {
+            alert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+        }
+    } catch(e) {
+        console.error('❌ revokeDevice error:', e);
+        alert('❌ Ошибка: ' + e.message);
+    }
+}
+// ===== АКТИВНЫЕ СЕССИИ =====
+async function loadSessions() {
+    const container = document.getElementById('sessionsList');
+    if (!container) return;
+    
+    try {
+        const token = getToken();
+        if (!token) {
+            container.innerHTML = '<p style="color: rgba(255,255,255,0.4); text-align: center;">Авторизуйтесь для просмотра сессий</p>';
+            return;
+        }
+        
+        let userId = currentUser?.user_id || currentUser?.id;
+        if (!userId) {
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                userId = payload.user_id || payload.sub;
+            } catch(e) {}
+        }
+        
+        if (!userId) {
+            container.innerHTML = '<p style="color: rgba(255,255,255,0.4); text-align: center;">ID пользователя не найден</p>';
+            return;
+        }
+        
+        const res = await fetch(`/api/sessions?user_id=${userId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (res.status === 401) {
+            container.innerHTML = '<p style="color: rgba(255,255,255,0.4); text-align: center;">Сессия истекла, войдите заново</p>';
+            return;
+        }
+        
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        
+        // ✅ ИСПРАВЛЕНО: проверяем что sessions - массив, даже если null
+        const sessions = Array.isArray(data.sessions) ? data.sessions : [];
+        
+        if (sessions.length > 0) {
+            container.innerHTML = sessions.map(s => {
+                const sessionId = s.id || s.session_id || '';
+                const isCurrent = s.is_current || s.current || false;
+                return `
+                <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <i class="fas fa-${isCurrent ? 'star' : 'circle'}" style="color: ${isCurrent ? '#f59e0b' : '#818cf8'};"></i>
+                        <strong>${s.browser || 'Браузер'}</strong>
+                        ${isCurrent ? '<span style="background: rgba(16,185,129,0.2); color: #34d399; padding: 2px 10px; border-radius: 12px; font-size: 10px;">✅ Текущая</span>' : ''}
+                        <br>
+                        <small style="color: rgba(255,255,255,0.4);">${s.os || 'ОС'} • IP: ${s.ip || '—'}</small>
+                        <br><small style="color: rgba(255,255,255,0.3);">${s.user_agent ? s.user_agent.substring(0, 50) + '...' : ''}</small>
+                    </div>
+                    <div style="text-align: right;">
+                        <small style="color: rgba(255,255,255,0.4);">${s.last_active ? new Date(s.last_active).toLocaleString() : '—'}</small>
+                        ${!isCurrent ? `<button class="btn-action" style="background: rgba(239,68,68,0.2); color: #f87171; padding: 4px 16px; margin-top: 5px; border: none; border-radius: 20px; cursor: pointer; font-size: 12px;" onclick="terminateSession('${sessionId}')">Завершить</button>` : ''}
+                    </div>
+                </div>
+            `}).join('');
+        } else {
+            container.innerHTML = '<p style="color: rgba(255,255,255,0.4); text-align: center;">Нет активных сессий</p>';
+        }
+    } catch(e) {
+        console.error('❌ loadSessions error:', e);
+        container.innerHTML = '<p style="color: rgba(255,255,255,0.4); text-align: center;">Ошибка загрузки сессий</p>';
+    }
+}
+// ===== ЗАВЕРШИТЬ СЕССИЮ =====
+async function terminateSession(sessionId) {
+    if (!confirm('Завершить эту сессию?')) return;
+    
+    try {
+        const token = getToken();
+        if (!token) {
+            alert('❌ Вы не авторизованы');
+            return;
+        }
+        
+        const res = await fetch(`/api/sessions/${sessionId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+            alert('✅ Сессия завершена');
+            loadSessions();
+        } else {
+            alert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+        }
+    } catch(e) {
+        alert('❌ Ошибка: ' + e.message);
+    }
+}
+// ===== ЗАВЕРШИТЬ ВСЕ СЕССИИ =====
+async function terminateAllSessions() {
+    if (!confirm('Завершить ВСЕ сессии (кроме текущей)?')) return;
+    
+    try {
+        const token = getToken();
+        if (!token) {
+            alert('❌ Вы не авторизованы');
+            return;
+        }
+        
+        const res = await fetch('/api/sessions/all', {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+            alert('✅ Все сессии завершены');
+            loadSessions();
+        } else {
+            alert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+        }
+    } catch(e) {
+        alert('❌ Ошибка: ' + e.message);
+    }
+}
+// ===== ИСТОРИЯ ВХОДОВ =====
+async function loadLoginHistory() {
+    const container = document.getElementById('loginHistoryList');
+    if (!container) return;
+    
+    try {
+        const token = getToken();
+        if (!token) {
+            container.innerHTML = '<p style="color: rgba(255,255,255,0.4); text-align: center;">Авторизуйтесь для просмотра истории</p>';
+            return;
+        }
+        
+        let userId = currentUser?.user_id || currentUser?.id;
+        if (!userId) {
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                userId = payload.user_id || payload.sub;
+            } catch(e) {}
+        }
+        
+        if (!userId) {
+            container.innerHTML = '<p style="color: rgba(255,255,255,0.4); text-align: center;">ID пользователя не найден</p>';
+            return;
+        }
+        
+        const res = await fetch(`/api/login-history?user_id=${userId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (res.status === 401) {
+            container.innerHTML = '<p style="color: rgba(255,255,255,0.4); text-align: center;">Сессия истекла, войдите заново</p>';
+            return;
+        }
+        
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        
+        // ✅ УЖЕ ПРАВИЛЬНО: data.history - массив
+        const history = Array.isArray(data.history) ? data.history : [];
+        
+        if (history.length > 0) {
+            container.innerHTML = history.map(h => `
+                <div style="background: rgba(255,255,255,0.03); border-radius: 10px; padding: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px;">
+                    <div>
+                        <i class="fas ${h.success ? 'fa-check-circle' : 'fa-exclamation-circle'}" style="color: ${h.success ? '#34d399' : '#f87171'};"></i>
+                        <strong>${h.ip || '—'}</strong>
+                    </div>
+                    <div><small style="color: rgba(255,255,255,0.4);">${h.browser || '—'} на ${h.os || '—'}</small></div>
+                    <div><small style="color: rgba(255,255,255,0.4);">${h.created_at ? new Date(h.created_at).toLocaleString() : '—'}</small></div>
+                    <div><span style="padding: 2px 10px; border-radius: 12px; font-size: 10px; background: ${h.success ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}; color: ${h.success ? '#34d399' : '#f87171'};">${h.success ? '✅ Успешно' : '❌ Неудачно'}</span></div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = '<p style="color: rgba(255,255,255,0.4); text-align: center;">История входов пуста</p>';
+        }
+    } catch(e) {
+        console.error('❌ loadLoginHistory error:', e);
+        container.innerHTML = '<p style="color: rgba(255,255,255,0.4); text-align: center;">Ошибка загрузки истории</p>';
+    }
+}
+// ============================================================
+// ===== НАСТРОЙКИ УВЕДОМЛЕНИЙ =====
+// ============================================================
+
+async function loadNotificationSettings() {
+    try {
+        const token = getToken();
+        if (!token) return;
+        
+        const res = await fetch('/api/notifications/settings', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        if (data.email !== undefined) {
+            document.getElementById('notifEmail').checked = data.email;
+        }
+        if (data.telegram !== undefined) {
+            document.getElementById('notifTelegram').checked = data.telegram;
+        }
+        if (data.push !== undefined) {
+            document.getElementById('notifPush').checked = data.push;
+        }
+        
+        updateToggleUI('notifEmail');
+        updateToggleUI('notifTelegram');
+        updateToggleUI('notifPush');
+        
+    } catch(e) {
+        console.error('❌ loadNotificationSettings error:', e);
+    }
+}
+
+async function saveNotificationSettings() {
+    try {
+        const token = getToken();
+        if (!token) return;
+        
+        const settings = {
+            email: document.getElementById('notifEmail').checked,
+            telegram: document.getElementById('notifTelegram').checked,
+            push: document.getElementById('notifPush').checked
+        };
+        
+        updateToggleUI('notifEmail');
+        updateToggleUI('notifTelegram');
+        updateToggleUI('notifPush');
+        
+        const res = await fetch('/api/notifications/settings', {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(settings)
+        });
+        
+        if (res.ok) {
+            showToast('✅ Настройки уведомлений сохранены', 'success');
+        } else {
+            const data = await res.json();
+            showToast('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'), 'error');
+        }
+    } catch(e) {
+        console.error('❌ saveNotificationSettings error:', e);
+        showToast('❌ Ошибка сохранения', 'error');
+    }
+}
+
+function updateToggleUI(id) {
+    const checkbox = document.getElementById(id);
+    if (!checkbox) return;
+    
+    const track = document.getElementById(id + 'Track');
+    const thumb = document.getElementById(id + 'Thumb');
+    
+    if (track && thumb) {
+        if (checkbox.checked) {
+            track.style.background = 'rgba(79, 70, 229, 0.6)';
+            thumb.style.left = '24px';
+            thumb.style.background = '#818cf8';
+        } else {
+            track.style.background = 'rgba(255,255,255,0.15)';
+            thumb.style.left = '2px';
+            thumb.style.background = '#64748b';
+        }
+    }
+}
+
+// ============================================================
+// ===== ПЕРЕОПРЕДЕЛЯЕМ showTab ДЛЯ 2FA =====
+// ============================================================
+
+const originalShowTab = showTab;
+showTab = function(tabName) {
+    originalShowTab(tabName);
+    if (tabName === 'security') {
+        // Загружаем все данные с небольшой задержкой, чтобы currentUser успел загрузиться
+        setTimeout(() => {
+            loadTwoFAStatus();
+            loadNotificationSettings();
+            loadTrustedDevices();
+            loadSessions();
+            loadLoginHistory();
+        }, 300);
+    }
+};
+
+// ===== ПРИНУДИТЕЛЬНАЯ ЗАГРУЗКА ДАННЫХ БЕЗОПАСНОСТИ =====
+async function loadAllSecurityData() {
+    console.log('🔐 Загрузка всех данных безопасности...');
+    await loadTrustedDevices();
+    await loadSessions();
+    await loadLoginHistory();
+    await loadTwoFAStatus();
+    await loadNotificationSettings();
+    console.log('✅ Данные безопасности загружены');
+}
+// ============================================================
+// ===== ДОБАВЛЯЕМ ВЫЗОВЫ В loadUserData =====
+// ============================================================
+
+const originalLoadUserData = loadUserData;
+loadUserData = async function() {
+    await originalLoadUserData();
+    loadTwoFAStatus();
+    loadNotificationSettings();
+    checkDiscountStatus(); 
+};
+
+// ===== ПОЛУЧИТЬ USER_ID ИЗ currentUser =====
+function getUserId() {
+    if (currentUser?.user_id) {
+        return currentUser.user_id;
+    }
+    if (currentUser?.id) {
+        return currentUser.id;
+    }
+    // Пробуем из токена как fallback
+    try {
+        const token = getToken();
+        if (token) {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            if (payload.user_id) return payload.user_id;
+            if (payload.sub) return payload.sub;
+        }
+    } catch(e) {}
+    return null;
+}
+
+// ===== ПОЛУЧИТЬ TENANT_ID ИЗ currentUser =====
+function getTenantId() {
+    if (currentUser?.tenant_id) {
+        return currentUser.tenant_id;
+    }
+    if (currentUser?.tenantId) {
+        return currentUser.tenantId;
+    }
+    // Пробуем из токена как fallback
+    try {
+        const token = getToken();
+        if (token) {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            if (payload.tenant_id) return payload.tenant_id;
+            if (payload.tenantId) return payload.tenantId;
+        }
+    } catch(e) {}
+    return null;
+}
+
+// ===== ПРОВЕРКА 2FA ПРИ ВХОДЕ В ПРОФИЛЬ =====
+async function check2FAForProfile() {
+    const token = getToken();
+    if (!token) return true;
+    
+    try {
+        const res = await fetch('/api/auth/2fa/profile-status', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const status = await res.json();
+        
+        // Если 2FA включена и требует подтверждения
+        if (status.enabled && status.requires_verification) {
+            show2FAProfileModal(status.qr_code, status.secret);
+            return false; // Ждем подтверждения
+        }
+        return true;
+    } catch(e) {
+        console.warn('⚠️ Ошибка проверки 2FA:', e);
+        return true;
+    }
+}
+
+// ===== МОДАЛЬНОЕ ОКНО 2FA ДЛЯ ПРОФИЛЯ =====
+function show2FAProfileModal(qrCode, secret) {
+    // Удаляем старое модальное окно если есть
+    const oldModal = document.getElementById('twofa-profile-modal');
+    if (oldModal) oldModal.remove();
+    
+    const modal = document.createElement('div');
+    modal.id = 'twofa-profile-modal';
+    modal.style.cssText = `
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.9);
+        backdrop-filter: blur(20px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 999999;
+        animation: fadeIn 0.3s ease;
+    `;
+    
+    modal.innerHTML = `
+        <div style="background: #0f0f23; border-radius: 32px; padding: 40px; max-width: 420px; width: 90%; border: 1px solid rgba(79,70,229,0.4); text-align: center; box-shadow: 0 0 80px rgba(79,70,229,0.2);">
+            <div style="font-size: 48px; margin-bottom: 10px;">🔐</div>
+            <h2 style="color: white; font-size: 24px; margin-bottom: 8px;">Подтверждение 2FA</h2>
+            <p style="color: rgba(255,255,255,0.6); font-size: 14px; margin-bottom: 20px;">
+                Отсканируйте QR-код в приложении аутентификации
+                <br><span style="font-size: 12px; color: rgba(255,255,255,0.3);">(Google Authenticator, Microsoft Authenticator, Authy)</span>
+            </p>
+            
+            <div style="background: white; padding: 15px; border-radius: 16px; margin: 10px auto; display: inline-block; box-shadow: 0 0 30px rgba(79,70,229,0.3);">
+               <img src="${qrCode || 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=otpauth://totp/Business%20Stack:user@example.com?secret=XXXXX&issuer=Business%20Stack'}" alt="QR Code" style="width: 200px; height: 200px; display: block; border-radius: 8px;">
+            </div>
+            
+            <div style="margin: 15px 0; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(79,70,229,0.2);">
+                <code style="color: #fbbf24; font-size: 13px; word-break: break-all;">${secret}</code>
+                <div style="color: rgba(255,255,255,0.2); font-size: 10px; margin-top: 4px;">👆 Секрет (можно ввести вручную)</div>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <p style="color: rgba(255,255,255,0.4); font-size: 12px; margin-bottom: 8px;">Введите 6-значный код из приложения</p>
+                <input type="text" id="twofaProfileInput" placeholder="000000" maxlength="6" 
+                    style="width: 100%; padding: 14px; background: rgba(255,255,255,0.06); border: 2px solid rgba(79,70,229,0.3); border-radius: 14px; color: white; font-size: 28px; text-align: center; letter-spacing: 8px; font-family: 'Courier New', monospace; outline: none;">
+            </div>
+            
+            <div style="display: flex; gap: 12px; margin-top: 25px; justify-content: center;">
+                <button onclick="verify2FAProfile()" style="padding: 14px 40px; background: linear-gradient(135deg, #4f46e5, #7c3aed); border: none; border-radius: 50px; color: white; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.3s;">
+                    <i class="fas fa-check"></i> Подтвердить
+                </button>
+                <button onclick="logout()" style="padding: 14px 30px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 50px; color: #94a3b8; cursor: pointer; font-size: 16px; transition: all 0.3s;">
+                    <i class="fas fa-sign-out-alt"></i> Выйти
+                </button>
+            </div>
+            
+            <p style="color: rgba(255,255,255,0.2); font-size: 11px; margin-top: 20px;">
+                ⏳ После подтверждения доступ к профилю будет открыт на 14 дней
+            </p>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Автофокус на поле ввода
+    setTimeout(() => {
+        const input = document.getElementById('twofaProfileInput');
+        if (input) input.focus();
+    }, 300);
+    
+    // Добавляем стили для анимации (если еще нет)
+    if (!document.getElementById('twofaModalStyles')) {
+        const styles = document.createElement('style');
+        styles.id = 'twofaModalStyles';
+        styles.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; transform: scale(0.95); }
+                to { opacity: 1; transform: scale(1); }
+            }
+        `;
+        document.head.appendChild(styles);
+    }
+}
+
+// ===== ПОДТВЕРЖДЕНИЕ 2FA ДЛЯ ПРОФИЛЯ =====
+async function verify2FAProfile() {
+    const input = document.getElementById('twofaProfileInput');
+    if (!input) return;
+    
+    const code = input.value.trim();
+    if (!code || code.length !== 6) {
+        alert('❌ Введите 6-значный код из приложения аутентификации');
+        return;
+    }
+    
+    const btn = document.querySelector('#twofa-profile-modal button:first-child');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Проверка...';
+    }
+    
+    try {
+        const token = getToken();
+        const res = await fetch('/api/auth/2fa/verify-profile', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ code: code })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+            // Удаляем модальное окно
+            const modal = document.getElementById('twofa-profile-modal');
+            if (modal) modal.remove();
+            
+            // Показываем уведомление об успехе
+            showToast('✅ 2FA подтверждена! Доступ к профилю открыт на 14 дней.', 'success');
+            
+            // Загружаем данные профиля
+            await loadUserData();
+        } else {
+            alert('❌ ' + (data.error || 'Неверный код. Попробуйте ещё раз.'));
+            const input = document.getElementById('twofaProfileInput');
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
+        }
+    } catch(e) {
+        console.error('❌ verify2FAProfile error:', e);
+        alert('❌ Ошибка: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check"></i> Подтвердить';
+        }
+    }
+}
+
+// ===== ВЫХОД ИЗ СИСТЕМЫ =====
+function logout() {
+    localStorage.removeItem('token');
+    window.location.href = '/login';
+}
+
+// ===== ПОКАЗАТЬ/СКРЫТЬ ПОДРОБНОСТИ 2FA =====
+function toggle2FADetails() {
+    const details = document.getElementById('twofaDetails');
+    const arrow = document.getElementById('faqArrow');
+    
+    if (!details) return;
+    
+    if (details.style.display === 'none' || details.style.display === '') {
+        details.style.display = 'block';
+        if (arrow) {
+            arrow.className = 'fas fa-chevron-up';
+        }
+    } else {
+        details.style.display = 'none';
+        if (arrow) {
+            arrow.className = 'fas fa-chevron-down';
+        }
+    }
+}
+
+// ===== ПРОВЕРКА СТАТУСА СКИДКИ 2FA =====
+async function checkDiscountStatus() {
+    try {
+        const token = getToken();
+        if (!token) return;
+        
+        const res = await fetch('/api/2fa/discount-status', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        if (data.has_discount && data.discount) {
+            showDiscountInfo({
+                percent: data.discount.percent,
+                valid_from: data.discount.valid_from,
+                valid_to: data.discount.valid_to,
+                status: data.discount.status
+            });
+        }
+    } catch(e) {
+        console.warn('⚠️ Не удалось проверить статус скидки:', e);
+    }
+}
+
+// ===== ПОКАЗАТЬ ИНФОРМАЦИЮ О СКИДКЕ =====
+function showDiscountInfo(discountInfo) {
+    const container = document.getElementById('twofaDiscountInfo');
+    const status = document.getElementById('discountStatus');
+    const badge = document.getElementById('discountBadge');
+    
+    if (!container) return;
+    
+    container.style.display = 'block';
+    
+    if (discountInfo) {
+        const now = new Date();
+        const validFrom = new Date(discountInfo.valid_from);
+        const validTo = new Date(discountInfo.valid_to);
+        
+        if (validFrom <= now && validTo >= now) {
+            status.textContent = `✅ Активна до ${validTo.toLocaleDateString()}`;
+            badge.textContent = `-${discountInfo.percent}%`;
+            badge.style.background = 'rgba(16,185,129,0.2)';
+            badge.style.color = '#34d399';
+        } else if (validFrom > now) {
+            const days = Math.ceil((validFrom - now) / (1000 * 60 * 60 * 24));
+            status.textContent = `⏳ Будет доступна через ${days} дн. (с ${validFrom.toLocaleDateString()})`;
+            badge.textContent = `-${discountInfo.percent}%`;
+            badge.style.background = 'rgba(251,191,36,0.2)';
+            badge.style.color = '#fbbf24';
+        } else {
+            status.textContent = '❌ Срок действия истек';
+            badge.textContent = 'Истекла';
+            badge.style.background = 'rgba(239,68,68,0.2)';
+            badge.style.color = '#f87171';
+        }
+    }
+}
+
+
 </script>
 </body>
 </html>

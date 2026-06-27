@@ -12,6 +12,12 @@ import (
 func DevModulesMiddleware() gin.HandlerFunc {
     return func(c *gin.Context) {
         requestPath := c.Request.URL.Path
+
+   // ✅ ПРОПУСКАЕМ /profile (без логов и без проверки)
+        if requestPath == "/profile" {
+            c.Next()
+            return
+        }
         
         // Убираем trailing slash для сравнения с БД
         if len(requestPath) > 1 && strings.HasSuffix(requestPath, "/") {
@@ -19,8 +25,19 @@ func DevModulesMiddleware() gin.HandlerFunc {
         }
         
         userEmail := c.GetString("user_email")
+        
+        // ✅ ИСПРАВЛЕНО: получаем tenant как строку
+        tenantID := c.GetString("tenant_id_string") // ← ИЗМЕНЕНО!
+        if tenantID == "" {
+            // Fallback: пробуем из заголовка
+            tenantID = c.GetHeader("X-Tenant-ID")
+        }
+        if tenantID == "" {
+            // Fallback: пробуем из параметра
+            tenantID = c.Query("tenant_id")
+        }
 
-        fmt.Printf("🔥🔥🔥 [DevModules] START: path=%s, email=%s\n", requestPath, userEmail)
+        fmt.Printf("🔥🔥🔥 [DevModules] START: path=%s, email=%s, tenant=%s\n", requestPath, userEmail, tenantID)
 
         // Владельцы пропускаются
         if isOwner(userEmail) {
@@ -51,12 +68,12 @@ func DevModulesMiddleware() gin.HandlerFunc {
         `, requestPath).Scan(&moduleName, &moduleIcon, &moduleDesc, &moduleStatus)
 
         if err != nil {
-            fmt.Printf("❌ [DevModules] Module NOT found: %v\n", err)
+            fmt.Printf("❌ [DevModules] Module NOT found: %v (tenant=%s)\n", err, tenantID)
             c.Next()
             return
         }
 
-        fmt.Printf("✅ [DevModules] Module FOUND: %s, status=%s\n", moduleName, moduleStatus)
+        fmt.Printf("✅ [DevModules] Module FOUND: %s, status=%s, tenant=%s\n", moduleName, moduleStatus, tenantID)
 
         if moduleStatus == "development" {
             fmt.Printf("🏗️ [DevModules] SHOW UNDER CONSTRUCTION for %s\n", moduleName)

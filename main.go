@@ -14,7 +14,8 @@ import (
     //"strconv"
      "os" 
      
-     
+    "github.com/redis/go-redis/v9"  
+    "github.com/jmoiron/sqlx"  
     "github.com/gin-gonic/gin"
     "github.com/jackc/pgx/v5"  // ДОБАВЛЕНО ДЛЯ pgx.Rows
     "github.com/joho/godotenv"
@@ -28,15 +29,18 @@ import (
     "subscription-system/handlers"
     "subscription-system/middleware"
     "subscription-system/services"
+     "subscription-system/cleanup"
     _ "subscription-system/docs"
 )
 
 type ServiceOrder struct {
     Name        string `json:"name"`
     Contact     string `json:"contact"`
+    ServiceType string `json:"service_type"`
+    Deadline    string `json:"deadline"`
+    Budget      string `json:"budget"`
     Description string `json:"description"`
 }
-
 func serviceOrderHandler(c *gin.Context) {
     var order ServiceOrder
     if err := c.ShouldBindJSON(&order); err != nil {
@@ -49,20 +53,41 @@ func serviceOrderHandler(c *gin.Context) {
         return
     }
 
+    // Получаем tenant_id из контекста
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("token_tenant_id")
+    }
+    if tenantID == "" {
+        userID := c.GetString("user_id")
+        if userID != "" {
+            database.Pool.QueryRow(c.Request.Context(), 
+                "SELECT tenant_id FROM users WHERE id = $1", userID).Scan(&tenantID)
+        }
+    }
+
+    // ✅ ИСПРАВЛЕНО: используем additional_info вместо description
     _, err := database.Pool.Exec(c.Request.Context(), `
-        INSERT INTO service_requests (name, contact, description, created_at)
-        VALUES ($1, $2, $3, NOW())
-    `, order.Name, order.Contact, order.Description)
+        INSERT INTO service_orders (client_name, client_contact, service_type, deadline, budget, additional_info, created_at, tenant_id, status)
+        VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7, 'new')
+    `, order.Name, order.Contact, order.ServiceType, order.Deadline, order.Budget, order.Description, tenantID)
+    
     if err != nil {
-        log.Printf("Ошибка сохранения заявки: %v", err)
+        log.Printf("❌ Ошибка сохранения заявки: %v", err)
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка базы данных"})
         return
     }
 
     log.Printf("📦 Новая заявка на услуги: %s (%s): %s", order.Name, order.Contact, order.Description)
+    
+    // ✅ Отвечаем сразу
     c.JSON(http.StatusOK, gin.H{"status": "ok"})
+    
+    // ✅ Уведомление отправляем асинхронно
+    go func() {
+        services.NotifyAdminServiceOrder(order.Name, order.Contact, order.Description)
+    }()
 }
-
 func main() {
     if err := godotenv.Load(); err != nil {
         log.Println("⚠️ .env file not found, using system environment")
@@ -76,60 +101,44 @@ func main() {
     }
     defer database.CloseDB()
 
-    // ========== СОЗДАНИЕ ТАБЛИЦ VPN ==========
-    ctx := context.Background()
-    
-    _, err := database.Pool.Exec(ctx, `
-        CREATE TABLE IF NOT EXISTS vpn_plans (
-            id SERIAL PRIMARY KEY,
-            name VARCHAR(50) NOT NULL,
-            price DECIMAL(10,2) NOT NULL,
-            days INTEGER NOT NULL,
-            speed VARCHAR(50),
-            devices INTEGER DEFAULT 1,
-            tenant_id UUID,
-            created_at TIMESTAMP DEFAULT NOW()
-        )
-    `)
-    if err != nil {
-        log.Printf("⚠️ Ошибка создания vpn_plans: %v", err)
-    } else {
-        log.Println("✅ Таблица vpn_plans готова")
-    }
-    
-    _, err = database.Pool.Exec(ctx, `
-        INSERT INTO vpn_plans (name, price, days, speed, devices, tenant_id) 
-        VALUES ($1, $2, $3, $4, $5, $6),
-               ($7, $8, $9, $10, $11, $12),
-               ($13, $14, $15, $16, $17, $18),
-               ($19, $20, $21, $22, $23, $24)
-        ON CONFLICT (id) DO NOTHING
-    `,
-        "Пробный", 0, 3, "10 Mbps", 1, "11111111-1111-1111-1111-111111111111",
-        "Старт", 299, 30, "50 Mbps", 2, "11111111-1111-1111-1111-111111111111",
-        "Про", 999, 90, "100 Mbps", 5, "11111111-1111-1111-1111-111111111111",
-        "Премиум", 2999, 365, "1 Gbps", 10, "11111111-1111-1111-1111-111111111111",
+// ✅ ЗАПУСКАЕМ ПЛАНИРОВЩИК ОЧИСТКИ
+    cleanup.StartCleanupScheduler()   
+
+   // ========== СОЗДАНИЕ ТАБЛИЦ VPN ==========
+ctx := context.Background()
+
+_, err := database.Pool.Exec(ctx, `
+    CREATE TABLE IF NOT EXISTS vpn_plans (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(50) NOT NULL,
+        price DECIMAL(10,2) NOT NULL,
+        days INTEGER NOT NULL,
+        speed VARCHAR(50),
+        devices INTEGER DEFAULT 1,
+        tenant_id UUID NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
     )
-    if err != nil {
-        log.Printf("⚠️ Ошибка вставки тарифов: %v", err)
-    } else {
-        log.Println("✅ VPN тарифы загружены")
-    }
+`)
+if err != nil {
+    log.Printf("⚠️ Ошибка создания vpn_plans: %v", err)
+} else {
+    log.Println("✅ Таблица vpn_plans готова")
+}
+
 
 // ========== ДОБАВЛЯЕМ tenant_id В ТАБЛИЦЫ (ЕСЛИ НЕТ) ==========
 _, err = database.Pool.Exec(ctx, `
-    ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS tenant_id UUID DEFAULT '11111111-1111-1111-1111-111111111111';
-    ALTER TABLE feature_requests ADD COLUMN IF NOT EXISTS tenant_id UUID DEFAULT '11111111-1111-1111-1111-111111111111';
-    ALTER TABLE employees ADD COLUMN IF NOT EXISTS tenant_id UUID DEFAULT '11111111-1111-1111-1111-111111111111';
-    ALTER TABLE candidates ADD COLUMN IF NOT EXISTS tenant_id UUID DEFAULT '11111111-1111-1111-1111-111111111111';
-    ALTER TABLE vacancies ADD COLUMN IF NOT EXISTS tenant_id UUID DEFAULT '11111111-1111-1111-1111-111111111111';
+    ALTER TABLE service_orders ADD COLUMN IF NOT EXISTS tenant_id UUID NOT NULL;
+    ALTER TABLE feature_requests ADD COLUMN IF NOT EXISTS tenant_id UUID NOT NULL;
+    ALTER TABLE employees ADD COLUMN IF NOT EXISTS tenant_id UUID NOT NULL;
+    ALTER TABLE candidates ADD COLUMN IF NOT EXISTS tenant_id UUID NOT NULL;
+    ALTER TABLE vacancies ADD COLUMN IF NOT EXISTS tenant_id UUID NOT NULL;
 `)
 if err != nil {
     log.Printf("⚠️ Ошибка добавления tenant_id: %v", err)
 } else {
     log.Println("✅ tenant_id добавлен во все таблицы")
 }
-
 
 
 // ========== СОЗДАНИЕ ТАБЛИЦЫ ЗАЯВОК ==========
@@ -146,7 +155,7 @@ _, err = database.Pool.Exec(ctx, `
         status VARCHAR(50) DEFAULT 'new',
         created_at TIMESTAMP DEFAULT NOW(),
         viewed_at TIMESTAMP,
-        tenant_id UUID DEFAULT '11111111-1111-1111-1111-111111111111',
+        tenant_id UUID NOT NULL,
         deposit_status VARCHAR(50) DEFAULT 'not_paid',
         deposit_amount DECIMAL(10,2) DEFAULT 0,
         deposit_date TIMESTAMP,
@@ -161,7 +170,6 @@ if err != nil {
 } else {
     log.Println("✅ Таблица service_orders готова")
 }
-
 
 // ========== ТАБЛИЦА ЖУРНАЛА ОПЕРАЦИЙ ==========
 _, err = database.Pool.Exec(ctx, `
@@ -202,7 +210,7 @@ _, err = database.Pool.Exec(ctx, `
         status VARCHAR(50) DEFAULT 'new',
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP,
-        tenant_id UUID DEFAULT '11111111-1111-1111-1111-111111111111'
+        tenant_id UUID NOT NULL
     )
 `)
 if err != nil {
@@ -228,7 +236,6 @@ if err != nil {
 } else {
     log.Println("✅ Таблица pending_users готова")
 }
-
 // Добавьте в main.go после создания других таблиц:
 _, err = database.Pool.Exec(ctx, `
     CREATE TABLE IF NOT EXISTS month_closing (
@@ -359,6 +366,218 @@ if err != nil {
 } else {
     log.Println("✅ Колонка deleted_at добавлена в chart_of_accounts")
 }
+
+
+// Таблица статусов модулей
+_, err = database.Pool.Exec(ctx, `
+    CREATE TABLE IF NOT EXISTS module_statuses (
+        id SERIAL PRIMARY KEY,
+        route VARCHAR(255) NOT NULL UNIQUE,
+        status VARCHAR(50) DEFAULT 'development',
+        message TEXT,
+        updated_at TIMESTAMP DEFAULT NOW()
+    )
+`)
+if err != nil {
+    log.Printf("⚠️ Ошибка создания module_statuses: %v", err)
+} else {
+    log.Println("✅ Таблица module_statuses готова")
+}
+
+// Таблица обратной связи (если еще нет)
+_, err = database.Pool.Exec(ctx, `
+    CREATE TABLE IF NOT EXISTS module_feedback (
+        id SERIAL PRIMARY KEY,
+        user_id UUID,
+        user_email VARCHAR(255),
+        user_name VARCHAR(255),
+        module VARCHAR(255) NOT NULL,
+        issue TEXT NOT NULL,
+        status VARCHAR(50) DEFAULT 'new',
+        url TEXT,
+        user_agent TEXT,
+        resolved BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+    )
+`)
+if err != nil {
+    log.Printf("⚠️ Ошибка создания module_feedback: %v", err)
+} else {
+    log.Println("✅ Таблица module_feedback готова")
+}
+
+// Таблица комментариев к заявкам
+_, err = database.Pool.Exec(ctx, `
+    CREATE TABLE IF NOT EXISTS request_comments (
+        id SERIAL PRIMARY KEY,
+        request_id INTEGER NOT NULL,
+        user_id VARCHAR(255) NOT NULL,
+        comment TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+    )
+`)
+if err != nil {
+    log.Printf("⚠️ Ошибка создания request_comments: %v", err)
+} else {
+    log.Println("✅ Таблица request_comments готова")
+}
+
+// Таблица уведомлений
+_, err = database.Pool.Exec(ctx, `
+    CREATE TABLE IF NOT EXISTS notifications (
+        id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL,
+        type VARCHAR(50) NOT NULL,
+        is_read BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT NOW()
+    )
+`)
+if err != nil {
+    log.Printf("⚠️ Ошибка создания notifications: %v", err)
+} else {
+    log.Println("✅ Таблица notifications готова")
+}
+
+// ========== ТАБЛИЦА СЕССИЙ ПОЛЬЗОВАТЕЛЕЙ ==========
+_, err = database.Pool.Exec(ctx, `
+    CREATE TABLE IF NOT EXISTS user_sessions (
+        id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL,
+        device_name VARCHAR(255),
+        ip VARCHAR(45),
+        location VARCHAR(255),
+        last_active TIMESTAMP DEFAULT NOW(),
+        is_current BOOLEAN DEFAULT false,
+        revoked BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT NOW()
+    )
+`)
+if err != nil {
+    log.Printf("⚠️ Ошибка создания user_sessions: %v", err)
+} else {
+    log.Println("✅ Таблица user_sessions готова")
+}
+
+// ========== ТАБЛИЦА АКТИВНОСТИ ==========
+_, err = database.Pool.Exec(ctx, `
+    CREATE TABLE IF NOT EXISTS activity_logs (
+        id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL,
+        action VARCHAR(100) NOT NULL,
+        resource VARCHAR(100),
+        resource_id VARCHAR(36),
+        details JSONB DEFAULT '{}',
+        ip VARCHAR(45),
+        user_agent TEXT,
+        status VARCHAR(50) DEFAULT 'success',
+        created_at TIMESTAMP DEFAULT NOW()
+    )
+`)
+if err != nil {
+    log.Printf("⚠️ Ошибка создания activity_logs: %v", err)
+} else {
+    log.Println("✅ Таблица activity_logs готова")
+}
+
+// ========== ТАБЛИЦА ДОВЕРЕННЫХ УСТРОЙСТВ ==========
+_, err = database.Pool.Exec(ctx, `
+    CREATE TABLE IF NOT EXISTS trusted_devices (
+        id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL,
+        device_name VARCHAR(255),
+        browser VARCHAR(255),
+        ip VARCHAR(45),
+        created_at TIMESTAMP DEFAULT NOW()
+    )
+`)
+if err != nil {
+    log.Printf("⚠️ Ошибка создания trusted_devices: %v", err)
+} else {
+    log.Println("✅ Таблица trusted_devices готова")
+}
+
+// ========== ТАБЛИЦА ИСТОРИИ ВХОДОВ ==========
+_, err = database.Pool.Exec(ctx, `
+    CREATE TABLE IF NOT EXISTS login_history (
+        id VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL,
+        ip VARCHAR(45),
+        browser VARCHAR(255),
+        os VARCHAR(100),
+        location VARCHAR(255),
+        success BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW()
+    )
+`)
+if err != nil {
+    log.Printf("⚠️ Ошибка создания login_history: %v", err)
+} else {
+    log.Println("✅ Таблица login_history готова")
+}
+
+// ========== СОЗДАНИЕ ТАБЛИЦЫ ЗАЯВОК НА УСЛУГИ ==========
+_, err = database.Pool.Exec(ctx, `
+    CREATE TABLE IF NOT EXISTS service_requests (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        contact VARCHAR(255) NOT NULL,
+        description TEXT,
+        status VARCHAR(50) DEFAULT 'new',
+        created_at TIMESTAMP DEFAULT NOW(),
+        viewed_at TIMESTAMP,
+        tenant_id UUID
+    )
+`)
+if err != nil {
+    log.Printf("⚠️ Ошибка создания service_requests: %v", err)
+} else {
+    log.Println("✅ Таблица service_requests готова")
+}
+// ========== ИНИЦИАЛИЗАЦИЯ REDIS ==========
+var redisClient *redis.Client
+redisAddr := os.Getenv("REDIS_ADDR")
+if redisAddr == "" {
+    redisAddr = "localhost:6379"
+}
+
+redisClient = redis.NewClient(&redis.Options{
+    Addr:     redisAddr,
+    Password: os.Getenv("REDIS_PASSWORD"),
+    DB:       0,
+})
+
+// Проверяем подключение к Redis
+
+if err := redisClient.Ping(ctx).Err(); err != nil {
+    log.Printf("⚠️ Redis не доступен: %v (кеширование будет отключено)", err)
+    redisClient = nil
+} else {
+    log.Println("✅ Redis подключен для кеширования")
+}
+
+// ========== ИНИЦИАЛИЗАЦИЯ УЛУЧШЕННЫХ ХЕНДЛЕРОВ ==========
+var db *sqlx.DB
+if database.Pool != nil {
+   db, err = sqlx.Open("pgx", os.Getenv("DATABASE_URL"))
+}
+
+var inventoryHandler *handlers.InventoryHandler  // ← РАСКОММЕНТИРОВАТЬ!
+var supplierHandler *handlers.SupplierHandler
+var receiptHandler *handlers.GoodsReceiptHandler
+
+if db != nil && redisClient != nil {
+    inventoryHandler = handlers.NewInventoryHandler(db, redisClient)
+    supplierHandler = handlers.NewSupplierHandler(db, redisClient)
+    receiptHandler = handlers.NewGoodsReceiptHandler(db, redisClient)
+    log.Println("✅ Улучшенные хендлеры инициализированы с Redis кешированием")
+} else {
+    log.Println("⚠️ Redis не доступен, используются стандартные хендлеры")
+}
+// ========== ИНИЦИАЛИЗАЦИЯ WEBSOCKET ==========
+handlers.InitInventoryWS()
+log.Println("✅ WebSocket хаб инициализирован")
     handlers.InitVPNWithDB(database.Pool)
     // Инициализация Stealth VPN сервиса
     handlers.InitStealthVPN(database.Pool)
@@ -379,6 +598,10 @@ if err != nil {
     speechKitService = services.NewSpeechKitService(cfg)
     _ = speechKitService
     log.Println("🎙️ Сервис транскрибации SpeechKit инициализирован")
+
+// ========== ИНИЦИАЛИЗАЦИЯ TELEGRAM БОТА ==========
+services.InitTelegramServices()
+log.Println("✅ Telegram боты инициализированы")
 
     // ========== НОВЫЕ СЕРВИСЫ ==========
     // Получаем API ключи для новых сервисов
@@ -429,6 +652,8 @@ log.Println("✅ AI Autonomous Scheduler запущен")
     }
 
   r := gin.New()
+
+
 
 // ========== БАЗОВЫЕ MIDDLEWARE ==========
 r.Use(middleware.MegaSecurityMiddleware())
@@ -958,44 +1183,119 @@ r.GET("/api/qr/reset-status", handlers.QRResetStatusWebSocket)
     r.POST("/api/upgrade-key", handlers.UpgradeAPIKey)           
     r.GET("/api/user/usage", handlers.GetAPIUsage)  
 
-    // Инвентаризация
-    r.GET("/inventory", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("inventory"), handlers.InventoryPageHandler)
-    //r.GET("/api/inventory/products", handlers.GetProducts)
-    //r.POST("/api/inventory/products", handlers.CreateProduct)
-    //r.PUT("/api/inventory/products/:id", handlers.UpdateProduct)
-    //r.DELETE("/api/inventory/products/:id", handlers.DeleteProduct)
-    //r.GET("/api/inventory/orders", handlers.GetOrders)
-    //r.POST("/api/inventory/orders", handlers.CreateOrder)
-    //r.GET("/api/inventory/orders/:id", handlers.GetOrderDetails)
-    //r.GET("/api/inventory/stats", handlers.GetInventoryStats)
-    //r.GET("/api/inventory/products/export/csv", handlers.ExportProductsCSV)
+  
 
-    // Поставщики
-    r.GET("/api/suppliers", handlers.GetSuppliers)
-    r.GET("/api/suppliers/:id", handlers.GetSupplier)
-    r.POST("/api/suppliers", handlers.CreateSupplier)
-    r.PUT("/api/suppliers/:id", handlers.UpdateSupplier)
-    r.DELETE("/api/suppliers/:id", handlers.DeleteSupplier)
-
+// Поставщики (улучшенные с кешированием)
+if supplierHandler != nil {
+    supplierAPI := r.Group("/api/suppliers")
+    supplierAPI.Use(middleware.AuthMiddleware(cfg))
+    {
+        supplierAPI.GET("", supplierHandler.GetSuppliers)
+        supplierAPI.GET("/:id", supplierHandler.GetSupplier)
+        supplierAPI.POST("", supplierHandler.CreateSupplier)
+        supplierAPI.PUT("/:id", supplierHandler.UpdateSupplier)
+        supplierAPI.DELETE("/:id", supplierHandler.DeleteSupplier)
+        supplierAPI.GET("/stats", supplierHandler.GetSupplierStats)
+    }
+    
     // Заказы поставщикам
-    r.GET("/api/purchase-orders", handlers.GetPurchaseOrders)
-    r.GET("/api/purchase-orders/:id", handlers.GetPurchaseOrder)
-    r.POST("/api/purchase-orders", handlers.CreatePurchaseOrder)
-    r.PUT("/api/purchase-orders/:id/status", handlers.UpdatePurchaseOrderStatus)
-    r.DELETE("/api/purchase-orders/:id", handlers.DeletePurchaseOrder)
+    purchaseAPI := r.Group("/api/purchase-orders")
+    purchaseAPI.Use(middleware.AuthMiddleware(cfg))
+    {
+        purchaseAPI.GET("", supplierHandler.GetPurchaseOrders)
+        purchaseAPI.GET("/:id", supplierHandler.GetPurchaseOrder)
+        purchaseAPI.POST("", supplierHandler.CreatePurchaseOrder)
+        purchaseAPI.PUT("/:id/status", supplierHandler.UpdatePurchaseOrderStatus)
+        purchaseAPI.DELETE("/:id", supplierHandler.DeletePurchaseOrder)
+    }
+} else {
+    // Fallback на старые хендлеры - закомментированы
+    // r.GET("/api/suppliers", handlers.GetSuppliers)
+    // r.GET("/api/suppliers/:id", handlers.GetSupplier)
+    // r.POST("/api/suppliers", handlers.CreateSupplier)
+    // r.PUT("/api/suppliers/:id", handlers.UpdateSupplier)
+    // r.DELETE("/api/suppliers/:id", handlers.DeleteSupplier)
+    // 
+    // r.GET("/api/purchase-orders", handlers.GetPurchaseOrders)
+    // r.GET("/api/purchase-orders/:id", handlers.GetPurchaseOrder)
+    // r.POST("/api/purchase-orders", handlers.CreatePurchaseOrder)
+    // r.PUT("/api/purchase-orders/:id/status", handlers.UpdatePurchaseOrderStatus)
+    // r.DELETE("/api/purchase-orders/:id", handlers.DeletePurchaseOrder)
+}
 
-    // Страница приемки товаров
-    r.GET("/goods-receipts", handlers.GoodsReceiptsPageHandler)
-    r.GET("/api/goods-receipts", handlers.GetGoodsReceipts)
-    r.GET("/api/goods-receipts/:id", handlers.GetGoodsReceipt)
-    r.POST("/api/goods-receipts", handlers.CreateGoodsReceipt)
+// Приемка товаров (улучшенная с кешированием)
+if receiptHandler != nil {
+    receiptAPI := r.Group("/api/goods-receipts")
+    receiptAPI.Use(middleware.AuthMiddleware(cfg))
+    {
+        receiptAPI.GET("", receiptHandler.GetGoodsReceipts)
+        receiptAPI.GET("/:id", receiptHandler.GetGoodsReceipt)
+        receiptAPI.POST("", receiptHandler.CreateGoodsReceipt)
+        receiptAPI.GET("/stats", receiptHandler.GetReceiptStats)
+    }
+} else {
+    // Fallback на старые хендлеры - закомментированы
+    // r.GET("/api/goods-receipts", handlers.GetGoodsReceipts)
+    // r.GET("/api/goods-receipts/:id", handlers.GetGoodsReceipt)
+    // r.POST("/api/goods-receipts", handlers.CreateGoodsReceipt)
+}
 
-    r.GET("/finance", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("fincore"), func(c *gin.Context) {
-        c.HTML(http.StatusOK, "finance.html", gin.H{
-            "title": "Финансовый учет | Business Stack",
-        })
+// Инвентаризация (улучшенная с кешированием)
+if inventoryHandler != nil {
+    // API для товаров и складов
+    inventoryAPI := r.Group("/api/inventory")
+    inventoryAPI.Use(middleware.AuthMiddleware(cfg))
+    {
+        // Товары
+        inventoryAPI.GET("", inventoryHandler.GetProducts)
+        inventoryAPI.POST("", inventoryHandler.CreateProduct)
+        inventoryAPI.PUT("/:id", inventoryHandler.UpdateProduct)
+        inventoryAPI.DELETE("/:id", inventoryHandler.DeleteProduct)
+        inventoryAPI.GET("/stats", inventoryHandler.GetInventoryStats)
+        inventoryAPI.GET("/low-stock", inventoryHandler.GetLowStock)
+        inventoryAPI.GET("/export", inventoryHandler.ExportProductsCSV)
+        inventoryAPI.POST("/bulk", inventoryHandler.BulkUpdateInventory)
+        inventoryAPI.GET("/:id/movements", inventoryHandler.GetProductMovements)
+        
+               // СКЛАДЫ (ТЕРМИНАЛЫ)
+        inventoryAPI.GET("/warehouses", inventoryHandler.GetWarehouses)
+        inventoryAPI.POST("/warehouses", inventoryHandler.CreateWarehouse)
+        inventoryAPI.PUT("/warehouses/:id", inventoryHandler.UpdateWarehouse)
+        inventoryAPI.DELETE("/warehouses/:id", inventoryHandler.DeleteWarehouse)
+        inventoryAPI.GET("/warehouses/:id/stats", inventoryHandler.GetWarehouseStats)
+        
+        // ПОДКЛЮЧЕНИЕ ТЕРМИНАЛОВ (управление)
+        inventoryAPI.POST("/terminals/connect", inventoryHandler.ConnectTerminal)
+        inventoryAPI.POST("/terminals/disconnect/:id", inventoryHandler.DisconnectTerminal)
+        
+        // ТЕРМИНАЛЫ (полноценное API для клиентов)
+        inventoryAPI.GET("/terminals", inventoryHandler.GetTerminals)
+        inventoryAPI.POST("/terminals/register", inventoryHandler.RegisterTerminal)
+        inventoryAPI.POST("/terminals/scan", inventoryHandler.TerminalScan)
+        inventoryAPI.GET("/terminals/:id/stats", inventoryHandler.GetTerminalStats)
+        
+        // СОЗДАНИЕ ТАБЛИЦ (админ)
+        inventoryAPI.POST("/create-tables", middleware.AdminMiddleware(cfg), inventoryHandler.CreateWarehouseTables)
+    }
+}
+
+// Страница склада (всегда одна)
+r.GET("/inventory", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("inventory"), func(c *gin.Context) {
+    c.HTML(http.StatusOK, "inventory.html", gin.H{
+        "title": "Инвентаризация | Business Stack",
     })
-
+})
+// Страница приемки (всегда одна)
+r.GET("/goods-receipts", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "goods_receipts.html", gin.H{
+        "title": "Приемка товаров | Business Stack",
+    })
+})
+  r.GET("/finance", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("finance"), func(c *gin.Context) {
+    c.HTML(http.StatusOK, "finance.html", gin.H{
+        "title": "Финансовый учет | Business Stack",
+    })
+})
  
 // Расширенные отчёты
 r.GET("/api/reports/advanced-osv", handlers.GetAdvancedTurnoverBalance)
@@ -1079,11 +1379,11 @@ r.GET("/suppliers", func(c *gin.Context) {
     r.GET("/api/gantt", handlers.GetGanttData)
 
     // Обновление статуса заказа
-    r.PUT("/api/inventory/orders/:id/status", handlers.UpdateOrderStatus)
+    //r.PUT("/api/inventory/orders/:id/status", handlers.UpdateOrderStatus)
 
     // Отчеты
-    r.GET("/api/inventory/reports/sales", handlers.GetSalesReport)
-    r.GET("/api/inventory/reports/top-products", handlers.GetTopProducts)
+    //r.GET("/api/inventory/reports/sales", handlers.GetSalesReport)
+    //r.GET("/api/inventory/reports/top-products", handlers.GetTopProducts)
 
     // OAuth2 / OpenID Connect маршруты
     r.GET("/.well-known/openid-configuration", handlers.OIDCConfigurationHandler)
@@ -1277,6 +1577,36 @@ responsesAPI.Use(middleware.AuthMiddleware(cfg))
         archiveGroup.GET("/api/plan", handlers.GetCurrentPlan)
         archiveGroup.DELETE("/api/trash/:id", handlers.DeleteFromTrashPermanently)
         archiveGroup.DELETE("/api/trash/clear", handlers.ClearTrashBin)
+
+ // ===== НОВЫЕ МАРШРУТЫ ДЛЯ АРХИВА ЖУРНАЛА ПРОВОДОК (FINCORE) =====
+    // Эти маршруты будут доступны по /archive/fincore/...
+    fincore := archiveGroup.Group("/fincore")
+    {
+        // Архивировать проводку (переместить в архив)
+        fincore.POST("/archive", handlers.ArchiveFincoreEntity)
+        
+        // Получить список архивированных проводок с фильтрацией
+        // Параметры: ?status=draft|posted|all&search=текст&date_from=2026-01-01&date_to=2026-12-31&days=0_7|8_14|15_21|22_30&page=1&limit=20
+        fincore.GET("/list", handlers.GetFincoreArchiveList)
+        
+        // Восстановить проводку из архива (только если не прошло 30 дней)
+        fincore.POST("/restore/:id", handlers.RestoreFincoreFromArchive)
+        
+        // Удалить проводку из архива навсегда
+        fincore.DELETE("/permanent/:id", handlers.PermanentDeleteFincoreFromArchive)
+        
+        // Получить статистику архива
+        fincore.GET("/stats", handlers.GetFincoreArchiveStats)
+        
+        // Очистить весь архив (удалить все записи навсегда)
+        fincore.DELETE("/clear-all", handlers.ClearAllFincoreArchive)
+        
+        // Массовое восстановление (массив ID в теле запроса: {"ids": ["id1", "id2"]})
+        fincore.POST("/mass-restore", handlers.MassRestoreFromArchive)
+        
+        // Массовое удаление навсегда (массив ID в теле запроса: {"ids": ["id1", "id2"]})
+        fincore.POST("/mass-delete", handlers.MassPermanentDeleteFromArchive)
+    }
     }
 // ========== БАНК-КЛИЕНТ ==========
 bankAPI := r.Group("/api/bank")
@@ -1735,7 +2065,93 @@ vpnAlias.Use(middleware.AuthMiddleware(cfg))
         authPages.GET("/login", handlers.LoginPageHandler)
         authPages.GET("/register", handlers.RegisterPageHandler)
         authPages.GET("/forgot-password", handlers.ForgotPasswordPageHandler)
+
+authPages.GET("/reset-password", func(c *gin.Context) {
+    token := c.Query("token")
+    if token == "" {
+        c.HTML(http.StatusBadRequest, "error.html", gin.H{
+            "title": "Ошибка",
+            "error": "Неверная ссылка для сброса пароля",
+        })
+        return
     }
+    c.HTML(http.StatusOK, "reset_password.html", gin.H{
+        "title": "Сброс пароля | Business Stack",
+        "token": token,
+    })
+})
+
+  authPages.GET("/qr/confirm-reset", func(c *gin.Context) {
+        token := c.Query("token")
+        if token == "" {
+            c.HTML(http.StatusBadRequest, "error.html", gin.H{
+                "title": "Ошибка",
+                "error": "Неверная ссылка подтверждения",
+            })
+            return
+        }
+        c.HTML(http.StatusOK, "qr_confirm_reset.html", gin.H{
+            "title": "Подтверждение | Business Stack",
+            "token": token,
+        })
+    })
+    }
+
+// ========== ПУБЛИЧНЫЙ МАРШРУТ: ПОЛУЧИТЬ ПОЛЬЗОВАТЕЛЯ ПО ТОКЕНУ ==========
+r.GET("/api/auth/user-by-token", func(c *gin.Context) {
+    token := c.Query("token")
+    if token == "" {
+        c.JSON(http.StatusBadRequest, gin.H{
+            "error": "Токен не указан",
+        })
+        return
+    }
+
+    var userID string
+    var expiresAt time.Time
+    
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT user_id, expires_at 
+        FROM reset_tokens 
+        WHERE token = $1 AND used = false
+    `, token).Scan(&userID, &expiresAt)
+    
+    if err != nil {
+        c.JSON(http.StatusUnauthorized, gin.H{
+            "error": "Неверный или истекший токен",
+        })
+        return
+    }
+    
+    if time.Now().After(expiresAt) {
+        c.JSON(http.StatusUnauthorized, gin.H{
+            "error": "Токен истек",
+        })
+        return
+    }
+
+    var user struct {
+        ID    string `json:"id"`
+        Email string `json:"email"`
+        Name  string `json:"name"`
+    }
+    
+    err = database.Pool.QueryRow(c.Request.Context(), `
+        SELECT id, email, COALESCE(name, '') as name 
+        FROM users WHERE id = $1
+    `, userID).Scan(&user.ID, &user.Email, &user.Name)
+    
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{
+            "error": "Пользователь не найден",
+        })
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "user": user,
+    })
+})
 
     // API авторизации
     authAPI := r.Group("/api/auth")
@@ -1777,7 +2193,11 @@ vpnAlias.Use(middleware.AuthMiddleware(cfg))
         authAPI.POST("/reset-password", handlers.ResetPasswordHandler)
         authAPI.POST("/qr/generate-reset", handlers.GenerateResetQRHandler)
         authAPI.GET("/qr/reset-status", handlers.CheckResetQRStatusHandler)
+        authAPI.GET("/qr/reset-check", handlers.CheckResetQRStatusHandler)  // для восстановления
         authAPI.POST("/qr/confirm-reset", handlers.ConfirmResetQRHandler)
+        authAPI.GET("/current-user-for-qr", handlers.GetCurrentUserForQR)
+        authAPI.GET("/2fa/profile-status", handlers.Check2FAProfileStatus)
+        authAPI.POST("/2fa/verify-profile", handlers.Verify2FAProfile)
     }
 
     // Реферальная программа
@@ -1809,6 +2229,7 @@ protected.Use(middleware.AuthMiddleware(cfg))
     protected.GET("/trusted-devices", handlers.TrustedDevicesHandler)
     protected.GET("/monetization", handlers.MonetizationHandler)
     protected.GET("/calendar", handlers.CalendarHandler)
+    protected.GET("/api/client/module-requests", handlers.GetMyModuleRequests)
 }
 
 r.GET("/profile", middleware.AuthMiddleware(cfg), func(c *gin.Context) {
@@ -1967,6 +2388,33 @@ modulesGroup.Use(middleware.AuthMiddleware(cfg))
     })
     modulesGroup.GET("/check/:module", handlers.CheckModuleAccess)
 }
+
+// API для статусов модулей и обратной связи
+devModulesGroup := r.Group("/api/dev-modules")
+devModulesGroup.Use(middleware.AuthMiddleware(cfg))
+{
+    // Статусы модулей
+    devModulesGroup.GET("/status/:route", handlers.GetModuleStatus)
+    devModulesGroup.PUT("/status/:route", middleware.AdminMiddleware(cfg), handlers.UpdateModuleStatus)
+    
+    // Обратная связь
+    devModulesGroup.POST("/feedback", handlers.ReportModuleIssue)
+     devModulesGroup.POST("/report-issue", handlers.ReportModuleIssue) 
+    devModulesGroup.GET("/feedback", middleware.AdminMiddleware(cfg), handlers.GetModuleFeedback)
+    devModulesGroup.GET("/feedback/:id", middleware.AdminMiddleware(cfg), handlers.GetModuleFeedbackByID)
+    devModulesGroup.PUT("/feedback/:id/status", middleware.AdminMiddleware(cfg), handlers.UpdateModuleRequestStatus)
+    devModulesGroup.DELETE("/feedback/:id", middleware.AdminMiddleware(cfg), handlers.DeleteModuleFeedback)
+    
+    // Заявки пользователя
+    devModulesGroup.GET("/my-requests", handlers.GetMyModuleRequests)
+    
+    // Комментарии к заявкам
+    devModulesGroup.GET("/requests/:id/comments", handlers.GetRequestComments)
+    devModulesGroup.POST("/requests/:id/comments", handlers.AddRequestComment)
+    
+    // Статистика (админ)
+    devModulesGroup.GET("/stats", middleware.AdminMiddleware(cfg), handlers.GetModuleStatistics)
+}
     // Дашборды
     dashboards := r.Group("/")
     dashboards.Use(middleware.AuthMiddleware(cfg))
@@ -2054,6 +2502,9 @@ api.GET("/journal-entries/:id", handlers.GetJournalEntry)
 api.POST("/journal-entries", handlers.CreateJournalEntrySimple)
 api.PUT("/journal-entries/:id", handlers.UpdateJournalEntry)
 api.DELETE("/journal-entries/:id", handlers.DeleteJournalEntry)
+
+// ========== АВТОМАТИЧЕСКАЯ ПРИВЯЗКА ТЕГОВ ==========
+api.POST("/journal-entries/auto-tag", handlers.AutoAssignTagToEntry)
 
 // ========== МАССОВЫЕ ОПЕРАЦИИ С ПРОВОДКАМИ ==========
 api.POST("/journal-entries/mass-archive", handlers.MassMoveToArchive)
@@ -2168,7 +2619,8 @@ api.DELETE("/webhooks/:id", func(c *gin.Context) {
     c.JSON(200, gin.H{"success": true})
 })
     api.Use(middleware.AuthMiddleware(cfg))
-api.Use(middleware.TenantMiddleware(database.Pool))
+
+
 
   
 
@@ -2184,6 +2636,7 @@ api.GET("/user/role", func(c *gin.Context) {
     role := c.GetString("role")
     c.JSON(200, gin.H{"role": role})
 })
+        api.GET("/user/profile", handlers.GetUserProfile) 
         api.GET("/system/stats", handlers.SystemStatsHandler)
         api.GET("/test", handlers.TestHandler)
         api.POST("/user/profile", handlers.UpdateProfileHandler)
@@ -2219,7 +2672,11 @@ api.GET("/user/role", func(c *gin.Context) {
         api.GET("/2fa/settings", handlers.Get2FASettings)
         api.GET("/2fa/check-trust", handlers.CheckTrustedDevice)
         api.POST("/2fa/trust-device", handlers.TrustDevice)
+         api.POST("/2fa/backup-codes/generate", handlers.GenerateBackupCodes)
+        
         api.POST("/2fa/verify-backup", handlers.VerifyWithBackupCode)
+        api.GET("/2fa/discount-status", handlers.GetTwoFADiscountStatus)
+        api.POST("/2fa/apply-discount", handlers.ApplyTwoFADiscountToSubscription)
         api.GET("/crm/customers", handlers.GetCustomers)
         api.POST("/crm/customers", handlers.CreateCustomer)
         api.PUT("/crm/customers/:id", handlers.UpdateCustomer)
@@ -2362,7 +2819,6 @@ api.POST("/sessions/limit", handlers.SetMaxSessions)
         })
     })
 
-// ========== DEVELOPER PORTAL СТАТИСТИКА ==========
 api.GET("/developer/stats", func(c *gin.Context) {
     userID := c.GetString("user_id")
     
@@ -2373,13 +2829,15 @@ api.GET("/developer/stats", func(c *gin.Context) {
         SELECT COUNT(*) FROM api_usage WHERE user_id = $1
     `, userID).Scan(&totalRequests)
     
-    // Количество пользователей
-    database.Pool.QueryRow(c.Request.Context(), `
-        SELECT COUNT(DISTINCT user_id) FROM oauth_authorizations 
-        WHERE client_id IN (SELECT id FROM oauth_clients WHERE id IN (
-            SELECT client_id FROM oauth_authorizations WHERE user_id = $1
-        ))
-    `, userID).Scan(&totalUsers)
+    // ✅ ИСПРАВЛЕНО: Считаем ВСЕХ пользователей из таблицы users
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COUNT(*) FROM users WHERE deleted_at IS NULL
+    `).Scan(&totalUsers)
+    if err != nil {
+        log.Printf("❌ Ошибка подсчета пользователей: %v", err)
+        totalUsers = 0
+    }
+    log.Printf("📊 totalUsers = %d", totalUsers)
     
     // Количество приложений разработчика
     database.Pool.QueryRow(c.Request.Context(), `
@@ -2395,7 +2853,6 @@ api.GET("/developer/stats", func(c *gin.Context) {
         "values":         []int64{65, 59, 80, 81, 56, 55},
     })
 })
-
 // ========== WEBHOOKS ==========
 api.GET("/api/webhooks", func(c *gin.Context) {
     userID := c.GetString("user_id")
@@ -2478,7 +2935,7 @@ api.DELETE("/api/webhooks/:id", func(c *gin.Context) {
     }
     
        secureAPI := r.Group("/secure-api")
-    //secureAPI.Use(middleware.AuthMiddleware(cfg))
+      secureAPI.Use(middleware.AuthMiddleware(cfg))
     {
         secureAPI.GET("/user/profile", handlers.GetUserProfile)
         secureAPI.GET("/user/ai-history", handlers.GetUserAIHistoryHandler)
@@ -2529,7 +2986,7 @@ api.DELETE("/api/webhooks/:id", func(c *gin.Context) {
     }
     
     // Страница портала FusionAPI
-    r.GET("/fusion-portal", handlers.FusionAPIPortalHandler)
+    r.GET("/fusion-portal", middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("fusion-api"), handlers.FusionAPIPortalHandler)
 
     // ========== AI AGENTS MANAGEMENT ==========
     aiAgents := r.Group("/api/ai/agents")
@@ -2600,10 +3057,12 @@ api.DELETE("/api/webhooks/:id", func(c *gin.Context) {
         adminAPI.PUT("/tenants/:id", handlers.UpdateTenant)
         adminAPI.DELETE("/tenants/:id", handlers.DeleteTenant)
         adminAPI.POST("/tenants/:id/switch", handlers.SwitchTenant)
+        
 
  // Админские API для выплат
     adminAPI.GET("/payouts", handlers.AdminGetPayouts)
     adminAPI.POST("/payouts/update", handlers.AdminUpdatePayoutStatus)
+    adminAPI.DELETE("/payouts/:id", handlers.AdminDeletePayout)
 
     // ========== УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ (CRUD) ==========
     adminAPI.GET("/users/all", handlers.GetAllUsers)
@@ -2667,45 +3126,128 @@ r.GET("/journal-archive", middleware.AuthMiddleware(cfg), middleware.RequireModu
 
 // ========== API ЗАЯВОК С МУЛЬТИТЕНАНТНОСТЬЮ ==========
 r.GET("/api/orders/list", func(c *gin.Context) {
-    tenantID := c.GetString("tenant_id")
     userEmail := c.GetString("user_email")
-    userName := c.GetString("user_name")
     role := c.GetString("role")
+    platformRole := c.GetString("platform_role")
+    
+    // ✅ ПРОВЕРКА НА ВЛАДЕЛЬЦА/АДМИНА
+    isOwner := userEmail == "dev@businessstack.ru" || 
+               platformRole == "owner" || 
+               role == "admin" || 
+               role == "platform_owner"
     
     var rows pgx.Rows
     var err error
     
-    if role == "admin" || role == "developer" {
-        // Администратор видит все заявки в своём тенанте
-        rows, err = database.Pool.Query(c.Request.Context(), 
-            `SELECT id, client_name, client_contact, service_type, deadline, 
-                    COALESCE(NULLIF(budget, ''), '0') as budget,
-                    status, created_at,
-                    COALESCE(deposit_status, 'not_paid') as deposit_status,
-                    COALESCE(deposit_amount, 0) as deposit_amount,
-                    COALESCE(remaining_amount, 0) as remaining_amount,
-                    COALESCE(remaining_status, 'not_paid') as remaining_status,
-                    COALESCE(work_status, 'waiting_deposit') as work_status
-             FROM service_orders 
-             WHERE tenant_id = $1 
-             ORDER BY created_at DESC LIMIT 50`, tenantID)
+    if isOwner {
+        // ✅ Владелец видит ВСЕ заявки (из обеих таблиц)
+        log.Printf("👑 Владелец просматривает ВСЕ заявки")
+        rows, err = database.Pool.Query(c.Request.Context(), `
+            SELECT 
+                id, 
+                'service' as source,
+                COALESCE(client_name, '') as client_name,
+                COALESCE(client_contact, '') as client_contact,
+                COALESCE(service_type, '') as service_type,
+                COALESCE(deadline, '') as deadline,
+                COALESCE(NULLIF(budget, ''), '0') as budget,
+                COALESCE(status, 'new') as status,
+                created_at,
+                COALESCE(deposit_status, 'not_paid') as deposit_status,
+                COALESCE(deposit_amount, 0) as deposit_amount,
+                COALESCE(remaining_amount, 0) as remaining_amount,
+                COALESCE(remaining_status, 'not_paid') as remaining_status,
+                COALESCE(work_status, 'waiting_deposit') as work_status,
+                COALESCE(tenant_id::text, '') as tenant_id,
+                '' as description
+            FROM service_orders 
+            
+            UNION ALL
+            
+            SELECT 
+                id, 
+                'individual' as source,
+                COALESCE(name, '') as client_name,
+                COALESCE(phone, '') as client_contact,
+                'Индивидуальный заказ' as service_type,
+                '' as deadline,
+                COALESCE(budget, 0)::text as budget,
+                COALESCE(status, 'new') as status,
+                created_at,
+                'not_paid' as deposit_status,
+                0 as deposit_amount,
+                0 as remaining_amount,
+                'not_paid' as remaining_status,
+                'waiting_deposit' as work_status,
+                '' as tenant_id,
+                COALESCE(description, '') as description
+            FROM individual_orders
+            
+            ORDER BY created_at DESC LIMIT 100
+        `)
     } else {
-        // Обычный клиент видит только свои заявки
-        rows, err = database.Pool.Query(c.Request.Context(), 
-            `SELECT id, client_name, client_contact, service_type, deadline, 
-                    COALESCE(NULLIF(budget, ''), '0') as budget,
-                    status, created_at,
-                    COALESCE(deposit_status, 'not_paid') as deposit_status,
-                    COALESCE(deposit_amount, 0) as deposit_amount,
-                    COALESCE(remaining_amount, 0) as remaining_amount,
-                    COALESCE(remaining_status, 'not_paid') as remaining_status,
-                    COALESCE(work_status, 'waiting_deposit') as work_status
-             FROM service_orders 
-             WHERE tenant_id = $1 AND (client_contact LIKE $2 OR client_name = $3)
-             ORDER BY created_at DESC LIMIT 50`, tenantID, "%"+userEmail+"%", userName)
+        // ✅ Обычный пользователь - только свои заявки
+        tenantID := c.GetString("tenant_id")
+        if tenantID == "" {
+            tenantID = c.GetString("token_tenant_id")
+        }
+        if tenantID == "" {
+            userID := c.GetString("user_id")
+            if userID != "" {
+                database.Pool.QueryRow(c.Request.Context(), 
+                    "SELECT tenant_id FROM users WHERE id = $1", userID).Scan(&tenantID)
+            }
+        }
+        log.Printf("👤 Пользователь просматривает заявки tenant: %s", tenantID)
+        rows, err = database.Pool.Query(c.Request.Context(), `
+            SELECT 
+                id, 
+                'service' as source,
+                COALESCE(client_name, '') as client_name,
+                COALESCE(client_contact, '') as client_contact,
+                COALESCE(service_type, '') as service_type,
+                COALESCE(deadline, '') as deadline,
+                COALESCE(NULLIF(budget, ''), '0') as budget,
+                COALESCE(status, 'new') as status,
+                created_at,
+                COALESCE(deposit_status, 'not_paid') as deposit_status,
+                COALESCE(deposit_amount, 0) as deposit_amount,
+                COALESCE(remaining_amount, 0) as remaining_amount,
+                COALESCE(remaining_status, 'not_paid') as remaining_status,
+                COALESCE(work_status, 'waiting_deposit') as work_status,
+                COALESCE(tenant_id::text, '') as tenant_id,
+                '' as description
+            FROM service_orders 
+            WHERE tenant_id = $1 
+            
+            UNION ALL
+            
+            SELECT 
+                id, 
+                'individual' as source,
+                COALESCE(name, '') as client_name,
+                COALESCE(phone, '') as client_contact,
+                'Индивидуальный заказ' as service_type,
+                '' as deadline,
+                COALESCE(budget, 0)::text as budget,
+                COALESCE(status, 'new') as status,
+                created_at,
+                'not_paid' as deposit_status,
+                0 as deposit_amount,
+                0 as remaining_amount,
+                'not_paid' as remaining_status,
+                'waiting_deposit' as work_status,
+                '' as tenant_id,
+                COALESCE(description, '') as description
+            FROM individual_orders
+            WHERE phone LIKE $2 OR name LIKE $2
+            
+            ORDER BY created_at DESC LIMIT 50
+        `, tenantID, "%"+userEmail+"%")
     }
     
     if err != nil {
+        log.Printf("❌ Ошибка получения заявок: %v", err)
         c.JSON(500, gin.H{"error": err.Error()})
         return
     }
@@ -2714,20 +3256,39 @@ r.GET("/api/orders/list", func(c *gin.Context) {
     var orders []gin.H
     for rows.Next() {
         var id int
-        var name, contact, service, deadline, budgetStr, status, depositStatus, remainingStatus, workStatus string
+        var source, name, contact, service, deadline, budgetStr, status, depositStatus, remainingStatus, workStatus, tenantIDFromDB, description string
         var depositAmount, remainingAmount float64
         var createdAt time.Time
         
-        rows.Scan(&id, &name, &contact, &service, &deadline, &budgetStr, &status, &createdAt,
-            &depositStatus, &depositAmount, &remainingAmount, &remainingStatus, &workStatus)
+        err := rows.Scan(&id, &source, &name, &contact, &service, &deadline, &budgetStr, &status, &createdAt,
+            &depositStatus, &depositAmount, &remainingAmount, &remainingStatus, &workStatus, &tenantIDFromDB, &description)
+        if err != nil {
+            log.Printf("⚠️ Ошибка сканирования заявки: %v", err)
+            continue
+        }
         
         var budget float64
         fmt.Sscanf(budgetStr, "%f", &budget)
         
+        // Определяем иконку в зависимости от источника
+        sourceIcon := "📋"
+        if source == "individual" {
+            sourceIcon = "👤"
+        }
+        
         orders = append(orders, gin.H{
-            "id": id, "name": name, "contact": contact, "service": service,
-            "deadline": deadline, "budget": budget,
-            "status": status, "date": createdAt.Format("02.01.2006 15:04"),
+            "id": id, 
+            "source": source,
+            "source_icon": sourceIcon,
+            "name": name, 
+            "contact": contact, 
+            "service": service,
+            "deadline": deadline, 
+            "budget": budget,
+            "status": status, 
+            "date": createdAt.Format("02.01.2006 15:04"),
+            "description": description,
+            "tenant_id": tenantIDFromDB,
             "deposit_status": depositStatus,
             "deposit_status_text": map[string]string{
                 "not_paid": "⏳ Ожидает предоплату 50%",
@@ -2750,59 +3311,160 @@ r.GET("/api/orders/list", func(c *gin.Context) {
             }[workStatus],
         })
     }
+    
+    log.Printf("📋 Возвращено %d заявок (включая индивидуальные)", len(orders))
     c.JSON(200, orders)
 })
-
 // ========== API ДЛЯ ДОРАБОТОК/ФИЧРЕКВЕСТОВ С МУЛЬТИТЕНАНТНОСТЬЮ ==========
-
 // Создать заявку на доработку (для всех авторизованных пользователей)
 r.POST("/api/feature-request", middleware.AuthMiddleware(cfg), func(c *gin.Context) {
+    // ✅ Берем ИЗ КОНТЕКСТА
     userID := c.GetString("user_id")
     userName := c.GetString("user_name")
     userEmail := c.GetString("user_email")
+    
+    // ✅ Пробуем получить tenant_id из контекста
     tenantID := c.GetString("tenant_id")
+    
+    // ✅ ЕСЛИ tenant_id пустой - получаем из БД
+    if tenantID == "" || tenantID == "null" {
+        var dbTenantID string
+        err := database.Pool.QueryRow(c.Request.Context(), 
+            "SELECT tenant_id FROM users WHERE id = $1", userID).Scan(&dbTenantID)
+        if err == nil && dbTenantID != "" && dbTenantID != "null" {
+            tenantID = dbTenantID
+            // Сохраняем в контекст для дальнейшего использования
+            c.Set("tenant_id", tenantID)
+            log.Printf("[AUTH] ✅ Tenant ID получен из БД для %s: %s", userEmail, tenantID)
+        } else {
+            log.Printf("❌ Ошибка: tenant_id не найден для пользователя %s (userID=%s)", userEmail, userID)
+            c.JSON(http.StatusUnauthorized, gin.H{
+                "error": "Ошибка авторизации: tenant_id не найден",
+                "code":  "TENANT_NOT_FOUND",
+            })
+            return
+        }
+    }
+    
+    if userID == "" {
+        log.Printf("❌ Ошибка: user_id отсутствует в контексте для пользователя %s", userEmail)
+        c.JSON(http.StatusUnauthorized, gin.H{
+            "error": "Ошибка авторизации: user_id не найден",
+        })
+        return
+    }
+    
+    log.Printf("📝 Создание заявки: userID=%s, tenantID=%s", userID, tenantID)
     
     var req struct {
         Title       string `json:"title"`
         Description string `json:"description"`
         Priority    string `json:"priority"`
     }
+    
     if err := c.BindJSON(&req); err != nil {
-        c.JSON(400, gin.H{"error": err.Error()})
+        c.JSON(400, gin.H{"error": "Неверный формат данных: " + err.Error()})
         return
     }
     
-    _, err := database.Pool.Exec(c.Request.Context(), 
-        `INSERT INTO feature_requests (user_id, user_name, user_email, title, description, priority, status, tenant_id) 
-         VALUES ($1, $2, $3, $4, $5, $6, 'new', $7)`,
-        userID, userName, userEmail, req.Title, req.Description, req.Priority, tenantID)
-    if err != nil {
-        c.JSON(500, gin.H{"error": err.Error()})
+    // Валидация
+    if req.Title == "" {
+        c.JSON(400, gin.H{"error": "Заголовок обязателен"})
         return
     }
-    c.JSON(200, gin.H{"message": "Заявка на доработку отправлена"})
+    if req.Description == "" {
+        c.JSON(400, gin.H{"error": "Описание обязательно"})
+        return
+    }
+    
+    if req.Priority == "" {
+        req.Priority = "medium"
+    }
+    
+    // ✅ Используем tenant_id ИЗ КОНТЕКСТА ИЛИ БД
+    _, err := database.Pool.Exec(c.Request.Context(), 
+        `INSERT INTO feature_requests 
+         (user_id, user_name, user_email, title, description, priority, status, tenant_id, created_at) 
+         VALUES ($1, $2, $3, $4, $5, $6, 'new', $7, NOW())`,
+        userID, userName, userEmail, req.Title, req.Description, req.Priority, tenantID)
+    
+    if err != nil {
+        log.Printf("❌ Ошибка сохранения: %v", err)
+        c.JSON(500, gin.H{"error": "Ошибка сохранения заявки: " + err.Error()})
+        return
+    }
+    
+    log.Printf("✅ Заявка создана: %s от %s (user_id=%s, tenant_id=%s)", 
+        req.Title, userEmail, userID, tenantID)
+    
+    c.JSON(200, gin.H{
+        "success": true,
+        "message": "Заявка на доработку отправлена",
+        "tenant_id": tenantID,
+    })
 })
-
-// GET /api/feature-requests - с мультитенантностью
+// GET /api/feature-requests - получить идеи
 r.GET("/api/feature-requests", middleware.AuthMiddleware(cfg), func(c *gin.Context) {
-    tenantID := c.GetString("tenant_id")
     userID := c.GetString("user_id")
+    userEmail := c.GetString("user_email")
     role := c.GetString("role")
+    platformRole := c.GetString("platform_role")
+    tenantID := c.GetString("tenant_id")
+    
+    // Если tenant_id пустой - получаем из БД
+    if tenantID == "" {
+        var dbTenantID string
+        err := database.Pool.QueryRow(c.Request.Context(), 
+            "SELECT tenant_id FROM users WHERE id = $1", userID).Scan(&dbTenantID)
+        if err == nil && dbTenantID != "" {
+            tenantID = dbTenantID
+            c.Set("tenant_id", tenantID)
+        }
+    }
+    
+    log.Printf("🔍 Запрос идей: userID=%s, userEmail=%s, tenantID=%s, role=%s", 
+        userID, userEmail, tenantID, role)
+    
+    // Проверяем, является ли пользователь владельцем/админом
+    isOwner := userEmail == "dev@businessstack.ru" || 
+               platformRole == "owner" || 
+               role == "admin" || 
+               role == "platform_owner"
     
     var rows pgx.Rows
     var err error
     
-    if role == "admin" || role == "developer" {
+    if isOwner {
+        // Владелец видит ВСЕ идеи
+        log.Printf("👑 Владелец просматривает ВСЕ идеи")
         rows, err = database.Pool.Query(c.Request.Context(), 
-            `SELECT id, user_name, user_email, title, description, priority, status, created_at 
-             FROM feature_requests WHERE tenant_id = $1 ORDER BY created_at DESC`, tenantID)
+            `SELECT id, COALESCE(user_name, '') as user_name, 
+                    COALESCE(user_email, '') as user_email, 
+                    COALESCE(title, '') as title, 
+                    COALESCE(description, '') as description, 
+                    COALESCE(priority, 'medium') as priority, 
+                    COALESCE(status, 'new') as status, 
+                    created_at 
+             FROM feature_requests 
+             ORDER BY created_at DESC`)
     } else {
+        // Обычный пользователь - только свои идеи (по tenant_id ИЛИ по email)
+        log.Printf("👤 Пользователь %s просматривает идеи", userEmail)
         rows, err = database.Pool.Query(c.Request.Context(), 
-            `SELECT id, user_name, user_email, title, description, priority, status, created_at 
-             FROM feature_requests WHERE tenant_id = $1 AND user_id = $2 ORDER BY created_at DESC`, tenantID, userID)
+            `SELECT id, COALESCE(user_name, '') as user_name, 
+                    COALESCE(user_email, '') as user_email, 
+                    COALESCE(title, '') as title, 
+                    COALESCE(description, '') as description, 
+                    COALESCE(priority, 'medium') as priority, 
+                    COALESCE(status, 'new') as status, 
+                    created_at 
+             FROM feature_requests 
+             WHERE tenant_id = $1 OR user_email = $2 OR user_id = $3
+             ORDER BY created_at DESC`, tenantID, userEmail, userID)
     }
     
     if err != nil {
+        log.Printf("❌ Ошибка получения идей: %v", err)
         c.JSON(200, []gin.H{})
         return
     }
@@ -2816,6 +3478,7 @@ r.GET("/api/feature-requests", middleware.AuthMiddleware(cfg), func(c *gin.Conte
         
         err := rows.Scan(&id, &userName, &userEmail, &title, &description, &priority, &status, &createdAt)
         if err != nil {
+            log.Printf("⚠️ Ошибка сканирования идеи: %v", err)
             continue
         }
         
@@ -2828,15 +3491,17 @@ r.GET("/api/feature-requests", middleware.AuthMiddleware(cfg), func(c *gin.Conte
             "priority":    priority,
             "status":      status,
             "date":        createdAt.Format("02.01.2006 15:04"),
+            "created_at":  createdAt,
         })
     }
     
     if requests == nil {
         requests = []gin.H{}
     }
+    
+    log.Printf("📋 Найдено идей: %d", len(requests))
     c.JSON(200, requests)
 })
-
 // Обновить статус доработки (только для админов)
 r.PUT("/api/feature-requests/:id/status", middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), func(c *gin.Context) {
     id := c.Param("id")
@@ -2926,11 +3591,11 @@ r.GET("/developer/admin", middleware.AuthMiddleware(cfg), func(c *gin.Context) {
 })
 
 // ========== API ДЛЯ ПОЛУЧЕНИЯ ДАННЫХ КЛИЕНТА ==========
+// ========== API ДЛЯ ПОЛУЧЕНИЯ ДАННЫХ КЛИЕНТА ==========
 // Получить данные текущего клиента
 r.GET("/api/client/data", middleware.AuthMiddleware(cfg), func(c *gin.Context) {
     userID := c.GetString("user_id")
     userEmail := c.GetString("user_email")
-    userName := c.GetString("user_name")
     tenantID := c.GetString("tenant_id")
     
     // Получаем статистику клиента из БД
@@ -2938,79 +3603,107 @@ r.GET("/api/client/data", middleware.AuthMiddleware(cfg), func(c *gin.Context) {
     var storageUsed float64
     var regDate time.Time
     
-    // Количество проектов клиента (если есть таблица projects)
-    err := database.Pool.QueryRow(c.Request.Context(), 
-        "SELECT COUNT(*) FROM projects WHERE user_id = $1 AND tenant_id = $2", userID, tenantID).Scan(&projectsCount)
+    // ✅ ПОЛУЧАЕМ ВСЕ ДАННЫЕ ПОЛЬЗОВАТЕЛЯ ИЗ БАЗЫ (включая телефон и организацию)
+    var userName, userPhone, userOrg, userInn string
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT 
+            COALESCE(name, '') as name,
+            COALESCE(phone, '') as phone,
+            COALESCE(organization_name, '') as organization_name,
+            COALESCE(organization_inn, '') as organization_inn,
+            created_at
+        FROM users 
+        WHERE id = $1::uuid
+    `, userID).Scan(&userName, &userPhone, &userOrg, &userInn, &regDate)
+    
+    if err != nil {
+        log.Printf("❌ Ошибка получения пользователя: %v", err)
+        userName = ""
+        userPhone = ""
+        userOrg = ""
+        userInn = ""
+    }
+    
+    // Количество проектов клиента
+    err = database.Pool.QueryRow(c.Request.Context(), 
+        "SELECT COUNT(*) FROM projects WHERE user_id = $1::uuid AND tenant_id = $2::uuid", userID, tenantID).Scan(&projectsCount)
     if err != nil {
         projectsCount = 0
     }
     
     // Количество активных услуг (подписок)
     err = database.Pool.QueryRow(c.Request.Context(), 
-        "SELECT COUNT(*) FROM subscriptions WHERE user_id = $1 AND status = 'active' AND tenant_id = $2", userID, tenantID).Scan(&activeServices)
+        "SELECT COUNT(*) FROM subscriptions WHERE user_id = $1::uuid AND status = 'active' AND tenant_id = $2::uuid", userID, tenantID).Scan(&activeServices)
     if err != nil {
         activeServices = 0
     }
     
     // Количество обращений в поддержку
     err = database.Pool.QueryRow(c.Request.Context(), 
-        "SELECT COUNT(*) FROM support_tickets WHERE user_id = $1 AND tenant_id = $2", userID, tenantID).Scan(&ticketsCount)
+        "SELECT COUNT(*) FROM support_tickets WHERE user_id = $1::uuid AND tenant_id = $2::uuid", userID, tenantID).Scan(&ticketsCount)
     if err != nil {
         ticketsCount = 0
     }
     
     // Количество дней с регистрации
-    err = database.Pool.QueryRow(c.Request.Context(), 
-        "SELECT created_at FROM users WHERE id = $1 AND tenant_id = $2", userID, tenantID).Scan(&regDate)
-    if err == nil && !regDate.IsZero() {
-        daysWithUs = int(time.Since(regDate).Hours() / 24)
+    if !regDate.IsZero() {
+        diff := time.Since(regDate)
+        daysWithUs = int(diff.Hours() / 24)
+        if daysWithUs < 1 {
+            daysWithUs = 1
+        }
+    } else {
+        daysWithUs = 1
     }
     
     // Количество запросов к API
     err = database.Pool.QueryRow(c.Request.Context(), 
-        "SELECT COUNT(*) FROM api_usage WHERE user_id = $1 AND tenant_id = $2", userID, tenantID).Scan(&totalRequests)
+        "SELECT COUNT(*) FROM api_usage WHERE user_id = $1::uuid AND tenant_id = $2::uuid", userID, tenantID).Scan(&totalRequests)
     if err != nil {
         totalRequests = 0
     }
     
-    // Использовано хранилища (если есть таблица cloud_files)
+    // Использовано хранилища
     err = database.Pool.QueryRow(c.Request.Context(), 
-        "SELECT COALESCE(SUM(size), 0) FROM cloud_files WHERE user_id = $1 AND tenant_id = $2", userID, tenantID).Scan(&storageUsed)
+        "SELECT COALESCE(SUM(size), 0) FROM cloud_files WHERE user_id = $1::uuid AND tenant_id = $2::uuid", userID, tenantID).Scan(&storageUsed)
     if err != nil {
         storageUsed = 0
     }
     
     // Количество заявок клиента
     err = database.Pool.QueryRow(c.Request.Context(), 
-        "SELECT COUNT(*) FROM service_orders WHERE client_contact LIKE $1 AND tenant_id = $2", "%"+userEmail+"%", tenantID).Scan(&ordersCount)
+        "SELECT COUNT(*) FROM service_orders WHERE client_contact LIKE $1 AND tenant_id = $2::uuid", "%"+userEmail+"%", tenantID).Scan(&ordersCount)
     if err != nil {
         ordersCount = 0
     }
     
     // Количество идей клиента
     err = database.Pool.QueryRow(c.Request.Context(), 
-        "SELECT COUNT(*) FROM feature_requests WHERE user_id = $1 AND tenant_id = $2", userID, tenantID).Scan(&ideasCount)
+        "SELECT COUNT(*) FROM feature_requests WHERE user_id = $1::uuid AND tenant_id = $2::uuid", userID, tenantID).Scan(&ideasCount)
     if err != nil {
         ideasCount = 0
     }
     
+    // ✅ ВОЗВРАЩАЕМ ВСЕ ДАННЫЕ
     c.JSON(200, gin.H{
-        "name":            userName,
-        "email":           userEmail,
-        "user_id":         userID,
-        "projects_count":  projectsCount,
-        "active_services": activeServices,
-        "tickets_count":   ticketsCount,
-        "days_with_us":    daysWithUs,
-        "total_requests":  totalRequests,
-        "storage_used":    storageUsed / 1024 / 1024 / 1024,
-        "orders_count":    ordersCount,
-        "ideas_count":     ideasCount,
-        "created_at":      regDate,
-        "last_login":      time.Now(),
+        "name":              userName,
+        "email":             userEmail,
+        "user_id":           userID,
+        "phone":             userPhone,
+        "organization_name": userOrg,
+        "organization_inn":  userInn,
+        "projects_count":    projectsCount,
+        "active_services":   activeServices,
+        "tickets_count":     ticketsCount,
+        "days_with_us":      daysWithUs,
+        "total_requests":    totalRequests,
+        "storage_used":      storageUsed / 1024 / 1024 / 1024,
+        "orders_count":      ordersCount,
+        "ideas_count":       ideasCount,
+        "created_at":        regDate,
+        "last_login":        time.Now(),
     })
 })
-
 // ========== HR МОДУЛЬ ==========
 
 // Статистика HR
@@ -3404,7 +4097,9 @@ r.PUT("/api/orders/:id/remaining", middleware.AuthMiddleware(cfg), middleware.Ad
     fincoreAssign.Use(middleware.AuthMiddleware(cfg), middleware.RequireModuleAccess("fincore"))
     {
         fincoreAssign.POST("/entry", handlers.AssignTagToEntry)
+        fincoreAssign.GET("/entry/:entryId/tags", handlers.GetEntryTags) 
         fincoreAssign.DELETE("/entry/:entry_id/tag/:tag_id", handlers.RemoveTagFromEntry)
+        fincoreAssign.POST("/entry/:entryId/tags", handlers.AssignTagsToEntry)//tag
     }
 
   
@@ -3415,6 +4110,12 @@ r.PUT("/api/orders/:id/remaining", middleware.AuthMiddleware(cfg), middleware.Ad
         fincoreExtra.GET("/export", handlers.ExportFincoreReport)
         fincoreExtra.GET("/top-tags", handlers.GetTopTags)
         fincoreExtra.DELETE("/template/:id", handlers.DeleteTemplatePosting)
+
+    fincoreExtra.GET("/compare", handlers.ComparePeriods)          // Сравнение периодов
+    fincoreExtra.GET("/budget-alerts", handlers.CheckBudgetAlerts) // Уведомления о бюджете
+    fincoreExtra.GET("/forecast", handlers.GetForecast)            // Прогнозирование
+    fincoreExtra.GET("/dashboard", handlers.GetManagementDashboard) // Управленческий дашборд
+    fincoreExtra.GET("/plan-fact", handlers.GetPlanFactAnalysis)    // План-факт анализ
     }
 
     // Страница управленческого учёта
@@ -3503,13 +4204,210 @@ r.DELETE("/api/dev-modules/:route", middleware.AuthMiddleware(cfg), middleware.A
 })
 
 
-// ========== API ДЛЯ СТАТУСА МОДУЛЕЙ И ОТЗЫВОВ ==========
-r.GET("/api/dev-modules/status/:route", middleware.AuthMiddleware(cfg), handlers.GetModuleStatus)
-r.PUT("/api/dev-modules/status/:route", middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handlers.UpdateModuleStatus)
-r.POST("/api/dev-modules/report-issue", middleware.AuthMiddleware(cfg), handlers.ReportModuleIssue)
-r.GET("/api/dev-modules/feedback", middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handlers.GetModuleFeedback)
+// ========== API ДЛЯ ЗАЯВОК НА МОДУЛИ ==========
+// Получить заявки на модули (только для админов)
+r.GET("/api/admin/module-requests", middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), func(c *gin.Context) {
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT id, 
+               COALESCE(module, '') as module_name,
+               COALESCE(user_id::text, '') as user_id,
+               COALESCE(user_email, '') as user_email,
+               COALESCE(user_name, '') as user_name,
+               COALESCE(issue, '') as issue,
+               COALESCE(status, 'new') as status,
+               created_at
+        FROM module_feedback
+        ORDER BY created_at DESC
+    `)
+    if err != nil {
+        log.Printf("❌ Ошибка запроса module_feedback: %v", err)
+        c.JSON(500, gin.H{"error": err.Error()})
+        return
+    }
+    defer rows.Close()
+    
+    var requests []gin.H
+    for rows.Next() {
+        var id int
+        var moduleName, userID, userEmail, userName, issue, status string
+        var createdAt time.Time
+        err := rows.Scan(&id, &moduleName, &userID, &userEmail, &userName, &issue, &status, &createdAt)
+        if err != nil {
+            log.Printf("❌ Ошибка сканирования: %v", err)
+            continue
+        }
+        requests = append(requests, gin.H{
+            "id": id,
+            "module_name": moduleName,
+            "user_id": userID,
+            "user_email": userEmail,
+            "user_name": userName,
+            "message": issue,
+            "status": status,
+            "created_at": createdAt.Format("02.01.2006 15:04"),
+        })
+    }
+    c.JSON(200, requests)
+})
 
+// Получить детали заявки
+r.GET("/api/admin/module-requests/:id", middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), func(c *gin.Context) {
+    id := c.Param("id")
+    var moduleName, userID, userEmail, userName, issue, status, url, userAgent string
+    var createdAt time.Time
 
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT module, user_id::text, user_email, user_name, issue, status, url, user_agent, created_at
+        FROM module_feedback
+        WHERE id = $1
+    `, id).Scan(&moduleName, &userID, &userEmail, &userName, &issue, &status, &url, &userAgent, &createdAt)
+
+    if err != nil {
+        c.JSON(404, gin.H{"error": "Заявка не найдена"})
+        return
+    }
+
+    c.JSON(200, gin.H{
+        "id": id,
+        "module_name": moduleName,
+        "user_id": userID,
+        "user_email": userEmail,
+        "user_name": userName,
+        "message": issue,
+        "status": status,
+        "url": url,
+        "user_agent": userAgent,
+        "created_at": createdAt.Format("02.01.2006 15:04"),
+    })
+})
+
+// Удалить заявку
+r.DELETE("/api/admin/module-requests/:id", middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), func(c *gin.Context) {
+    id := c.Param("id")
+    _, err := database.Pool.Exec(c.Request.Context(),
+        "DELETE FROM module_feedback WHERE id = $1", id)
+    if err != nil {
+        c.JSON(500, gin.H{"error": err.Error()})
+        return
+    }
+    c.JSON(200, gin.H{"success": true})
+})
+
+// Обновить статус заявки
+r.PUT("/api/admin/module-requests/:id/status", middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), func(c *gin.Context) {
+    id := c.Param("id")
+    var req struct{ Status string `json:"status"` }
+    if err := c.BindJSON(&req); err != nil {
+        c.JSON(400, gin.H{"error": err.Error()})
+        return
+    }
+    _, err := database.Pool.Exec(c.Request.Context(), 
+        "UPDATE module_feedback SET status = $1, resolved = $2 WHERE id = $3", 
+        req.Status, req.Status == "done" || req.Status == "resolved", id)
+    if err != nil {
+        c.JSON(500, gin.H{"error": err.Error()})
+        return
+    }
+    c.JSON(200, gin.H{"success": true})
+})
+
+// ========== WEBSOCKET ДЛЯ РЕАЛЬНОГО ВРЕМЕНИ ==========
+// WebSocket для инвентаризации
+r.GET("/ws/inventory", func(c *gin.Context) {
+    handlers.InventoryWebSocket(c)
+})
+
+// WebSocket для поставщиков
+//r.GET("/ws/suppliers", func(c *gin.Context) {
+    //handlers.SupplierWebSocket(c)
+//})
+
+// WebSocket для приемки
+//r.GET("/ws/receipts", func(c *gin.Context) {
+    //handlers.ReceiptWebSocket(c)
+//})
+
+log.Println("✅ WebSocket маршруты зарегистрированы")
+
+// ========== API ДЛЯ ПОЛУЧЕНИЯ ПРОЕКТОВ ==========
+// Получить проекты текущего пользователя
+r.GET("/api/my-projects", middleware.AuthMiddleware(cfg), func(c *gin.Context) {
+    userID := c.GetString("user_id")
+    userEmail := c.GetString("user_email")
+    tenantID := c.GetString("tenant_id")
+    
+    log.Printf("📊 Запрос проектов: userID=%s, email=%s, tenantID=%s", userID, userEmail, tenantID)
+    
+    // Если tenant_id пустой - получаем из БД
+    if tenantID == "" {
+        err := database.Pool.QueryRow(c.Request.Context(), 
+            "SELECT tenant_id::text FROM users WHERE id = $1::uuid", userID).Scan(&tenantID)
+        if err != nil {
+            log.Printf("❌ Ошибка получения tenant_id: %v", err)
+        }
+    }
+    
+    // Получаем проекты для этого пользователя
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT 
+            id::text,
+            name,
+            COALESCE(description, '') as description,
+            COALESCE(status, 'active') as status,
+            created_at,
+            updated_at,
+            user_id::text,
+            tenant_id::text
+        FROM projects 
+        WHERE user_id = $1::uuid
+        ORDER BY created_at DESC
+    `, userID)
+    
+    if err != nil {
+        log.Printf("❌ Ошибка получения проектов: %v", err)
+        c.JSON(200, gin.H{
+            "projects": []gin.H{},
+            "count": 0,
+            "error": err.Error(),
+        })
+        return
+    }
+    defer rows.Close()
+    
+    var projects []gin.H
+    for rows.Next() {
+        var id, name, description, status, userIDFromDB, tenantIDFromDB string
+        var createdAt, updatedAt time.Time
+        
+        err := rows.Scan(&id, &name, &description, &status, &createdAt, &updatedAt, &userIDFromDB, &tenantIDFromDB)
+        if err != nil {
+            log.Printf("⚠️ Ошибка сканирования: %v", err)
+            continue
+        }
+        
+        projects = append(projects, gin.H{
+            "id": id,
+            "name": name,
+            "description": description,
+            "status": status,
+            "user_id": userIDFromDB,
+            "tenant_id": tenantIDFromDB,
+            "created_at": createdAt,
+            "updated_at": updatedAt,
+            "created_at_formatted": createdAt.Format("02.01.2006 15:04"),
+        })
+    }
+    
+    log.Printf("📋 Найдено проектов: %d для пользователя %s", len(projects), userEmail)
+    
+    c.JSON(200, gin.H{
+        "success": true,
+        "projects": projects,
+        "count": len(projects),
+        "user_id": userID,
+        "tenant_id": tenantID,
+    })
+})
 
       r.NoRoute(func(c *gin.Context) {
         c.HTML(http.StatusNotFound, "404.html", gin.H{
@@ -3712,12 +4610,15 @@ if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 }
 }
 
+
+// ========== HR АССИСТЕНТ ==========
 func handleHRRequest(c *gin.Context, tenantID, userID, message string) string {
     msg := strings.ToLower(message)
     
-    // Исправляем tenantID
-    if tenantID == "" || tenantID == "default" {
-        tenantID = "11111111-1111-1111-1111-111111111111"
+    // ❌ НЕТ ДЕФОЛТНЫХ ЗНАЧЕНИЙ!
+    // ✅ ТОЛЬКО ИЗ КОНТЕКСТА!
+    if tenantID == "" {
+        return "⚠️ Ошибка: tenant_id не найден в контексте"
     }
     
     // Создание вакансии
@@ -3735,7 +4636,7 @@ func handleHRRequest(c *gin.Context, tenantID, userID, message string) string {
         
         _, err := database.Pool.Exec(context.Background(),
             `INSERT INTO vacancies (title, status, tenant_id, created_at) 
-             VALUES ($1, 'open', $2::uuid, NOW())`,
+             VALUES ($1, 'open', $2, NOW())`,
             title, tenantID)
         
         if err != nil {
@@ -3749,7 +4650,7 @@ func handleHRRequest(c *gin.Context, tenantID, userID, message string) string {
     if strings.Contains(msg, "список") && strings.Contains(msg, "ваканс") {
         rows, err := database.Pool.Query(context.Background(),
             `SELECT title, status, created_at FROM vacancies 
-             WHERE tenant_id = $1::uuid ORDER BY created_at DESC LIMIT 10`,
+             WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT 10`,
             tenantID)
         if err != nil {
             return "Ошибка получения списка вакансий"
@@ -3779,11 +4680,11 @@ func handleHRRequest(c *gin.Context, tenantID, userID, message string) string {
     if strings.Contains(msg, "статистик") {
         var total int
         database.Pool.QueryRow(context.Background(),
-            "SELECT COUNT(*) FROM vacancies WHERE tenant_id = $1::uuid", tenantID).Scan(&total)
+            "SELECT COUNT(*) FROM vacancies WHERE tenant_id = $1", tenantID).Scan(&total)
         
         var open int
         database.Pool.QueryRow(context.Background(),
-            "SELECT COUNT(*) FROM vacancies WHERE tenant_id = $1::uuid AND status = 'open'", tenantID).Scan(&open)
+            "SELECT COUNT(*) FROM vacancies WHERE tenant_id = $1 AND status = 'open'", tenantID).Scan(&open)
         
         closed := total - open
         
@@ -3806,4 +4707,3 @@ func handleHRRequest(c *gin.Context, tenantID, userID, message string) string {
 
 Просто напишите, что нужно сделать!`
 }
-

@@ -15,7 +15,8 @@ import (
 func GetBudgets(c *gin.Context) {
     tenantID := c.GetString("tenant_id")
     if tenantID == "" {
-        tenantID = "11111111-1111-1111-1111-111111111111"
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: tenant not found"})
+        return
     }
     
     tagID := c.Query("tag_id")
@@ -68,7 +69,8 @@ func GetBudgets(c *gin.Context) {
 func UpdateBudget(c *gin.Context) {
     tenantID := c.GetString("tenant_id")
     if tenantID == "" {
-        tenantID = "11111111-1111-1111-1111-111111111111"
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: tenant not found"})
+        return
     }
     
     var req struct {
@@ -102,67 +104,97 @@ func UpdateBudget(c *gin.Context) {
 
 // GetPlanFactAnalysis - анализ план-факт
 func GetPlanFactAnalysis(c *gin.Context) {
-    userID := getCurrentUserID(c)
-    period := c.DefaultQuery("period", "month")
-    
-    var fromDate, toDate time.Time
-    now := time.Now()
-    switch period {
-    case "month":
-        fromDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
-    case "quarter":
-        fromDate = time.Date(now.Year(), now.Month()-2, 1, 0, 0, 0, 0, time.UTC)
-    case "year":
-        fromDate = time.Date(now.Year(), 1, 1, 0, 0, 0, 0, time.UTC)
-    default:
-        fromDate = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: tenant not found"})
+        return
     }
-    toDate = now
     
-    // Фактические доходы и расходы
-    var actualIncome, actualExpense float64
-    query := `
-        SELECT 
-            COALESCE(SUM(CASE WHEN debit_account LIKE '90%%' AND credit_account LIKE '90%%' THEN amount ELSE 0 END), 0) as income,
-            COALESCE(SUM(CASE WHEN credit_account LIKE '90%%' AND debit_account LIKE '20%%' THEN amount ELSE 0 END), 0) as expense
-        FROM journal_entries
-        WHERE user_id = $1 AND date BETWEEN $2 AND $3
-    `
-    database.Pool.QueryRow(c.Request.Context(), query, userID, fromDate, toDate).Scan(&actualIncome, &actualExpense)
+    tagID := c.Query("tag_id")
+    year := c.DefaultQuery("year", strconv.Itoa(time.Now().Year()))
     
-    // Плановые данные (из таблицы budgets)
-    var planIncome, planExpense float64
-    planQuery := `
+    // Получаем план и факт по месяцам
+    rows, err := database.Pool.Query(c.Request.Context(), `
         SELECT 
-            COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as plan_income,
-            COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as plan_expense
-        FROM budgets
-        WHERE user_id = $1 AND year = $2 AND month = $3
-    `
-    database.Pool.QueryRow(c.Request.Context(), planQuery, userID, fromDate.Year(), int(fromDate.Month())).Scan(&planIncome, &planExpense)
+            b.month,
+            b.planned_amount as planned,
+            COALESCE(SUM(j.debit_amount - j.credit_amount), 0) as actual
+        FROM fincore_budgets b
+        LEFT JOIN journal_entries j ON (
+            j.tenant_id = b.tenant_id 
+            AND EXTRACT(MONTH FROM j.operation_date) = b.month 
+            AND EXTRACT(YEAR FROM j.operation_date) = b.year
+        )
+        LEFT JOIN journal_entry_tags jet ON jet.entry_id = j.id
+        WHERE b.tenant_id = $1 
+            AND b.year = $2 
+            AND b.tag_id = $3
+        GROUP BY b.month, b.planned_amount
+        ORDER BY b.month
+    `, tenantID, year, tagID)
+    
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    defer rows.Close()
+    
+    var months []gin.H
+    var totalPlanned, totalActual float64
+    monthNames := []string{"Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"}
+    
+    for rows.Next() {
+        var month int
+        var planned, actual float64
+        rows.Scan(&month, &planned, &actual)
+        totalPlanned += planned
+        totalActual += actual
+        
+        months = append(months, gin.H{
+            "month":     monthNames[month-1],
+            "month_num": month,
+            "planned":   planned,
+            "actual":    actual,
+            "variance":  actual - planned,
+            "percent": func() float64 {
+                if planned == 0 {
+                    return 0
+                }
+                return (actual / planned) * 100
+            }(),
+        })
+    }
     
     c.JSON(http.StatusOK, gin.H{
         "success": true,
-        "actual": gin.H{
-            "income":  actualIncome,
-            "expense": actualExpense,
-            "profit":  actualIncome - actualExpense,
-        },
-        "plan": gin.H{
-            "income":  planIncome,
-            "expense": planExpense,
-            "profit":  planIncome - planExpense,
-        },
-        "period": gin.H{
-            "from": fromDate,
-            "to":   toDate,
+        "months":  months,
+        "total": gin.H{
+            "planned":  totalPlanned,
+            "actual":   totalActual,
+            "variance": totalActual - totalPlanned,
+            "percent": func() float64 {
+                if totalPlanned == 0 {
+                    return 0
+                }
+                return (totalActual / totalPlanned) * 100
+            }(),
         },
     })
 }
 
 // CreateTemplatePosting - создание шаблона проводки
 func CreateTemplatePosting(c *gin.Context) {
-    userID := getCurrentUserID(c)
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: tenant not found"})
+        return
+    }
+    
+    userID := c.GetString("user_id")
+    if userID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+        return
+    }
     
     var req struct {
         Name          string  `json:"name" binding:"required"`
@@ -192,7 +224,17 @@ func CreateTemplatePosting(c *gin.Context) {
 
 // GetPostingTemplates - получение шаблонов проводок
 func GetPostingTemplates(c *gin.Context) {
-    userID := getCurrentUserID(c)
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: tenant not found"})
+        return
+    }
+    
+    userID := c.GetString("user_id")
+    if userID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+        return
+    }
     
     rows, err := database.Pool.Query(c.Request.Context(), `
         SELECT id, name, debit_account, credit_account, amount, description, created_at
@@ -230,7 +272,17 @@ func GetPostingTemplates(c *gin.Context) {
 
 // CloseMonth - закрытие месяца
 func CloseMonth(c *gin.Context) {
-    userID := getCurrentUserID(c)
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: tenant not found"})
+        return
+    }
+    
+    userID := c.GetString("user_id")
+    if userID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+        return
+    }
     
     var req struct {
         Month int `json:"month" binding:"required"`
@@ -271,7 +323,17 @@ func CloseMonth(c *gin.Context) {
 
 // GetMonthClosingStatus - статус закрытия месяцев
 func GetMonthClosingStatus(c *gin.Context) {
-    userID := getCurrentUserID(c)
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: tenant not found"})
+        return
+    }
+    
+    userID := c.GetString("user_id")
+    if userID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+        return
+    }
     
     rows, err := database.Pool.Query(c.Request.Context(), `
         SELECT year, month, closed_at, status
@@ -302,4 +364,143 @@ func GetMonthClosingStatus(c *gin.Context) {
     }
     
     c.JSON(http.StatusOK, closings)
+}
+
+// ========== АВТОМАТИЧЕСКОЕ СОЗДАНИЕ БЮДЖЕТОВ ==========
+
+// AutoCreateBudgets - автоматически создаёт бюджеты для тега
+func AutoCreateBudgets(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: tenant not found"})
+        return
+    }
+
+    tagID := c.Query("tag_id")
+    if tagID == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "tag_id required"})
+        return
+    }
+
+    year := time.Now().Year()
+    if y := c.Query("year"); y != "" {
+        if val, err := strconv.Atoi(y); err == nil {
+            year = val
+        }
+    }
+
+    // Проверяем, есть ли уже бюджеты
+    var count int
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COUNT(*) FROM fincore_budgets WHERE tag_id = $1 AND year = $2
+    `, tagID, year).Scan(&count)
+
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    if count > 0 {
+        c.JSON(http.StatusOK, gin.H{
+            "success": true,
+            "message": "Бюджеты уже существуют",
+            "count":   count,
+        })
+        return
+    }
+
+    // Создаём бюджеты на 12 месяцев
+    var inserted int
+    for month := 1; month <= 12; month++ {
+        // Получаем фактическую сумму за прошлый год для этого месяца
+        var actual float64
+        database.Pool.QueryRow(c.Request.Context(), `
+            SELECT COALESCE(SUM(debit_amount - credit_amount), 0)
+            FROM journal_entries
+            WHERE tenant_id = $1 
+                AND EXTRACT(MONTH FROM operation_date) = $2
+                AND EXTRACT(YEAR FROM operation_date) = $3
+        `, tenantID, month, year-1).Scan(&actual)
+
+        // План = факт прошлого года * 1.1 (рост 10%)
+        planned := actual * 1.1
+        if planned == 0 {
+            planned = 10000 // Минимальный план, если нет данных
+        }
+
+        _, err := database.Pool.Exec(c.Request.Context(), `
+            INSERT INTO fincore_budgets (tenant_id, tag_id, year, month, planned_amount, created_at)
+            VALUES ($1, $2, $3, $4, $5, NOW())
+            ON CONFLICT (tenant_id, tag_id, year, month) DO UPDATE SET
+                planned_amount = EXCLUDED.planned_amount
+        `, tenantID, tagID, year, month, planned)
+
+        if err == nil {
+            inserted++
+        }
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "success":   true,
+        "message":   fmt.Sprintf("Создано %d бюджетов на %d год", inserted, year),
+        "count":     inserted,
+        "year":      year,
+    })
+}
+
+// UpdateBudgetsFromEntries - обновляет фактические данные из проводок
+func UpdateBudgetsFromEntries(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: tenant not found"})
+        return
+    }
+
+    tagID := c.Query("tag_id")
+    if tagID == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "tag_id required"})
+        return
+    }
+
+    year := time.Now().Year()
+    if y := c.Query("year"); y != "" {
+        if val, err := strconv.Atoi(y); err == nil {
+            year = val
+        }
+    }
+
+    // Обновляем фактические суммы для каждого месяца
+    var updated int
+    for month := 1; month <= 12; month++ {
+        var actual float64
+        err := database.Pool.QueryRow(c.Request.Context(), `
+            SELECT COALESCE(SUM(j.debit_amount - j.credit_amount), 0)
+            FROM journal_entries j
+            JOIN journal_entry_tags jet ON jet.entry_id = j.id
+            WHERE j.tenant_id = $1 
+                AND jet.tag_id = $2
+                AND EXTRACT(MONTH FROM j.operation_date) = $3
+                AND EXTRACT(YEAR FROM j.operation_date) = $4
+        `, tenantID, tagID, month, year).Scan(&actual)
+
+        if err != nil {
+            continue
+        }
+
+        result, err := database.Pool.Exec(c.Request.Context(), `
+            UPDATE fincore_budgets 
+            SET actual_amount = $1, updated_at = NOW()
+            WHERE tag_id = $2 AND year = $3 AND month = $4
+        `, actual, tagID, year, month)
+
+        if err == nil && result.RowsAffected() > 0 {
+            updated++
+        }
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "message": fmt.Sprintf("Обновлено %d месяцев", updated),
+        "updated": updated,
+    })
 }

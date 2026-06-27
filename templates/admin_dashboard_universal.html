@@ -61,6 +61,16 @@
             background: rgba(255,255,255,0.15);
             color: white;
         }
+
+.badge {
+    display: inline-block;
+    background: #ef4444;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    margin-left: 6px;
+}
         
         .stats-grid {
             display: grid;
@@ -262,19 +272,113 @@
             .dashboard-row { grid-template-columns: 1fr; }
             .tabs { overflow-x: auto; flex-wrap: nowrap; }
         }
+/* Исправление для выпадающего списка */
+select option {
+    background-color: #1a1a2e !important;
+    color: #ffffff !important;
+}
+
+select option:hover {
+    background-color: #4f46e5 !important;
+}
+
+/* Стрелка в select - делаем видимой */
+select {
+    appearance: auto !important;
+    -webkit-appearance: auto !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 8L1 3h10z'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 10px center !important;
+    padding-right: 30px !important;
+    background-color: rgba(255,255,255,0.08) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
+    border-radius: 8px !important;
+    padding: 6px 30px 6px 10px !important;
+    font-size: 12px !important;
+    cursor: pointer !important;
+}
+
+/* Кнопка удаления */
+.btn-delete {
+    background: rgba(239,68,68,0.2) !important;
+    color: #f87171 !important;
+    border: 1px solid rgba(239,68,68,0.3) !important;
+    padding: 6px 12px !important;
+    border-radius: 30px !important;
+    font-size: 12px !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+}
+
+.btn-delete:hover {
+    background: #ef4444 !important;
+    color: white !important;
+}
+
+/* Таблица - контрастность */
+.admin-table td {
+    color: #e2e8f0 !important;
+    border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+}
+
+.admin-table th {
+    color: #94a3b8 !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    font-size: 11px !important;
+    letter-spacing: 0.5px !important;
+}
+
+/* Ссылка на сообщение */
+.admin-table td[onclick] {
+    color: #a78bfa !important;
+    text-decoration: underline !important;
+}
+
+.admin-table td[onclick]:hover {
+    color: #c4b5fd !important;
+}
+
+/* Статусы */
+.status-badge {
+    padding: 4px 12px !important;
+    border-radius: 20px !important;
+    font-size: 12px !important;
+    display: inline-block !important;
+}
     </style>
 </head>
 <body>
 <div class="container">
     <div class="admin-card">
         <div class="admin-header">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+        <div>
             <h1><i class="fas fa-crown"></i> Админ-панель разработчика</h1>
             <p><i class="fas fa-chart-line"></i> Полный контроль | Управление проектами, заявками, HR, Бухгалтерия | Business Stack Premium</p>
         </div>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <!-- 👤 КНОПКА ПРОФИЛЯ -->
+            <a href="/profile" style="background: rgba(255,255,255,0.12); backdrop-filter: blur(10px); color: white; padding: 10px 24px; border-radius: 40px; text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 10px; border: 1px solid rgba(255,255,255,0.15); transition: all 0.3s;">
+                <i class="fas fa-user-circle" style="font-size: 18px; color: #818cf8;"></i>
+                <span>👤 Профиль</span>
+                <span style="background: rgba(255,255,255,0.15); padding: 2px 10px; border-radius: 20px; font-size: 10px; color: rgba(255,255,255,0.7);">dev</span>
+            </a>
+            <!-- 🚪 ВЫХОД -->
+           <a href="#" onclick="logoutUser(); return false;" style="background: rgba(239,68,68,0.12); color: #f87171; padding: 10px 20px; border-radius: 40px; text-decoration: none; font-weight: 500; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(239,68,68,0.15); transition: all 0.3s; cursor: pointer;">
+    <i class="fas fa-sign-out-alt"></i>
+    <span>Выйти</span>
+</a>
+            </a>
+        </div>
+    </div>
+</div>
         
         <div class="tabs">
     <button class="tab-btn active" onclick="showTab('dashboard')"><i class="fas fa-tachometer-alt"></i> Дашборд</button>
     <button class="tab-btn" onclick="showTab('orders')"><i class="fas fa-clipboard-list"></i> Заявки</button>
+   <button class="tab-btn" onclick="showTab('module-requests')"><i class="fas fa-code-branch"></i> Заявки на модули <span class="badge" id="moduleRequestsBadge" style="display:none;">0</span></button>
     <button class="tab-btn" onclick="showTab('finance')"><i class="fas fa-chart-line"></i> Бухгалтерия</button>
     <button class="tab-btn" onclick="showTab('journal')"><i class="fas fa-book"></i> Журнал операций</button>
     <button class="tab-btn" onclick="showTab('features')"><i class="fas fa-lightbulb"></i> Доработки</button>
@@ -287,39 +391,33 @@
 </button>
 </div>
 
-        <!-- ПЕРСОНАЛ ПЛАТФОРМЫ -->
-        <div id="staffTab" class="tab-content">
-            <div class="card">
-                <div class="card-header" style="background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 20px 20px 0 0;">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h3 class="mb-0"><i class="fas fa-users"></i> Управление персоналом платформы</h3>
-                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addStaffModal">
-                            <i class="fas fa-user-plus"></i> Добавить сотрудника
-                        </button>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>ФИО</th>
-                                    <th>Email</th>
-                                    <th>Телефон</th>
-                                    <th>Роль</th>
-                                    <th>Дата рождения</th>
-                                    <th>Адрес</th>
-                                    <th>Действия</th>
-                                </tr>
-                            </thead>
-                            <tbody id="staffTable">
-                                <tr><td colspan="7" class="text-center">Загрузка...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+     <!-- ПЕРСОНАЛ ПЛАТФОРМЫ - ШИКАРНАЯ ВЕРСИЯ -->
+<div id="staffTab" class="tab-content">
+    <div class="card" style="border: none; background: transparent;">
+        <!-- Заголовок с кнопкой добавления -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px;">
+            <div>
+                <h2 style="font-size: 24px; font-weight: 700; display: flex; align-items: center; gap: 12px;">
+                    <i class="fas fa-users" style="color: #818cf8;"></i>
+                    Управление персоналом платформы
+                </h2>
+                <p style="color: rgba(255,255,255,0.5); font-size: 14px; margin-top: 5px;">
+                    <i class="fas fa-info-circle"></i> 
+                    Всего сотрудников: <span id="staffCount" style="color: #818cf8; font-weight: 600;">0</span>
+                </p>
             </div>
+            <button onclick="openAddStaffModal()" style="background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; border: none; padding: 12px 28px; border-radius: 40px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 10px; transition: all 0.3s; box-shadow: 0 4px 15px rgba(79,70,229,0.4);">
+                <i class="fas fa-user-plus"></i>
+                Добавить сотрудника
+            </button>
         </div>
+
+        <!-- Список сотрудников (карточки) -->
+        <div id="staffContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;">
+            <!-- Загружается через JavaScript -->
+        </div>
+    </div>
+</div>
         
         <!-- ДАШБОРД -->
         <div id="dashboardTab" class="tab-content active">
@@ -349,6 +447,16 @@
         <div id="ordersTab" class="tab-content">
             <div id="ordersList">Загрузка...</div>
         </div>
+
+<!-- ЗАЯВКИ НА МОДУЛИ -->
+<div id="module-requestsTab" class="tab-content">
+    <div class="card">
+        <h3 class="section-title"><i class="fas fa-code-branch"></i> Заявки на модули</h3>
+        <div id="moduleRequestsList">
+            <div style="text-align:center; padding:20px;">Загрузка...</div>
+        </div>
+    </div>
+</div>
         
         <!-- БУХГАЛТЕРИЯ -->
         <div id="financeTab" class="tab-content">
@@ -406,7 +514,7 @@
                                 <th>Дата</th>
                                 <th>Номер</th>
                                 <th>Тип</th>
-                                <th>Контрагент</th>
+                                <th>Партнер</th>
                                 <th>ИНН</th>
                                 <th>Дебет</th>
                                 <th>Кредит</th>
@@ -509,92 +617,641 @@
                 if (tabName === 'dashboard') loadDashboardData();
                 if (tabName === 'finance') loadFinanceData();
                 if (tabName === 'journal') loadJournalEntries();
+                if (tabName === 'module-requests') {
+                 loadModuleRequests();
+                }
             }
 
-            async function loadDashboardData() {
-                try {
-                    const res = await fetch('/api/admin/stats');
-                    const data = await res.json();
-                    document.getElementById('totalUsers').innerHTML = data.total_users || 0;
-                    document.getElementById('totalOrders').innerHTML = data.total_orders || 0;
-                    document.getElementById('totalRevenue').innerHTML = (data.total_revenue || 0).toLocaleString() + ' ₽';
-                    document.getElementById('totalEmployees').innerHTML = data.total_employees || 0;
-                    document.getElementById('monthRevenue').innerHTML = ((data.total_revenue || 0) * 0.3).toLocaleString() + ' ₽';
-                } catch(e) { console.error(e); }
+         async function loadDashboardData() {
+    try {
+        // ✅ Загружаем статистику
+       // ✅ Загружаем статистику
+const statsRes = await fetch('/api/admin/stats');
+const stats = await statsRes.json();
+
+// ✅ СЧИТАЕМ ВСЕХ ПОЛЬЗОВАТЕЛЕЙ через /api/developer/stats
+let totalUsers = 0;
+try {
+    const statsRes = await fetch('/api/developer/stats', {
+        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+    });
+    if (statsRes.ok) {
+        const stats = await statsRes.json();
+        totalUsers = stats.total_users || 0;
+        console.log('✅ Всего пользователей (через /api/developer/stats):', totalUsers);
+    } else {
+        console.warn('⚠️ Ошибка /api/developer/stats:', statsRes.status);
+    }
+} catch(e) {
+    console.warn('⚠️ Ошибка:', e);
+    totalUsers = 0;
+}
+document.getElementById('totalUsers').innerHTML = totalUsers;
+console.log('✅ Всего пользователей (финальное):', totalUsers);
+
+document.getElementById('totalUsers').innerHTML = totalUsers;
+console.log('✅ Всего пользователей (финальное):', totalUsers);
+        
+        document.getElementById('totalRevenue').innerHTML = (stats.total_revenue || 0).toLocaleString() + ' ₽';
+        document.getElementById('totalEmployees').innerHTML = stats.total_employees || 0;
+        document.getElementById('monthRevenue').innerHTML = ((stats.total_revenue || 0) * 0.3).toLocaleString() + ' ₽';
+    } catch(e) { console.error(e); }
+    
+    try {
+        // ✅ ЗАГРУЖАЕМ ВСЕ ЗАЯВКИ (включая индивидуальные)
+        const res = await fetch('/api/orders/list');
+        const orders = await res.json();
+        
+        console.log('📋 Заявки для дашборда:', orders);
+        console.log('📊 Количество заявок:', orders ? orders.length : 0);
+        
+        const totalOrders = orders ? orders.length : 0;
+        document.getElementById('totalOrders').innerHTML = totalOrders;
+        console.log('✅ totalOrders обновлен на:', totalOrders);
+        
+        if (orders && orders.length) {
+            let inProgress = 0, completed = 0, totalBudget = 0, completedBudget = 0;
+            
+            orders.forEach(o => { 
+                totalBudget += o.budget || 0; 
                 
-                try {
-                    const res = await fetch('/api/orders/list');
-                    const orders = await res.json();
-                    if (orders && orders.length) {
-                        let inProgress = 0, completed = 0, totalBudget = 0, completedBudget = 0;
-                        orders.forEach(o => { totalBudget += o.budget || 0; if (o.work_status === 'in_progress') inProgress++; if (o.work_status === 'completed') { completed++; completedBudget += o.budget || 0; } });
-                        document.getElementById('activeProjects').innerHTML = inProgress;
-                        document.getElementById('completedProjects').innerHTML = completed;
-                        document.getElementById('completionRate').innerHTML = totalBudget > 0 ? Math.round((completedBudget / totalBudget) * 100) : 0;
-                        
-                        let newCount = orders.filter(o => o.status === 'new').length;
-                        if (ordersChart) ordersChart.destroy();
-                        ordersChart = new Chart(document.getElementById('ordersChart'), { type: 'doughnut', data: { labels: ['🆕 Новые', '🔧 В работе', '🎉 Завершённые'], datasets: [{ data: [newCount, inProgress, completed], backgroundColor: ['#f59e0b', '#3b82f6', '#10b981'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom', labels: { color: '#fff' } } } } });
-                        
-                        if (revenueChart) revenueChart.destroy();
-                        revenueChart = new Chart(document.getElementById('revenueChart'), { type: 'line', data: { labels: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн'], datasets: [{ label: 'Доход (₽)', data: [totalBudget * 0.1, totalBudget * 0.15, totalBudget * 0.2, totalBudget * 0.25, totalBudget * 0.15, totalBudget * 0.15], borderColor: '#818cf8', backgroundColor: 'rgba(129,140,248,0.1)', fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { labels: { color: '#fff' } } }, scales: { y: { ticks: { color: '#fff' } }, x: { ticks: { color: '#fff' } } } } });
-                        
-                        const active = orders.filter(o => o.work_status === 'in_progress').slice(0, 5);
-                        document.getElementById('activeProjectsList').innerHTML = active.length ? active.map(p => `<div class="project-item"><div class="project-title">${p.name || 'Проект'}</div><div style="display:flex; justify-content:space-between; font-size:12px;"><span>💰 ${(p.budget || 0).toLocaleString()} ₽</span><span>📞 ${p.contact || '—'}</span></div><div class="project-progress"><div class="project-progress-fill" style="width:50%"></div></div></div>`).join('') : '<div style="text-align:center; padding:20px;">Нет активных проектов</div>';
-                        
-                        const recent = orders.slice(0, 5);
-                        document.getElementById('recentActivity').innerHTML = recent.map(a => `<div class="activity-item"><div class="activity-icon"><i class="fas fa-file-alt"></i></div><div class="activity-text"><div>${a.status === 'new' ? '🆕 Новая заявка' : '📝 Обновление'}</div><div><strong>${a.name || 'Клиент'}</strong> | 📞 ${a.contact || '—'}</div><small>${a.date || '—'}</small></div></div>`).join('');
-                    }
-                } catch(e) { console.error(e); }
-            }
+                // ✅ Активные: все, кроме завершённых и отменённых
+                const isActive = o.status !== 'completed' && 
+                                 o.status !== 'cancelled' && 
+                                 o.work_status !== 'completed' && 
+                                 o.work_status !== 'cancelled';
+                
+                if (isActive) inProgress++;
+                
+                if (o.work_status === 'completed' || o.status === 'completed') { 
+                    completed++; 
+                    completedBudget += o.budget || 0; 
+                } 
+            });
+            
+            document.getElementById('activeProjects').innerHTML = inProgress;
+            document.getElementById('completedProjects').innerHTML = completed;
+            document.getElementById('completionRate').innerHTML = totalBudget > 0 ? Math.round((completedBudget / totalBudget) * 100) : 0;
+            
+            // Обновляем график
+            if (ordersChart) ordersChart.destroy();
+            ordersChart = new Chart(document.getElementById('ordersChart'), { 
+                type: 'doughnut', 
+                data: { 
+                    labels: ['🆕 Новые', '🔧 В работе', '🎉 Завершённые'], 
+                    datasets: [{ 
+                        data: [
+                            orders.filter(o => o.status === 'new').length, 
+                            inProgress, 
+                            completed
+                        ], 
+                        backgroundColor: ['#f59e0b', '#3b82f6', '#10b981'], 
+                        borderWidth: 0 
+                    }] 
+                }, 
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: true, 
+                    plugins: { 
+                        legend: { 
+                            position: 'bottom', 
+                            labels: { color: '#fff' } 
+                        } 
+                    } 
+                } 
+            });
+            
+            // Обновляем график дохода
+            if (revenueChart) revenueChart.destroy();
+            revenueChart = new Chart(document.getElementById('revenueChart'), { 
+                type: 'line', 
+                data: { 
+                    labels: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн'], 
+                    datasets: [{ 
+                        label: 'Доход (₽)', 
+                        data: [
+                            totalBudget * 0.1, 
+                            totalBudget * 0.15, 
+                            totalBudget * 0.2, 
+                            totalBudget * 0.25, 
+                            totalBudget * 0.15, 
+                            totalBudget * 0.15
+                        ], 
+                        borderColor: '#818cf8', 
+                        backgroundColor: 'rgba(129,140,248,0.1)', 
+                        fill: true, 
+                        tension: 0.4 
+                    }] 
+                }, 
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: true, 
+                    plugins: { 
+                        legend: { 
+                            labels: { color: '#fff' } 
+                        } 
+                    }, 
+                    scales: { 
+                        y: { ticks: { color: '#fff' } }, 
+                        x: { ticks: { color: '#fff' } } 
+                    } 
+                } 
+            });
+            
+            // Активные проекты (последние 5)
+            const active = orders.filter(o => {
+                const isActive = o.status !== 'completed' && 
+                                 o.status !== 'cancelled' && 
+                                 o.work_status !== 'completed' && 
+                                 o.work_status !== 'cancelled';
+                return isActive;
+            }).slice(0, 5);
+            
+           document.getElementById('activeProjectsList').innerHTML = active.length ? active.map(p => `
+    <div class="project-item">
+        <div class="project-title">
+            ${p.source === 'individual' ? '👤' : '📋'} ${p.name || 'Проект'}
+            <span style="font-size:11px; color:rgba(255,255,255,0.3); float:right;">
+                ${p.source === 'individual' ? 'Индивидуальный' : ''}
+            </span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:12px;">
+            <span>💰 ${(p.budget || 0).toLocaleString()} ₽</span>
+            <span>📞 ${p.contact || '—'}</span>
+        </div>
+        ${p.description ? `<div style="margin-top:8px; color: rgba(255,255,255,0.6); font-size:13px;">📝 ${p.description}</div>` : ''}
+        <div class="project-progress"><div class="project-progress-fill" style="width:${p.work_status === 'completed' ? 100 : 50}%"></div></div>
+    </div>
+`).join('') : '<div style="text-align:center; padding:20px;">Нет активных проектов</div>';
 
-            async function loadOrders() { try { const res = await fetch('/api/orders/list'); const orders = await res.json(); const container = document.getElementById('ordersList'); if (!orders || orders.length === 0) { container.innerHTML = '<div class="card">📭 Нет заявок</div>'; return; } container.innerHTML = orders.map(o => `<div class="project-card"><div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;"><span class="badge-new">📝 ${o.name || 'Проект'}</span><small>${o.date || '—'}</small></div><div><strong>💰 Бюджет:</strong> ${(o.budget || 0).toLocaleString()} ₽</div><div><strong>📞 Контакт:</strong> ${o.contact || '—'}</div><div><strong>⏰ Срок:</strong> ${o.deadline || '—'}</div></div>`).join(''); } catch(e) { console.error(e); } }
+            
+           const recent = orders.slice(0, 5);
+document.getElementById('recentActivity').innerHTML = recent.map(a => `
+    <div class="activity-item">
+        <div class="activity-icon"><i class="fas fa-file-alt"></i></div>
+        <div class="activity-text">
+            <div>${a.source === 'individual' ? '👤 Индивидуальный' : '📋 Заявка'} ${a.status === 'new' ? '🆕 Новая' : '📝 Обновлена'}</div>
+            <div><strong>${a.name || 'Клиент'}</strong> | 📞 ${a.contact || '—'}</div>
+            ${a.description ? `<div style="color: rgba(255,255,255,0.6); font-size:12px; margin-top:3px;">📝 ${a.description}</div>` : ''}
+            <small>${a.date || '—'}</small>
+        </div>
+    </div>
+`).join('');
+        }
+    } catch(e) { console.error('Ошибка загрузки заявок:', e); }
+}
+
+          async function loadOrders() { 
+    try { 
+        const res = await fetch('/api/orders/list'); 
+        const orders = await res.json(); 
+        const container = document.getElementById('ordersList'); 
+        if (!orders || orders.length === 0) { 
+            container.innerHTML = '<div class="card">📭 Нет заявок</div>'; 
+            return; 
+        } 
+        container.innerHTML = orders.map(o => `
+            <div class="project-card">
+                <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                    <span class="badge-new">
+                        ${o.source === 'individual' ? '👤 Индивидуальный заказ' : '📋 Заявка'}
+                        ${o.status === 'new' ? ' 🆕 Новая' : ''}
+                    </span>
+                    <small>${o.date || '—'}</small>
+                </div>
+                <div><strong>👤 Клиент:</strong> ${o.name || '—'}</div>
+                <div><strong>📞 Контакт:</strong> ${o.contact || '—'}</div>
+                ${o.description ? `<div><strong>📝 Описание:</strong> ${o.description}</div>` : ''}
+                <div><strong>💰 Бюджет:</strong> ${(o.budget || 0).toLocaleString()} ₽</div>
+                ${o.source === 'service' ? `<div><strong>⏰ Срок:</strong> ${o.deadline || '—'}</div>` : ''}
+                <div style="margin-top: 10px;">
+                    <button class="btn-action btn-delete" onclick="deleteOrder(${o.id}, '${o.source}')">🗑️ Удалить</button>
+                </div>
+            </div>
+        `).join(''); 
+    } catch(e) { console.error(e); } 
+}
+
+// ========== УДАЛЕНИЕ ИНДИВИДУАЛЬНОГО ЗАКАЗА ==========
+async function deleteOrder(id, source) {
+    if (!confirm(`🗑️ Удалить заказ #${id}? Это действие нельзя отменить!`)) {
+        return;
+    }
+    
+    try {
+        let url = '';
+        if (source === 'individual') {
+            url = `/api/admin/orders/${id}`;
+        } else {
+            url = `/api/orders/${id}/delete`;
+        }
+        
+        const response = await fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success || response.ok) {
+            alert('✅ Заказ удалён');
+            loadOrders();
+            loadDashboardData();
+            loadFinanceData();
+        } else {
+            alert('❌ Ошибка удаления: ' + (result.error || 'Неизвестная ошибка'));
+        }
+    } catch (error) {
+        console.error('Ошибка удаления:', error);
+        alert('❌ Ошибка: ' + error.message);
+    }
+}
 
             async function loadFeatures() { try { const res = await fetch('/api/feature-requests'); const features = await res.json(); const container = document.getElementById('featuresList'); if (!features || features.length === 0) { container.innerHTML = '<div class="card">💡 Нет идей</div>'; return; } container.innerHTML = features.map(f => `<div class="card"><div><span class="badge-new">${f.priority === 'high' ? '🔴 Высокий' : '🟡 Средний'}</span> <small>${f.date}</small></div><strong>${f.title}</strong><p>${f.description}</p><small>От: ${f.user_name}</small></div>`).join(''); } catch(e) { console.error(e); } }
 
-            async function loadUsers() { try { const res = await fetch('/api/admin/users'); const users = await res.json(); const container = document.getElementById('usersList'); if (!users || users.length === 0) { container.innerHTML = '<div class="card">👤 Нет пользователей</div>'; return; } container.innerHTML = '<table><thead><tr><th>Email</th><th>Имя</th><th>Роль</th></tr></thead><tbody>' + users.map(u => `<td>${u.email}</td><td>${u.name || '—'}</td><td>${u.role || 'user'}</td></tr>`).join('') + '</tbody></table>'; } catch(e) { console.error(e); } }
+   async function loadUsers() { 
+    try { 
+        const res = await fetch('/api/developer/stats', {
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        }); 
+        const stats = await res.json(); 
+        const container = document.getElementById('usersList'); 
+        
+        container.innerHTML = `
+            <div class="card">
+                <h3>👥 Всего зарегистрировано: ${stats.total_users || 0} пользователей</h3>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Имя</th>
+                            <th>Роль</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>dev@businessstack.ru</td>
+                            <td>Максим</td>
+                            <td>owner</td>
+                            <td><button class="btn-action btn-delete" onclick="deleteUser('dev@businessstack.ru')">🗑️</button></td>
+                        </tr>
+                        <tr>
+                            <td>NEOMAR@mail.ru</td>
+                            <td>Вася</td>
+                            <td>client</td>
+                            <td><button class="btn-action btn-delete" onclick="deleteUser('NEOMAR@mail.ru')">🗑️</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p style="color: rgba(255,255,255,0.4); font-size: 13px; margin-top: 10px;">
+                    <i class="fas fa-info-circle"></i> 
+                    Всего активных пользователей: ${stats.total_users || 0}
+                </p>
+            </div>
+        `; 
+    } catch(e) { 
+        console.error(e); 
+        document.getElementById('usersList').innerHTML = '<div class="card">❌ Ошибка загрузки</div>'; 
+    } 
+}
+
+// ========== УДАЛЕНИЕ ПОЛЬЗОВАТЕЛЯ ==========
+async function deleteUser(email) {
+    if (!confirm(`🗑️ Удалить пользователя ${email}? Это действие нельзя отменить!`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/admin/users/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+            },
+            body: JSON.stringify({ email: email })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('✅ Пользователь удалён');
+            loadUsers();
+            loadDashboardData();
+        } else {
+            alert('❌ Ошибка удаления: ' + (result.error || 'Неизвестная ошибка'));
+        }
+    } catch (error) {
+        console.error('Ошибка удаления:', error);
+        alert('❌ Ошибка: ' + error.message);
+    }
+}
 
             async function loadFinanceData() { try { const res = await fetch('/api/orders/list'); const orders = await res.json(); let totalIncome = 0; if (orders && orders.length) { orders.forEach(o => { totalIncome += o.budget || 0; }); } const totalExpenses = expensesList.reduce((s, e) => s + (e.amount || 0), 0); const totalTax = totalIncome * 0.13; const totalProfit = totalIncome - totalExpenses - totalTax; document.getElementById('totalIncome').innerHTML = totalIncome.toLocaleString() + ' ₽'; document.getElementById('totalExpenses').innerHTML = totalExpenses.toLocaleString() + ' ₽'; document.getElementById('totalTax').innerHTML = totalTax.toLocaleString() + ' ₽'; document.getElementById('totalProfit').innerHTML = totalProfit.toLocaleString() + ' ₽'; if (profitChart) profitChart.destroy(); profitChart = new Chart(document.getElementById('profitChart'), { type: 'line', data: { labels: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн'], datasets: [{ label: 'Прибыль (₽)', data: [totalProfit * 0.1, totalProfit * 0.15, totalProfit * 0.2, totalProfit * 0.25, totalProfit * 0.15, totalProfit * 0.15], borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { labels: { color: '#fff' } } }, scales: { y: { ticks: { color: '#fff' } }, x: { ticks: { color: '#fff' } } } } }); if (expensesChart) expensesChart.destroy(); expensesChart = new Chart(document.getElementById('expensesChart'), { type: 'doughnut', data: { labels: ['Налоги', 'Расходы', 'Чистая прибыль'], datasets: [{ data: [totalTax, totalExpenses, totalProfit], backgroundColor: ['#ef4444', '#f59e0b', '#10b981'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom', labels: { color: '#fff' } } } } }); document.getElementById('financeDetails').innerHTML = `<div><div>📈 Доход: ${totalIncome.toLocaleString()} ₽</div><div>📊 Налоги: ${totalTax.toLocaleString()} ₽</div><div>📉 Расходы: ${totalExpenses.toLocaleString()} ₽</div><div>💰 Прибыль: ${totalProfit.toLocaleString()} ₽</div></div>`; } catch(e) { console.error(e); } }
 
             // HR функции
             async function loadHRStats() { try { const res = await fetch('/api/hr/stats'); const data = await res.json(); document.getElementById('hrEmployees').innerHTML = data.total_employees || 0; document.getElementById('hrCandidates').innerHTML = data.total_candidates || 0; document.getElementById('hrVacancies').innerHTML = data.open_vacancies || 0; document.getElementById('hrPayroll').innerHTML = (data.total_payroll || 0).toLocaleString() + ' ₽'; } catch(e) { console.error(e); } }
-            async function loadEmployees() { try { const res = await fetch('/api/hr/employees'); const employees = await res.json(); const container = document.getElementById('employeesList'); if (!employees || employees.length === 0) { container.innerHTML = '<div class="card">👔 Нет сотрудников</div>'; return; } container.innerHTML = employees.map(e => `<div class="card"><div><strong>${e.full_name}</strong><br><small>${e.position}</small></div><div>${(e.salary || 0).toLocaleString()} ₽</div></div>`).join(''); } catch(e) { console.error(e); } }
-            async function loadCandidates() { try { const res = await fetch('/api/hr/candidates'); const candidates = await res.json(); const container = document.getElementById('candidatesList'); if (!candidates || candidates.length === 0) { container.innerHTML = '<div class="card">📋 Нет кандидатов</div>'; return; } container.innerHTML = candidates.map(c => `<div class="card"><div><strong>${c.full_name}</strong><br><small>${c.vacancy || '—'}</small></div><div>${(c.expected_salary || 0).toLocaleString()} ₽</div></div>`).join(''); } catch(e) { console.error(e); } }
-            async function loadVacancies() { try { const res = await fetch('/api/hr/vacancies'); const vacancies = await res.json(); const container = document.getElementById('vacanciesList'); if (!vacancies || vacancies.length === 0) { container.innerHTML = '<div class="card">💼 Нет вакансий</div>'; return; } container.innerHTML = vacancies.map(v => `<div class="card"><div><strong>${v.title}</strong><br><small>от ${(v.salary_from || 0).toLocaleString()} ₽</small></div></div>`).join(''); } catch(e) { console.error(e); } }
+          async function loadEmployees() { 
+    try { 
+        const res = await fetch('/api/hr/employees', {
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        }); 
+        const employees = await res.json(); 
+        const container = document.getElementById('employeesList'); 
+        if (!employees || employees.length === 0) { 
+            container.innerHTML = `
+                <div class="card" style="text-align:center; padding:30px; color: rgba(255,255,255,0.6);">
+                    <i class="fas fa-users" style="font-size:32px; color:#34d399; margin-bottom:15px;"></i>
+                    <div>👔 Нет сотрудников</div>
+                </div>
+            `; 
+            return; 
+        } 
+        container.innerHTML = employees.map(e => `
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; background:rgba(255,255,255,0.03); border-left: 4px solid #34d399;">
+                <div>
+                    <strong style="font-size:16px;">${e.full_name}</strong>
+                    <br>
+                    <span style="color: rgba(255,255,255,0.6); font-size:13px;">
+                        🏢 ${e.position || '—'} 
+                        ${e.department ? `| 📂 ${e.department}` : ''}
+                        ${e.email ? `| ✉️ ${e.email}` : ''}
+                    </span>
+                </div>
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <span style="color: #34d399; font-weight:600;">${(e.salary || 0).toLocaleString()} ₽</span>
+                    <button class="btn-action btn-delete" onclick="deleteEmployee(${e.id})">🗑️</button>
+                </div>
+            </div>
+        `).join(''); 
+    } catch(e) { 
+        console.error('Ошибка загрузки сотрудников:', e);
+        document.getElementById('employeesList').innerHTML = '<div class="card" style="color:#ef4444;">❌ Ошибка загрузки сотрудников</div>';
+    } 
+}
 
-            // Заявки на вывод
-            async function loadPayouts() {
-                try {
-                    const token = localStorage.getItem('token');
-                    const res = await fetch('/api/admin/payouts', {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    const data = await res.json();
-                    const tbody = document.getElementById('payoutsTable');
-                    if (data.payouts && data.payouts.length > 0) {
-                        tbody.innerHTML = data.payouts.map(p => `
-                            <tr>
-                                <td>${p.id}</td>
-                                <td>${p.user_email || p.user_id}</td>
-                                <td><strong>${p.amount} ₽</strong></td>
-                                <td>${p.method === 'bank' ? '💳 Карта' : p.method === 'crypto' ? '🪙 USDT' : '🏦 Счёт'}</td>
-                                <td><small>${p.details ? JSON.stringify(p.details) : '-'}</small></td>
-                                <td>${new Date(p.created_at).toLocaleString()}</td>
-                                <td><span class="status-${p.status}">${p.status === 'pending' ? '⏳ В обработке' : p.status === 'completed' ? '✅ Выплачен' : '❌ Отклонён'}</span></td>
-                                <td>
-                                    ${p.status === 'pending' ? `
-                                        <button class="btn-sm" style="background:#10b981;" onclick="updatePayoutStatus(${p.id}, 'completed')">Выплатить</button>
-                                        <button class="btn-sm" style="background:#ef4444;" onclick="updatePayoutStatus(${p.id}, 'rejected')">Отклонить</button>
-                                    ` : ''}
-                                </td>
-                            </tr>
-                        `).join('');
-                    } else {
-                        tbody.innerHTML = '<tr><td colspan="8" class="text-center">Нет активных заявок</td><tr>';
-                    }
-                } catch(e) { console.error(e); }
+// ========== УДАЛЕНИЕ СОТРУДНИКА ==========
+async function deleteEmployee(id) {
+    if (!confirm(`🗑️ Уволить сотрудника?`)) return;
+    
+    try {
+        const response = await fetch(`/api/hr/employees/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
             }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('✅ Сотрудник уволен');
+            loadEmployees();
+            loadHRStats();
+        } else {
+            alert('❌ Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        alert('❌ Ошибка: ' + error.message);
+    }
+}
+        // ✅ НОВАЯ ФУНКЦИЯ С ОБРАБОТКОЙ ОШИБОК
+async function loadPayouts() {
+    const tbody = document.getElementById('payoutsTable');
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">⏳ Загрузка...</td></tr>';
+    
+    try {
+        const token = localStorage.getItem('token');
+        console.log('🔍 Токен:', token ? 'Есть' : 'Нет');
+        
+        const res = await fetch('/api/admin/payouts', {
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        console.log('📡 Статус ответа:', res.status);
+        
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        
+        const data = await res.json();
+        console.log('📊 Данные выплат:', data);
+        
+        if (data && data.payouts && data.payouts.length > 0) {
+            tbody.innerHTML = data.payouts.map(p => `
+                <tr>
+                    <td>${p.id || '—'}</td>
+                    <td>${p.user_email || p.user_id || '—'}</td>
+                    <td><strong>${(p.amount || 0).toLocaleString()} ₽</strong></td>
+                    <td>${p.method === 'bank' ? '💳 Карта' : p.method === 'crypto' ? '🪙 USDT' : '🏦 Счёт'}</td>
+                    <td><small>${p.details ? JSON.stringify(p.details).substring(0, 50) : '-'}</small></td>
+                    <td>${p.created_at ? new Date(p.created_at).toLocaleString() : '—'}</td>
+                    <td><span class="status-${p.status || 'pending'}">${p.status === 'pending' ? '⏳ В обработке' : p.status === 'completed' ? '✅ Выплачен' : '❌ Отклонён'}</span></td>
+                    <td>
+                        ${p.status === 'pending' ? `
+                            <button class="btn-sm" style="background:#10b981; color:white; border:none; padding:4px 12px; border-radius:12px; cursor:pointer;" onclick="updatePayoutStatus(${p.id}, 'completed')">✅ Выплатить</button>
+                            <button class="btn-sm" style="background:#ef4444; color:white; border:none; padding:4px 12px; border-radius:12px; cursor:pointer;" onclick="updatePayoutStatus(${p.id}, 'rejected')">❌ Отклонить</button>
+                        ` : ''}
+                        <button class="btn-sm" style="background:#ef4444; color:white; border:none; padding:4px 12px; border-radius:12px; cursor:pointer;" onclick="deletePayout(${p.id})">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:40px;">📭 Нет заявок на вывод</td></tr>';
+        }
+    } catch (error) {
+        console.error('❌ Ошибка загрузки выплат:', error);
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" style="text-align:center; padding:40px; color: #ef4444;">
+                    ❌ Ошибка загрузки: ${error.message}
+                    <br><br>
+                    <button onclick="loadPayouts()" style="background:#4f46e5; color:white; border:none; padding:8px 20px; border-radius:20px; cursor:pointer;">
+                        🔄 Повторить
+                    </button>
+                </td>
+            </tr>
+        `;
+    }
+}
 
+// ========== УДАЛЕНИЕ ЗАЯВКИ НА ВЫВОД ==========
+async function deletePayout(id) {
+    if (!confirm(`🗑️ Удалить заявку #${id}? Это действие нельзя отменить!`)) {
+        return;
+    }
+    
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/admin/payouts/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success || response.ok) {
+            alert('✅ Заявка удалена');
+            loadPayouts(); // Обновляем список
+        } else {
+            alert('❌ Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+        }
+    } catch (error) {
+        console.error('❌ Ошибка удаления:', error);
+        alert('❌ Ошибка: ' + error.message);
+    }
+}
+function loadModuleRequests() {
+    const container = document.getElementById('moduleRequestsList');
+    container.innerHTML = '<div class="loading">Загрузка...</div>';
+    
+    fetch('/api/admin/module-requests', {
+        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+    })
+    .then(res => res.json())
+    .then(data => {
+        // Обновляем счетчик
+        const newCount = data.filter(item => item.status === 'new' || item.status === 'interest').length;
+        const badge = document.getElementById('moduleRequestsBadge');
+        if (badge) {
+            badge.textContent = newCount;
+            badge.style.display = newCount > 0 ? 'inline-block' : 'none';
+        }
+        
+        if (data.length === 0) {
+            container.innerHTML = '<div class="empty-state">📭 Нет заявок на модули</div>';
+            return;
+        }
+        
+        let html = `<table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Модуль</th>
+                    <th>Пользователь</th>
+                    <th>Сообщение</th>
+                    <th>Дата</th>
+                    <th>Статус</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>`;
+        
+        const statusLabels = {
+            'new': '🟡 Новая',
+            'interest': '💡 Интерес',
+            'viewed': '🔵 Просмотрена',
+            'in_progress': '🟣 В работе',
+            'done': '🟢 Готово',
+            'resolved': '✅ Решено',
+            'rejected': '🔴 Отклонена'
+        };
+        
+        data.forEach(item => {
+            const shortMessage = item.message ? 
+                (item.message.length > 100 ? item.message.substring(0, 100) + '...' : item.message) : 
+                '—';
+            
+            html += `<tr>
+                <td><strong>${item.module_name || '—'}</strong></td>
+                <td>${item.user_name || item.user_email || '—'}</td>
+                <td onclick="viewRequestDetail(${item.id})" style="cursor:pointer; color:#a78bfa; text-decoration:underline;">
+                    ${shortMessage}
+                </td>
+                <td>${item.created_at}</td>
+                <td>${statusLabels[item.status] || item.status}</td>
+                <td>
+                    <select onchange="updateRequestStatus(${item.id}, this.value)" style="background:rgba(255,255,255,0.08); color:white; border:1px solid rgba(255,255,255,0.2); border-radius:8px; padding:6px 10px; font-size:12px;">
+                        <option value="new" ${item.status === 'new' ? 'selected' : ''}>🟡 Новая</option>
+                        <option value="interest" ${item.status === 'interest' ? 'selected' : ''}>💡 Интерес</option>
+                        <option value="viewed" ${item.status === 'viewed' ? 'selected' : ''}>🔵 Просмотрена</option>
+                        <option value="in_progress" ${item.status === 'in_progress' ? 'selected' : ''}>🟣 В работе</option>
+                        <option value="done" ${item.status === 'done' ? 'selected' : ''}>🟢 Готово</option>
+                        <option value="rejected" ${item.status === 'rejected' ? 'selected' : ''}>🔴 Отклонена</option>
+                    </select>
+                    <button class="btn-action btn-delete" onclick="deleteRequest(${item.id})" style="margin-left:5px;">🗑️</button>
+                </td>
+            </tr>`;
+        });
+        
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    })
+    .catch(err => {
+        console.error(err);
+        container.innerHTML = '❌ Ошибка загрузки';
+    });
+}
+
+// Просмотр деталей заявки
+function viewRequestDetail(id) {
+    fetch(`/api/admin/module-requests/${id}`, {
+        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(`📋 Заявка #${data.id}\n\n` +
+              `Модуль: ${data.module_name}\n` +
+              `Пользователь: ${data.user_name || data.user_email}\n` +
+              `Сообщение: ${data.message || '—'}\n` +
+              `Статус: ${data.status}\n` +
+              `Дата: ${data.created_at}\n` +
+              `URL: ${data.url || '—'}\n` +
+              `User Agent: ${data.user_agent || '—'}`);
+    })
+    .catch(err => {
+        alert('❌ Ошибка загрузки деталей');
+    });
+}
+
+// Удалить заявку
+function deleteRequest(id) {
+    if (!confirm('Удалить эту заявку?')) return;
+    
+    fetch(`/api/admin/module-requests/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert('✅ Заявка удалена');
+            loadModuleRequests();
+        } else {
+            alert('❌ Ошибка удаления');
+        }
+    })
+    .catch(err => {
+        alert('❌ Ошибка сети');
+    });
+}
+
+// Обновить статус заявки
+function updateRequestStatus(id, status) {
+    fetch(`/api/admin/module-requests/${id}/status`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        body: JSON.stringify({ status: status })
+    })
+    .then(res => res.json())
+    .then(() => {
+        loadModuleRequests();
+    })
+    .catch(err => {
+        alert('❌ Ошибка обновления статуса');
+    });
+}
             async function updatePayoutStatus(payoutId, status) {
                 if (!confirm(`Подтвердить действие?`)) return;
                 try {
@@ -632,35 +1289,282 @@
             function closeVacancyModal() { document.getElementById('vacancyModal').style.display = 'none'; }
             async function createVacancy() { await fetch('/api/hr/vacancies', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('vacancyTitle').value, salary_from: parseFloat(document.getElementById('vacancySalaryFrom').value) || 0, salary_to: parseFloat(document.getElementById('vacancySalaryTo').value) || 0, description: document.getElementById('vacancyDesc').value }) }); closeVacancyModal(); loadVacancies(); loadHRStats(); alert('✅ Вакансия создана'); }
             
-            async function openPayrollModal() { document.getElementById('payrollModal').style.display = 'flex'; const res = await fetch('/api/hr/employees'); const employees = await res.json(); if (!employees || employees.length === 0) { document.getElementById('payrollResult').innerHTML = '<div>Нет сотрудников</div>'; return; } let total = 0; const html = employees.map(e => { total += e.salary || 0; return `<div><strong>${e.full_name}</strong> - ${(e.salary || 0).toLocaleString()} ₽</div>`; }).join(''); document.getElementById('payrollResult').innerHTML = `<div><h3>Итого ФОТ: ${total.toLocaleString()} ₽</h3>${html}</div>`; }
-            async function savePayroll() { await fetch('/api/hr/payroll/calculate', { method: 'POST' }); alert('✅ Расчёт сохранён'); closePayrollModal(); loadHRStats(); }
-            function closePayrollModal() { document.getElementById('payrollModal').style.display = 'none'; }
-            
-            function loadAllData() { 
-                loadDashboardData(); 
-                loadOrders(); 
-                loadFeatures(); 
-                loadUsers(); 
-                loadFinanceData(); 
-                loadHRStats(); 
-                loadEmployees(); 
-                loadCandidates(); 
-                loadVacancies(); 
-                loadPayouts();
-                loadJournalEntries();
-                loadStaff();
-                console.log("✅ Все данные обновлены");
+          // ========== МОДАЛКА РАСЧЁТА ФОТ ==========
+async function openPayrollModal() { 
+    document.getElementById('payrollModal').style.display = 'flex'; 
+    
+    try {
+        const token = localStorage.getItem('token');
+        // ✅ ИСПРАВЛЕНО: правильный URL
+        const res = await fetch('/hr/api/employees', {
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
             }
+        }); 
+        
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+        }
+        
+        const employees = await res.json(); 
+        
+        if (!employees || employees.length === 0) { 
+            document.getElementById('payrollResult').innerHTML = `
+                <div style="text-align:center; padding:20px; color: rgba(255,255,255,0.6);">
+                    <i class="fas fa-users" style="font-size:32px; color:#34d399; margin-bottom:15px;"></i>
+                    <div>👔 Нет сотрудников для расчёта</div>
+                    <button onclick="closePayrollModal()" style="margin-top:15px; background:#4f46e5; color:white; border:none; padding:8px 20px; border-radius:20px; cursor:pointer;">
+                        Закрыть
+                    </button>
+                </div>
+            `; 
+            return; 
+        } 
+        
+        let total = 0; 
+        const html = employees.map(e => { 
+            total += e.salary || 0; 
+            return `
+                <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <strong>${e.full_name || '—'}</strong>
+                    <span style="color: #34d399; font-weight:600;">${(e.salary || 0).toLocaleString()} ₽</span>
+                </div>
+            `; 
+        }).join(''); 
+        
+        document.getElementById('payrollResult').innerHTML = `
+            <div>
+                <div style="background: rgba(79,70,229,0.2); border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(79,70,229,0.3);">
+                    <h3 style="color: #818cf8; font-size: 20px; margin: 0;">
+                        💰 Итого ФОТ: ${total.toLocaleString()} ₽
+                    </h3>
+                    <p style="color: rgba(255,255,255,0.5); font-size: 13px; margin-top: 5px;">
+                        Всего сотрудников: ${employees.length}
+                    </p>
+                </div>
+                <div style="max-height: 300px; overflow-y: auto; padding-right: 10px;">
+                    ${html}
+                </div>
+            </div>
+        `; 
+    } catch(e) { 
+        console.error('Ошибка загрузки сотрудников:', e);
+        document.getElementById('payrollResult').innerHTML = `
+            <div style="text-align:center; padding:20px; color: #ef4444;">
+                ❌ Ошибка загрузки: ${e.message}
+                <br><br>
+                <button onclick="openPayrollModal()" style="background:#4f46e5; color:white; border:none; padding:8px 20px; border-radius:20px; cursor:pointer;">
+                    🔄 Повторить
+                </button>
+            </div>
+        `; 
+    } 
+}
+
+// ========== СОХРАНЕНИЕ РАСЧЁТА ФОТ ==========
+async function savePayroll() { 
+    try {
+        const token = localStorage.getItem('token');
+        // ✅ ИСПРАВЛЕНО: правильный URL
+        const res = await fetch('/hr/api/payroll/calculate', {
+            method: 'POST',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        }); 
+        
+        const result = await res.json();
+        
+        if (result.success || res.ok) {
+            alert('✅ Расчёт сохранён');
+            closePayrollModal(); 
+            loadHRStats();
+        } else {
+            alert('❌ Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+        }
+    } catch(e) {
+        console.error('Ошибка сохранения:', e);
+        alert('❌ Ошибка: ' + e.message);
+    }
+}
+
+function closePayrollModal() { 
+    document.getElementById('payrollModal').style.display = 'none'; 
+}
+      
+// ========== ЗАГРУЗКА КАНДИДАТОВ ==========
+async function loadCandidates() { 
+    try { 
+        const res = await fetch('/api/hr/candidates', {
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        }); 
+        const candidates = await res.json(); 
+        const container = document.getElementById('candidatesList'); 
+        if (!candidates || candidates.length === 0) { 
+            container.innerHTML = `
+                <div class="card" style="text-align:center; padding:30px; color: rgba(255,255,255,0.6);">
+                    <i class="fas fa-user-plus" style="font-size:32px; color:#4f46e5; margin-bottom:15px;"></i>
+                    <div>📋 Нет кандидатов</div>
+                    <button onclick="openCandidateModal()" style="margin-top:15px; background:#4f46e5; color:white; border:none; padding:8px 20px; border-radius:20px; cursor:pointer;">
+                        ➕ Добавить кандидата
+                    </button>
+                </div>
+            `; 
+            return; 
+        } 
+        container.innerHTML = candidates.map(c => `
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; background:rgba(255,255,255,0.03); border-left: 4px solid #4f46e5;">
+                <div>
+                    <strong style="font-size:16px;">${c.full_name}</strong>
+                    <br>
+                    <span style="color: rgba(255,255,255,0.6); font-size:13px;">
+                        💼 ${c.vacancy || 'Без вакансии'} 
+                        ${c.experience ? `| ⭐ ${c.experience}` : ''}
+                    </span>
+                </div>
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <span style="color: #34d399; font-weight:600;">${(c.expected_salary || 0).toLocaleString()} ₽</span>
+                    <button class="btn-action btn-delete" onclick="deleteCandidate(${c.id})">🗑️</button>
+                </div>
+            </div>
+        `).join(''); 
+    } catch(e) { 
+        console.error('Ошибка загрузки кандидатов:', e);
+        document.getElementById('candidatesList').innerHTML = '<div class="card" style="color:#ef4444;">❌ Ошибка загрузки кандидатов</div>';
+    } 
+}
+// ========== УДАЛЕНИЕ КАНДИДАТА ==========
+async function deleteCandidate(id) {
+    if (!confirm(`🗑️ Удалить кандидата?`)) return;
+    try {
+        const response = await fetch(`/api/hr/candidates/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        const result = await response.json();
+        if (result.success) {
+            alert('✅ Кандидат удалён');
+            loadCandidates();
+            loadHRStats();
+        } else {
+            alert('❌ Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+        }
+    } catch(e) { alert('❌ Ошибка: ' + e.message); }
+}
+
+// ========== УДАЛЕНИЕ ВАКАНСИИ ==========
+async function deleteVacancy(id) {
+    if (!confirm(`🗑️ Удалить вакансию?`)) return;
+    try {
+        const response = await fetch(`/api/hr/vacancies/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        const result = await response.json();
+        if (result.success) {
+            alert('✅ Вакансия удалена');
+            loadVacancies();
+            loadHRStats();
+        } else {
+            alert('❌ Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+        }
+    } catch(e) { alert('❌ Ошибка: ' + e.message); }
+}     
+// ========== ЗАГРУЗКА ВАКАНСИЙ ==========
+async function loadVacancies() { 
+    try { 
+        const token = localStorage.getItem('token');
+        console.log('🔍 Загрузка вакансий...');
+        
+        const res = await fetch('/api/hr/vacancies', {
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        console.log('📡 Статус вакансий:', res.status);
+        
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        
+        const vacancies = await res.json(); 
+        console.log('📊 Вакансии получены:', vacancies);
+        
+        const container = document.getElementById('vacanciesList'); 
+        
+        // Проверяем, что vacancies - это массив
+        if (!vacancies || !Array.isArray(vacancies) || vacancies.length === 0) { 
+            container.innerHTML = `
+                <div class="card" style="text-align:center; padding:30px; color: rgba(255,255,255,0.6);">
+                    <i class="fas fa-briefcase" style="font-size:32px; color:#f59e0b; margin-bottom:15px;"></i>
+                    <div>💼 Нет вакансий</div>
+                    <button onclick="openVacancyModal()" style="margin-top:15px; background:#f59e0b; color:white; border:none; padding:8px 20px; border-radius:20px; cursor:pointer;">
+                        ➕ Создать вакансию
+                    </button>
+                </div>
+            `; 
+            return; 
+        } 
+        
+        container.innerHTML = vacancies.map(v => `
+            <div class="card" style="border-left: 4px solid #f59e0b; background:rgba(255,255,255,0.03);">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+                    <div>
+                        <strong style="font-size:18px;">${v.title || 'Без названия'}</strong>
+                        <br>
+                        <span style="color: rgba(255,255,255,0.6); font-size:14px;">
+                            💰 ${(v.salary_from || 0).toLocaleString()} - ${(v.salary_to || 0).toLocaleString()} ₽
+                            ${v.status === 'open' ? '🟢' : '🔴'} ${v.status === 'open' ? 'Открыта' : 'Закрыта'}
+                        </span>
+                        ${v.description ? `<p style="margin-top:8px; color: rgba(255,255,255,0.7); font-size:13px;">${v.description}</p>` : ''}
+                    </div>
+                    <button class="btn-action btn-delete" onclick="deleteVacancy(${v.id})">🗑️</button>
+                </div>
+            </div>
+        `).join(''); 
+    } catch(e) { 
+        console.error('❌ Ошибка загрузки вакансий:', e);
+        document.getElementById('vacanciesList').innerHTML = `
+            <div class="card" style="color:#ef4444; text-align:center; padding:20px;">
+                ❌ Ошибка загрузки вакансий: ${e.message}
+                <br><br>
+                <button onclick="loadVacancies()" style="background:#4f46e5; color:white; border:none; padding:8px 20px; border-radius:20px; cursor:pointer;">
+                    🔄 Повторить
+                </button>
+            </div>
+        `; 
+    } 
+} 
+      function loadAllData() { 
+    loadDashboardData(); 
+    loadOrders(); 
+    loadFeatures(); 
+    loadUsers(); 
+    loadFinanceData(); 
+    loadHRStats(); 
+    loadEmployees(); 
+    loadCandidates();  
+    loadVacancies(); 
+    loadPayouts();
+    loadJournalEntries();
+    loadStaff();
+    loadModuleRequests();
+    console.log("✅ Все данные обновлены");
+}
             loadAllData();
             setInterval(loadAllData, 30000);
 
             // ========== ЖУРНАЛ ОПЕРАЦИЙ ==========
-            async function loadJournalEntries() {
-                const token = localStorage.getItem('token');
-                try {
-                    const res = await fetch('/api/journal/entries', {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
+           async function loadJournalEntries() {
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch('/api/journal/entries', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
                     const data = await res.json();
                     const tbody = document.getElementById('journalList');
                     
@@ -743,115 +1647,250 @@
                 }
             }
 
-            // ========== УПРАВЛЕНИЕ ПЕРСОНАЛОМ ПЛАТФОРМЫ ==========
-            async function loadStaff() {
-                try {
-                   const response = await fetch('/platform/staff');
-                    const data = await response.json();
-                    const tbody = document.getElementById('staffTable');
+           // ========== ЗАГРУЗКА ПЕРСОНАЛА (КАРТОЧКИ) ==========
+async function loadStaff() {
+    try {
+        const response = await fetch('/platform/staff');
+        const data = await response.json();
+        const container = document.getElementById('staffContainer');
+        const countElement = document.getElementById('staffCount');
+        
+        if (!data.staff || data.staff.length === 0) {
+            container.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; background: rgba(255,255,255,0.03); border-radius: 24px; border: 2px dashed rgba(79,70,229,0.3);">
+                    <i class="fas fa-users" style="font-size: 48px; color: rgba(255,255,255,0.1); margin-bottom: 15px;"></i>
+                    <p style="color: rgba(255,255,255,0.5); font-size: 16px;">👔 Нет сотрудников</p>
+                    <button onclick="openAddStaffModal()" style="margin-top: 15px; background: #4f46e5; color: white; border: none; padding: 10px 24px; border-radius: 30px; cursor: pointer;">
+                        ➕ Добавить первого сотрудника
+                    </button>
+                </div>
+            `;
+            if (countElement) countElement.textContent = '0';
+            return;
+        }
+        
+        if (countElement) countElement.textContent = data.staff.length;
+        
+        container.innerHTML = data.staff.map(s => {
+            const fullName = `${s.last_name || ''} ${s.first_name || ''} ${s.middle_name || ''}`.trim();
+            const initials = fullName.split(' ').map(n => n[0]).join('').toUpperCase() || '?';
+            const roleBadge = s.role === 'admin' 
+                ? '<span style="background: rgba(79,70,229,0.2); color: #818cf8; padding: 4px 12px; border-radius: 20px; font-size: 12px;">👑 Админ</span>'
+                : '<span style="background: rgba(245,158,11,0.2); color: #fbbf24; padding: 4px 12px; border-radius: 20px; font-size: 12px;">🔧 Разработчик</span>';
+            
+            return `
+                <div style="background: rgba(255,255,255,0.04); border-radius: 20px; padding: 20px; border: 1px solid rgba(255,255,255,0.06); transition: all 0.3s; cursor: default; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: ${s.role === 'admin' ? 'linear-gradient(90deg, #4f46e5, #7c3aed)' : 'linear-gradient(90deg, #f59e0b, #d97706)'};"></div>
                     
-                    if (!data.staff || data.staff.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="7" class="text-center">Нет сотрудников</td></tr>';
-                        return;
-                    }
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                        <div style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #4f46e5, #7c3aed); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: white; flex-shrink: 0;">
+                            ${initials}
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: 600; font-size: 16px; color: white; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                ${fullName || 'Без имени'}
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap;">
+                                ${roleBadge}
+                                ${s.email ? `<span style="color: rgba(255,255,255,0.4); font-size: 12px;">✉️ ${s.email}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
                     
-                    let html = '';
-                    for (let s of data.staff) {
-                        const fullName = `${s.last_name || ''} ${s.first_name || ''} ${s.middle_name || ''}`.trim();
-                        const roleBadge = s.role === 'admin' ? '👑 Админ' : '🔧 Разработчик';
-                        html += `
-                            <tr>
-                                <td>${fullName || '-'}</td>
-                                <td>${s.email || '-'}</td>
-                                <td>${s.phone || '-'}</td>
-                                <td>${roleBadge}</td>
-                                <td>${s.birth_date || '-'}</td>
-                                <td>${s.address || '-'}</td>
-                                <td><button class="btn-delete" onclick="deleteStaff('${s.email}')">🗑️</button></td>
-                            </tr>
-                        `;
-                    }
-                    tbody.innerHTML = html;
-                } catch (error) {
-                    console.error('Ошибка:', error);
-                    document.getElementById('staffTable').innerHTML = '<tr><td colspan="7" class="text-center">Ошибка загрузки</td></tr>';
-                }
-            }
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 15px;">
+                        ${s.phone ? `<div><i class="fas fa-phone" style="color: rgba(255,255,255,0.3); width: 16px;"></i> ${s.phone}</div>` : ''}
+                        ${s.birth_date ? `<div><i class="fas fa-calendar" style="color: rgba(255,255,255,0.3); width: 16px;"></i> ${s.birth_date}</div>` : ''}
+                        ${s.address ? `<div style="grid-column: 1 / -1;"><i class="fas fa-map-marker-alt" style="color: rgba(255,255,255,0.3); width: 16px;"></i> ${s.address}</div>` : ''}
+                    </div>
+                    
+                    <div style="display: flex; justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px;">
+                       // ✅ НОВОЕ (стало "Уволить")
+<button onclick="deleteStaff('${s.email}')" style="background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.2); padding: 6px 16px; border-radius: 30px; cursor: pointer; font-size: 13px; transition: all 0.3s; display: flex; align-items: center; gap: 6px; hover:background: rgba(239,68,68,0.25);">
+    <i class="fas fa-user-slash"></i> Уволить
+</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+    } catch (error) {
+        console.error('Ошибка загрузки персонала:', error);
+        document.getElementById('staffContainer').innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #ef4444;">
+                ❌ Ошибка загрузки: ${error.message}
+                <br><br>
+                <button onclick="loadStaff()" style="background: #4f46e5; color: white; border: none; padding: 8px 20px; border-radius: 20px; cursor: pointer;">🔄 Повторить</button>
+            </div>
+        `;
+    }
+}
 
-            async function deleteStaff(email) {
-                if (!confirm(`Удалить сотрудника ${email}?`)) return;
-                try {
-                    const response = await fetch(`/platform/staff/${email}`, { method: 'DELETE' });
-                    const result = await response.json();
-                    if (result.success) {
-                        alert('Сотрудник удалён');
-                        loadStaff();
-                    } else {
-                        alert('Ошибка удаления');
-                    }
-                } catch (error) {
-                    alert('Ошибка: ' + error.message);
-                }
-            }
+// ========== ОТКРЫТЬ/ЗАКРЫТЬ МОДАЛКУ ==========
+function openAddStaffModal() {
+    document.getElementById('addStaffModal').style.display = 'flex';
+}
 
-            async function addPlatformStaff() {
-                const password = document.getElementById('staff_password').value;
-                const passwordConfirm = document.getElementById('staff_password_confirm').value;
-                
-                if (password !== passwordConfirm) {
-                    alert('Пароли не совпадают!');
-                    return;
-                }
-                
-                const data = {
-                    last_name: document.getElementById('staff_last_name').value,
-                    first_name: document.getElementById('staff_first_name').value,
-                    middle_name: document.getElementById('staff_middle_name').value,
-                    email: document.getElementById('staff_email').value,
-                    phone: document.getElementById('staff_phone').value,
-                    birth_date: document.getElementById('staff_birth_date').value,
-                    address: document.getElementById('staff_address').value,
-                    role: document.getElementById('staff_role').value,
-                    password: password
-                };
-                
-                if (!data.email || !data.password) {
-                    alert('Email и пароль обязательны!');
-                    return;
-                }
-                
-                try {
-                    const response = await fetch('/platform/staff', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data)
-                    });
-                    
-                    const result = await response.json();
-                    if (result.success) {
-                        alert('Сотрудник добавлен!');
-                        // Очищаем форму
-                        document.getElementById('staff_last_name').value = '';
-                        document.getElementById('staff_first_name').value = '';
-                        document.getElementById('staff_middle_name').value = '';
-                        document.getElementById('staff_email').value = '';
-                        document.getElementById('staff_phone').value = '';
-                        document.getElementById('staff_birth_date').value = '';
-                        document.getElementById('staff_address').value = '';
-                        document.getElementById('staff_password').value = '';
-                        document.getElementById('staff_password_confirm').value = '';
-                        // Закрываем модальное окно
-                        bootstrap.Modal.getInstance(document.getElementById('addStaffModal')).hide();
-                        // Обновляем таблицу
-                        loadStaff();
-                    } else {
-                        alert('Ошибка: ' + (result.error || 'Не удалось добавить'));
-                    }
-                } catch (error) {
-                    alert('Ошибка: ' + error.message);
-                }
-            }
-        </script>
+function closeAddStaffModal() {
+    document.getElementById('addStaffModal').style.display = 'none';
+}
+
+// ========== ДОБАВИТЬ СОТРУДНИКА ==========
+async function addPlatformStaff() {
+    const password = document.getElementById('staff_password').value;
+    const passwordConfirm = document.getElementById('staff_password_confirm').value;
+    
+    if (password !== passwordConfirm) {
+        alert('❌ Пароли не совпадают!');
+        return;
+    }
+    
+    if (password.length < 6) {
+        alert('❌ Пароль должен быть не менее 6 символов');
+        return;
+    }
+    
+    const data = {
+        last_name: document.getElementById('staff_last_name').value.trim(),
+        first_name: document.getElementById('staff_first_name').value.trim(),
+        middle_name: document.getElementById('staff_middle_name').value.trim(),
+        email: document.getElementById('staff_email').value.trim(),
+        phone: document.getElementById('staff_phone').value.trim(),
+        birth_date: document.getElementById('staff_birth_date').value,
+        address: document.getElementById('staff_address').value.trim(),
+        role: document.getElementById('staff_role').value,
+        password: password
+    };
+    
+    if (!data.email || !data.first_name || !data.last_name) {
+        alert('❌ Заполните обязательные поля: Фамилия, Имя, Email');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/platform/staff', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            alert('✅ Сотрудник добавлен!');
+            closeAddStaffModal();
+            // Очищаем форму
+            document.querySelectorAll('#addStaffModal input').forEach(el => el.value = '');
+            document.getElementById('staff_role').value = 'admin';
+            loadStaff();
+        } else {
+            alert('❌ Ошибка: ' + (result.error || 'Не удалось добавить'));
+        }
+    } catch (error) {
+        alert('❌ Ошибка: ' + error.message);
+    }
+}
+
+// ========== УДАЛИТЬ СОТРУДНИКА ==========
+async function deleteStaff(email) {
+    if (!confirm(`🗑️ Удалить сотрудника ${email}? Это действие нельзя отменить!`)) return;
+    
+    try {
+        const response = await fetch(`/platform/staff/${email}`, { method: 'DELETE' });
+        const result = await response.json();
+        if (result.success) {
+            alert('✅ Сотрудник удалён');
+            loadStaff();
+        } else {
+            alert('❌ Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+        }
+    } catch (error) {
+        alert('❌ Ошибка: ' + error.message);
+    }
+}
+
+function logoutUser() {
+    if (confirm('🚪 Вы уверены, что хотите выйти?')) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('user_id');
+        window.location.href = '/login';
+    }
+}
+
+          
+                  </script>
+    </div>
+</div>
+<!-- МОДАЛКА ДОБАВЛЕНИЯ СОТРУДНИКА -->
+<div class="modal-overlay" id="addStaffModal">
+    <div class="modal-content" style="max-width: 550px;">
+        <h3 style="display: flex; align-items: center; gap: 12px; margin-bottom: 25px;">
+            <i class="fas fa-user-plus" style="color: #4f46e5; font-size: 24px;"></i>
+            Добавить сотрудника
+        </h3>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div>
+                <label style="color: #94a3b8; font-size: 13px; font-weight: 500; display: block; margin-bottom: 5px;">Фамилия *</label>
+                <input type="text" id="staff_last_name" placeholder="Иванов" style="width:100%; padding:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(79,70,229,0.3); border-radius:12px; color:white; font-size:14px;">
+            </div>
+            <div>
+                <label style="color: #94a3b8; font-size: 13px; font-weight: 500; display: block; margin-bottom: 5px;">Имя *</label>
+                <input type="text" id="staff_first_name" placeholder="Иван" style="width:100%; padding:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(79,70,229,0.3); border-radius:12px; color:white; font-size:14px;">
+            </div>
+        </div>
+        
+        <div style="margin-top: 10px;">
+            <label style="color: #94a3b8; font-size: 13px; font-weight: 500; display: block; margin-bottom: 5px;">Отчество</label>
+            <input type="text" id="staff_middle_name" placeholder="Петрович" style="width:100%; padding:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(79,70,229,0.3); border-radius:12px; color:white; font-size:14px;">
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px;">
+            <div>
+                <label style="color: #94a3b8; font-size: 13px; font-weight: 500; display: block; margin-bottom: 5px;">Email *</label>
+                <input type="email" id="staff_email" placeholder="ivan@example.com" style="width:100%; padding:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(79,70,229,0.3); border-radius:12px; color:white; font-size:14px;">
+            </div>
+            <div>
+                <label style="color: #94a3b8; font-size: 13px; font-weight: 500; display: block; margin-bottom: 5px;">Телефон</label>
+                <input type="text" id="staff_phone" placeholder="+7 (999) 123-45-67" style="width:100%; padding:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(79,70,229,0.3); border-radius:12px; color:white; font-size:14px;">
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px;">
+            <div>
+                <label style="color: #94a3b8; font-size: 13px; font-weight: 500; display: block; margin-bottom: 5px;">Дата рождения</label>
+                <input type="date" id="staff_birth_date" style="width:100%; padding:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(79,70,229,0.3); border-radius:12px; color:white; font-size:14px;">
+            </div>
+            <div>
+                <label style="color: #94a3b8; font-size: 13px; font-weight: 500; display: block; margin-bottom: 5px;">Роль *</label>
+                <select id="staff_role" style="width:100%; padding:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(79,70,229,0.3); border-radius:12px; color:white; font-size:14px;">
+                    <option value="admin">👑 Администратор</option>
+                    <option value="developer">🔧 Разработчик</option>
+                </select>
+            </div>
+        </div>
+        
+        <div style="margin-top: 10px;">
+            <label style="color: #94a3b8; font-size: 13px; font-weight: 500; display: block; margin-bottom: 5px;">Адрес</label>
+            <input type="text" id="staff_address" placeholder="г. Москва, ул. Ленина, д. 1" style="width:100%; padding:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(79,70,229,0.3); border-radius:12px; color:white; font-size:14px;">
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px;">
+            <div>
+                <label style="color: #94a3b8; font-size: 13px; font-weight: 500; display: block; margin-bottom: 5px;">Пароль *</label>
+                <input type="password" id="staff_password" placeholder="••••••••" style="width:100%; padding:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(79,70,229,0.3); border-radius:12px; color:white; font-size:14px;">
+            </div>
+            <div>
+                <label style="color: #94a3b8; font-size: 13px; font-weight: 500; display: block; margin-bottom: 5px;">Подтвердите пароль *</label>
+                <input type="password" id="staff_password_confirm" placeholder="••••••••" style="width:100%; padding:12px; background:rgba(255,255,255,0.06); border:1px solid rgba(79,70,229,0.3); border-radius:12px; color:white; font-size:14px;">
+            </div>
+        </div>
+        
+        <div class="modal-buttons" style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px;">
+            <button class="btn-cancel" onclick="closeAddStaffModal()">Отмена</button>
+            <button class="btn-save" onclick="addPlatformStaff()" style="background: linear-gradient(135deg, #4f46e5, #7c3aed);">
+                <i class="fas fa-plus"></i> Добавить
+            </button>
+        </div>
     </div>
 </div>
 </body>

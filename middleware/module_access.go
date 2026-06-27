@@ -31,79 +31,31 @@ func RequireModuleAccess(moduleName string) gin.HandlerFunc {
         role := c.GetString("role")
         email := c.GetString("user_email")
 
-        // ВЛАДЕЛЕЦ СИСТЕМЫ - БЕЗЛИМИТНЫЙ ДОСТУП
+        // ТОЛЬКО ВЛАДЕЛЕЦ СИСТЕМЫ - БЕЗЛИМИТНЫЙ ДОСТУП
         if isOwner(email) {
-            c.Next()
-            return
-        }
-
-        // РАЗРАБОТЧИК И АДМИН - БЕЗЛИМИТНЫЙ ДОСТУП
-        if role == "developer" || role == "admin" {
+            log.Printf("👑 [RequireModuleAccess] Владелец %s - полный доступ к %s", email, moduleName)
             c.Next()
             return
         }
 
         userID := c.GetString("user_id")
-        tenantID := c.GetString("tenant_id")
+        tenantID := c.GetString("tenant_id") // берем из контекста
 
-        if tenantID == "" {
-            c.JSON(http.StatusForbidden, gin.H{
-                "error":   "Доступ запрещён",
-                "message": "Tenant ID не найден",
-            })
-            c.Abort()
-            return
-        }
+        log.Printf("🔍 [RequireModuleAccess] НАЧАЛО: moduleName=%s, userID=%s, role=%s, tenant=%s", 
+            moduleName, userID, role, tenantID)
 
-        // 1. Проверяем активную подписку
-        var expiresAt time.Time
-        var subStatus string
-        err := database.Pool.QueryRow(context.Background(), `
-            SELECT status, expires_at FROM user_subscriptions 
-            WHERE user_id = $1 AND module_name = $2 AND status = 'active'
-            ORDER BY expires_at DESC LIMIT 1
-        `, userID, moduleName).Scan(&subStatus, &expiresAt)
-
-        if err == nil && expiresAt.After(time.Now()) {
-            c.Next()
-            return
-        }
-
-        // 1.5 ПРОВЕРКА РОДИТЕЛЬСКОГО МОДУЛЯ FinCore
-        if parentModule, ok := fincoreSubModules[moduleName]; ok {
-            var parentExpiresAt time.Time
-            var parentStatus string
-            err := database.Pool.QueryRow(context.Background(), `
-                SELECT status, expires_at FROM user_subscriptions 
-                WHERE user_id = $1 AND module_name = $2 AND status = 'active' AND expires_at > NOW()
-            `, userID, parentModule).Scan(&parentStatus, &parentExpiresAt)
-            
-            if err == nil && parentExpiresAt.After(time.Now()) {
-                c.Next()
-                return
-            }
-            
-            var parentTrialEnd time.Time
-            err = database.Pool.QueryRow(context.Background(), `
-                SELECT trial_end FROM user_trials 
-                WHERE user_id = $1 AND module_name = $2 AND trial_end > NOW()
-            `, userID, parentModule).Scan(&parentTrialEnd)
-            
-            if err == nil && parentTrialEnd.After(time.Now()) {
-                c.Next()
-                return
-            }
-        }
-
-        // 2. Проверяем триальный период
+        // 1. Проверяем ЛИЧНЫЙ триал пользователя (по user_id)
         var trialEnd time.Time
-        err = database.Pool.QueryRow(context.Background(), `
+        err := database.Pool.QueryRow(context.Background(), `
             SELECT trial_end FROM user_trials 
             WHERE user_id = $1 AND module_name = $2 AND trial_end > NOW()
         `, userID, moduleName).Scan(&trialEnd)
 
         if err == nil && trialEnd.After(time.Now()) {
             daysLeft := int(time.Until(trialEnd).Hours() / 24)
+            log.Printf("✅ [RequireModuleAccess] Личный триал на %s активен до %v (осталось %d дней)", 
+                moduleName, trialEnd, daysLeft)
+            
             if daysLeft == 3 || daysLeft == 1 {
                 var notified bool
                 database.Pool.QueryRow(context.Background(), `
@@ -123,11 +75,63 @@ func RequireModuleAccess(moduleName string) gin.HandlerFunc {
             return
         }
 
+        // 1.5 ПРОВЕРКА РОДИТЕЛЬСКОГО МОДУЛЯ ПО USER (FinCore)
+        if parentModule, ok := fincoreSubModules[moduleName]; ok {
+            log.Printf("🔍 [RequireModuleAccess] Проверка родительского модуля по user: %s", parentModule)
+            
+            var parentTrialEnd time.Time
+            err = database.Pool.QueryRow(context.Background(), `
+                SELECT trial_end FROM user_trials 
+                WHERE user_id = $1 AND module_name = $2 AND trial_end > NOW()
+            `, userID, parentModule).Scan(&parentTrialEnd)
+            
+            if err == nil && parentTrialEnd.After(time.Now()) {
+                log.Printf("✅ [RequireModuleAccess] Личный триал на родительский модуль %s активен до %v", 
+                    parentModule, parentTrialEnd)
+                c.Next()
+                return
+            }
+        }
+
+        // 2. Если есть tenant - проверяем по tenant
+        if tenantID != "" {
+            log.Printf("🔍 [RequireModuleAccess] Проверка по tenant: %s", tenantID)
+            
+            // Проверяем триал по tenant
+            err = database.Pool.QueryRow(context.Background(), `
+                SELECT trial_end FROM tenant_trials 
+                WHERE tenant_id = $1 AND module_name = $2 AND trial_end > NOW()
+            `, tenantID, moduleName).Scan(&trialEnd)
+            
+            if err == nil && trialEnd.After(time.Now()) {
+                log.Printf("✅ [RequireModuleAccess] Триал на %s по tenant активен до %v", 
+                    moduleName, trialEnd)
+                c.Next()
+                return
+            }
+            
+            // Проверяем родительский модуль по tenant
+            if parentModule, ok := fincoreSubModules[moduleName]; ok {
+                err = database.Pool.QueryRow(context.Background(), `
+                    SELECT trial_end FROM tenant_trials 
+                    WHERE tenant_id = $1 AND module_name = $2 AND trial_end > NOW()
+                `, tenantID, parentModule).Scan(&trialEnd)
+                
+                if err == nil && trialEnd.After(time.Now()) {
+                    log.Printf("✅ [RequireModuleAccess] Триал на родительский модуль %s по tenant активен до %v", 
+                        parentModule, trialEnd)
+                    c.Next()
+                    return
+                }
+            }
+        }
+
+        log.Printf("❌ [RequireModuleAccess] Нет доступа к модулю %s для user %s", moduleName, userID)
+
         // 3. Нет доступа - проверяем тип запроса
         if strings.HasPrefix(c.Request.URL.Path, "/api/") || 
            c.GetHeader("X-Requested-With") == "XMLHttpRequest" || 
            c.GetHeader("Accept") == "application/json" {
-            // API запрос - возвращаем JSON
             c.JSON(http.StatusPaymentRequired, gin.H{
                 "error":            "Модуль не оплачен",
                 "message":          "Для доступа к этому модулю необходимо оплатить подписку или начать пробный период",
@@ -138,7 +142,6 @@ func RequireModuleAccess(moduleName string) gin.HandlerFunc {
                 "start_trial_url":  "/api/trial/start?module=" + moduleName,
             })
         } else {
-            // Обычный переход по ссылке - показываем красивую HTML страницу
             displayName := GetModuleDisplayName(moduleName)
             c.HTML(http.StatusPaymentRequired, "module_locked.html", gin.H{
                 "title":        fmt.Sprintf("🔒 %s — требуется подписка", displayName),
@@ -153,7 +156,6 @@ func RequireModuleAccess(moduleName string) gin.HandlerFunc {
         c.Abort()
     }
 }
-
 // StartModuleTrial - начать триальный период для пользователя (с учётом дней для конкретного модуля)
 func StartModuleTrial(userID, moduleName string) error {
     trialDays := GetModuleTrialDays(moduleName)

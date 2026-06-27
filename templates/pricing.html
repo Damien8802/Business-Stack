@@ -109,13 +109,13 @@
             margin-left: 10px;
         }
         
-        /* Стили для модулей в разработке */
-        .module-dev-row {
-            opacity: 0.8;
+        /* Стили для модулей "Скоро" */
+        .module-soon-row {
+            opacity: 0.6;
             background: rgba(255,255,255,0.02);
             position: relative;
         }
-        .module-dev-row::after {
+        .module-soon-row::after {
             content: '';
             position: absolute;
             top: 0;
@@ -125,15 +125,6 @@
             background: linear-gradient(135deg, rgba(100,100,100,0.1), rgba(50,50,50,0.05));
             pointer-events: none;
             border-radius: 20px;
-        }
-        .dev-badge {
-            background: linear-gradient(135deg, #6b7280, #4b5563);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 10px;
-            font-weight: 600;
-            display: inline-block;
-            margin-right: 8px;
         }
         .soon-badge {
             background: linear-gradient(135deg, #f59e0b, #d97706);
@@ -319,6 +310,111 @@
             border-radius: 10px;
             display: inline-block;
         }
+        .module-soon td {
+            opacity: 0.5;
+        }
+        .soon-tag {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-block;
+            animation: pulse 1.5s infinite;
+            color: #1a1a2e;
+        }
+        .saving-badge {
+            background: #10b981;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-block;
+            color: white;
+        }
+        .economy-block {
+            background: rgba(16,185,129,0.1);
+            border: 1px solid rgba(16,185,129,0.2);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-top: 12px;
+            text-align: center;
+        }
+        .economy-block strong {
+            color: #10b981;
+            font-size: 18px;
+        }
+        
+        /* Поздравление для первого клиента */
+        .congrats-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(15px);
+            z-index: 99999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.5s ease;
+        }
+        .congrats-popup.show {
+            display: flex;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .congrats-content {
+            background: linear-gradient(135deg, #0f172a, #1e1b4b);
+            border-radius: 32px;
+            max-width: 550px;
+            width: 90%;
+            padding: 45px;
+            text-align: center;
+            border: 2px solid #f59e0b;
+            box-shadow: 0 0 60px rgba(245,158,11,0.3);
+        }
+        .congrats-content .emoji {
+            font-size: 70px;
+            margin-bottom: 15px;
+        }
+        .congrats-content h2 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: white;
+        }
+        .congrats-content h2 span {
+            color: #ffd700;
+        }
+        .congrats-content p {
+            color: rgba(255,255,255,0.8);
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+        .congrats-content .number-big {
+            font-size: 48px;
+            font-weight: 900;
+            color: #ffd700;
+        }
+        .congrats-content .btn-close-congrats {
+            margin-top: 20px;
+            padding: 12px 40px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border: none;
+            border-radius: 30px;
+            color: #1a1a2e;
+            font-weight: 800;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .congrats-content .btn-close-congrats:hover {
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
@@ -329,6 +425,15 @@
         <h1 class="page-title">💰 Премиум тарифы Business Stack</h1>
         <p class="page-subtitle">Выберите идеальный план для вашего бизнеса. Пробный период — от 3 до 14 дней в зависимости от модуля.</p>
     </div>
+<!-- ===== КНОПКИ НАВИГАЦИИ (ВСТАВИТЬ СЮДА) ===== -->
+<div style="text-align: center; margin-bottom: 30px;">
+    <a href="/" style="display: inline-flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); color: white; padding: 12px 28px; border-radius: 40px; text-decoration: none; font-weight: 600; transition: all 0.3s; border: 1px solid rgba(255,255,255,0.1);">
+        <i class="bi bi-house-door-fill"></i> На главную
+    </a>
+    <a href="/individual-order" style="display: inline-flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 12px 28px; border-radius: 40px; text-decoration: none; font-weight: 600; transition: all 0.3s; margin-left: 12px; border: 1px solid rgba(255,255,255,0.1);">
+        <i class="bi bi-code-square"></i> Индивидуальная разработка
+    </a>
+</div>
 
     <div class="promo-banner">
         <div style="display: flex; align-items: center; gap: 15px;">
@@ -352,7 +457,7 @@
     <div class="plans-grid" id="plansContainer"></div>
 
     <div class="tabs">
-        <div class="tab active" onclick="showTab('modules')">🧩 Отдельные модули</div>
+        <div class="tab active" onclick="showTab('modules')">🧩 Модули</div>
         <div class="tab" onclick="showTab('addons')">⚡ Аддоны</div>
         <div class="tab" onclick="showTab('api')">🔌 FusionAPI</div>
         <div class="tab" onclick="showTab('nebula')">☁️ Nebula Cloud</div>
@@ -381,7 +486,7 @@
             <table class="price-table">
                 <thead><tr><th>Аддон</th><th>Цена/мес</th><th>Описание</th></tr></thead>
                 <tbody id="addonsTable"></tbody>
-            </tr>
+            </table>
         </div>
     </div>
 
@@ -415,16 +520,13 @@
     <div class="table-container" style="margin-top: 40px;">
         <h3 style="margin-bottom: 20px;">📊 Сравнение с конкурентами (20 пользователей)</h3>
         <table class="price-table comparison-table">
-            <thead><tr><th>Параметр</th><th>1С</th><th>Bitrix24</th><th>AmoCRM</th><th>МойСклад</th><th>Business Stack</th></tr></thead>
+            <thead><tr><th>Параметр</th><th>1С</th><th>Bitrix24</th><th>АмоCRM</th><th>МойСклад</th><th>Business Stack</th></tr></thead>
             <tbody>
                 <tr><td>CRM</td><td class="half">🟡</td><td class="check">✅</td><td class="check">✅</td><td class="cross">❌</td><td class="check">✅</td></tr>
                 <tr><td>Бухгалтерия</td><td class="check">✅</td><td class="cross">❌</td><td class="cross">❌</td><td class="cross">❌</td><td class="check">✅</td></tr>
                 <tr><td>Склад</td><td class="half">🟡</td><td class="cross">❌</td><td class="cross">❌</td><td class="check">✅</td><td class="check">✅</td></tr>
-                <tr><td>Портал</td><td class="half">🟡</td><td class="check">✅</td><td class="cross">❌</td><td class="cross">❌</td><td class="check">✅</td></tr>
-                <tr><td>HR</td><td class="half">🟡</td><td class="half">🟡</td><td class="cross">❌</td><td class="cross">❌</td><td class="check">✅</td></tr>
                 <tr><td>VPN</td><td class="cross">❌</td><td class="cross">❌</td><td class="cross">❌</td><td class="cross">❌</td><td class="check">✅</td></tr>
                 <tr><td>Облако</td><td class="cross">❌</td><td class="cross">❌</td><td class="cross">❌</td><td class="cross">❌</td><td class="check">✅</td></tr>
-                <tr><td>ИИ-агенты</td><td class="cross">❌</td><td class="cross">❌</td><td class="cross">❌</td><td class="cross">❌</td><td class="check">✅</td></tr>
                 <tr><td><strong>Цена</strong></td><td class="price">60 000 ₽</td><td class="price">50 000 ₽</td><td class="price">35 000 ₽</td><td class="price">25 000 ₽</td><td class="price" style="color:#10b981;">19 900 ₽</td></tr>
             </tbody>
         </table>
@@ -455,10 +557,22 @@
     </div>
 </div>
 
+<!-- Поздравление для первого клиента -->
+<div class="congrats-popup" id="congratsPopup">
+    <div class="congrats-content">
+        <div class="emoji">🏆</div>
+        <h2>🎉 Вы <span>ПЕРВЫЙ</span> клиент!</h2>
+        <p>Вы стали обладателем эксклюзивного предложения!</p>
+        <p>🔥 <strong>Скидка 40%</strong> на первые 6 месяцев уже ваша!</p>
+        <p style="margin-top: 15px;">Осталось мест: <span class="number-big" id="congratsPlacesLeft">10</span></p>
+        <button class="btn-close-congrats" onclick="closeCongrats()">Продолжить 🚀</button>
+    </div>
+</div>
+
 <script>
     let currentBilling = 'month';
-    let devModulesRoutes = [];
     let remainingPlaces = 10;
+    let isFirstPurchase = false;
     
     function loadRemainingPlaces() {
         const saved = localStorage.getItem('promo_places_left');
@@ -473,6 +587,12 @@
     
     function usePromoPlace() {
         if (remainingPlaces > 0) {
+            // Проверяем, был ли это первый клиент
+            if (remainingPlaces === 10) {
+                isFirstPurchase = true;
+                showCongrats();
+            }
+            
             remainingPlaces--;
             localStorage.setItem('promo_places_left', remainingPlaces);
             document.getElementById('placesLeft').innerText = remainingPlaces;
@@ -481,102 +601,314 @@
         return false;
     }
     
+    function showCongrats() {
+        document.getElementById('congratsPlacesLeft').innerText = remainingPlaces;
+        document.getElementById('congratsPopup').classList.add('show');
+    }
+    
+    function closeCongrats() {
+        document.getElementById('congratsPopup').classList.remove('show');
+    }
+    
+    // ===== ПРАВИЛЬНЫЕ ТАРИФЫ =====
     const plans = [
-        { name: "🚀 СТАРТ", priceMonth: 9900, priceYear: 99000, discountPriceMonth: 5940, discountPriceYear: 59400, features: ["SalesHub (CRM)", "До 10 пользователей", "Базовая аналитика", "Email поддержка", "5 интеграций", "API доступ"], popular: false },
-        { name: "💼 БИЗНЕС", priceMonth: 19900, priceYear: 199000, discountPriceMonth: 11940, discountPriceYear: 119400, features: ["SalesHub + FinCore + StockFlow", "До 50 пользователей", "Продвинутая аналитика", "Приоритетная поддержка", "20 интеграций"], popular: true },
-        { name: "🏆 ПРОФИ", priceMonth: 39900, priceYear: 399000, discountPriceMonth: 23940, discountPriceYear: 239400, features: ["Все модули (кроме Enterprise)", "До 200 пользователей", "Расширенная аналитика", "24/7 поддержка", "Все интеграции"], popular: false },
-        { name: "👑 КОРПОРАЦИЯ", priceMonth: 69900, priceYear: 699000, discountPriceMonth: 41940, discountPriceYear: 419400, features: ["White Label + SLA 99.9%", "Неограниченно пользователей", "Персональный менеджер", "Кастомная разработка"], popular: false }
+        // ОТДЕЛЬНЫЕ МОДУЛИ
+        { 
+            name: "💰 FinCore", 
+            priceMonth: 19900, 
+            priceYear: 199000, 
+            discountPriceMonth: 11940, 
+            discountPriceYear: 119400, 
+            features: [
+                "💰 Бухгалтерия — 19 900 ₽",
+                "Банк, налоги, зарплата",
+                "Импорт Excel, закрытие месяца",
+                "До 50 пользователей"
+            ], 
+            popular: false,
+            saving: null
+        },
+        { 
+            name: "🤝 CRM", 
+            priceMonth: 9900, 
+            priceYear: 99000, 
+            discountPriceMonth: 5940, 
+            discountPriceYear: 59400, 
+            features: [
+                "🤝 SalesHub (CRM) — 9 900 ₽",
+                "Клиенты, сделки, воронка",
+                "До 10 пользователей",
+                "Базовая аналитика"
+            ], 
+            popular: false,
+            saving: null
+        },
+        { 
+            name: "📦 Склад", 
+            priceMonth: 9900, 
+            priceYear: 99000, 
+            discountPriceMonth: 5940, 
+            discountPriceYear: 59400, 
+            features: [
+                "📦 StockFlow (Склад) — 9 900 ₽",
+                "Товары, заказы, поставщики",
+                "Инвентаризация",
+                "До 10 пользователей"
+            ], 
+            popular: false,
+            saving: null
+        },
+        { 
+            name: "🔒 VPN", 
+            priceMonth: 490, 
+            priceYear: 4900, 
+            discountPriceMonth: 294, 
+            discountPriceYear: 2940, 
+            features: [
+                "🔒 SecureLink (VPN) — 490 ₽",
+                "VPN для 10 сотрудников",
+                "Шифрование трафика"
+            ], 
+            popular: false,
+            saving: null
+        },
+        { 
+            name: "☁️ Облако", 
+            priceMonth: 150, 
+            priceYear: 1500, 
+            discountPriceMonth: 90, 
+            discountPriceYear: 900, 
+            features: [
+                "☁️ Nebula (Облако) — 150 ₽",
+                "Хранилище файлов (10 ГБ)"
+            ], 
+            popular: false,
+            saving: null
+        },
+        // ===== ПАКЕТЫ =====
+        { 
+            name: "📦 CRM + Склад", 
+            priceMonth: 14900, 
+            priceYear: 149000, 
+            discountPriceMonth: 8940, 
+            discountPriceYear: 89400, 
+            features: [
+                "🤝 CRM — 9 900 ₽",
+                "📦 Склад — 9 900 ₽",
+                "💡 Экономия 4 900 ₽",
+                "До 20 пользователей"
+            ], 
+            popular: false,
+            saving: "4 900 ₽"
+        },
+        { 
+            name: "💰 FinCore + CRM", 
+            priceMonth: 24900, 
+            priceYear: 249000, 
+            discountPriceMonth: 14940, 
+            discountPriceYear: 149400, 
+            features: [
+                "💰 FinCore — 19 900 ₽",
+                "🤝 CRM — 9 900 ₽",
+                "💡 Экономия 4 900 ₽",
+                "До 50 пользователей"
+            ], 
+            popular: false,
+            saving: "4 900 ₽"
+        },
+        { 
+            name: "💰 FinCore + Склад", 
+            priceMonth: 24900, 
+            priceYear: 249000, 
+            discountPriceMonth: 14940, 
+            discountPriceYear: 149400, 
+            features: [
+                "💰 FinCore — 19 900 ₽",
+                "📦 Склад — 9 900 ₽",
+                "💡 Экономия 4 900 ₽",
+                "До 50 пользователей"
+            ], 
+            popular: false,
+            saving: "4 900 ₽"
+        },
+        { 
+            name: "🏆 FinCore + CRM + Склад", 
+            priceMonth: 34900, 
+            priceYear: 349000, 
+            discountPriceMonth: 20940, 
+            discountPriceYear: 209400, 
+            features: [
+                "💰 FinCore — 19 900 ₽",
+                "🤝 CRM — 9 900 ₽",
+                "📦 Склад — 9 900 ₽",
+                "💡 Экономия 4 800 ₽",
+                "До 100 пользователей",
+                "24/7 поддержка"
+            ], 
+            popular: true,
+            saving: "4 800 ₽"
+        },
+        { 
+            name: "👑 ВСЁ ВКЛЮЧЕНО", 
+            priceMonth: 35000, 
+            priceYear: 350000, 
+            discountPriceMonth: 21000, 
+            discountPriceYear: 210000, 
+            features: [
+                "💰 FinCore — 19 900 ₽",
+                "🤝 CRM — 9 900 ₽",
+                "📦 Склад — 9 900 ₽",
+                "🔒 VPN — 490 ₽",
+                "☁️ Облако — 150 ₽",
+                "💡 Экономия 10 340 ₽",
+                "White Label + SLA 99.9%",
+                "Персональный менеджер"
+            ], 
+            popular: false,
+            saving: "10 340 ₽"
+        }
     ];
-    
+
+    // ===== ТОЛЬКО 5 РАБОЧИХ МОДУЛЕЙ =====
     const modulesData = [
-        { name: "💰 FinCore (1С)", route: "/finance", price: 19900, priceYear: 199000, discountPrice: 11940, desc: "Бухгалтерия, налоги, зарплата, банк, импорт Excel, закрытие месяца", trialDays: 14 },
-        { name: "🤝 SalesHub (CRM)", route: "/crm", price: 9900, priceYear: 99000, discountPrice: 5940, desc: "Клиенты, сделки, воронка, задачи", trialDays: 14 },
-        { name: "👥 TeamSphere", route: "/teamsphere", price: 9900, priceYear: 99000, discountPrice: 5940, desc: "Задачи, проекты, чат, календарь", trialDays: 14 },
-        { name: "📦 StockFlow (Склад)", route: "/inventory", price: 5900, priceYear: 59000, discountPrice: 3540, desc: "Товары, заказы, поставщики", trialDays: 7 },
-        { name: "👥 PeopleCore (HR)", route: "/hr", price: 4900, priceYear: 49000, discountPrice: 2940, desc: "Сотрудники, отпуска, кандидаты", trialDays: 7 },
-        { name: "🚚 Logistics", route: "/logistics", price: 3900, priceYear: 39000, discountPrice: 2340, desc: "Отслеживание заказов, маршруты", trialDays: 7 },
-        { name: "🛡️ Security Pack", route: "/security-center", price: 5900, priceYear: 59000, discountPrice: 3540, desc: "Расширенные логи, DLP, белые списки IP", trialDays: 7 },
-        { name: "🔄 Миграция данных", route: "/migration", price: 4900, priceYear: 49000, discountPrice: 2940, desc: "Перенос из 1С, Bitrix, Амо", trialDays: 7 },
-        { name: "🔒 SecureLink (VPN)", route: "/vpn", price: 490, priceYear: 4900, discountPrice: 294, desc: "VPN для 10 сотрудников", trialDays: 3 },
-        { name: "☁️ Nebula (Облако)", route: "/cloud", price: 150, priceYear: 1500, discountPrice: 90, desc: "Хранилище файлов (10 ГБ)", trialDays: 3 },
-        { name: "✨ Новый модуль (Скоро)", route: "/new-module", price: 0, priceYear: 0, discountPrice: 0, desc: "Уникальный функционал, который скоро появится", trialDays: 0, isDev: true }
+        { 
+            name: "💰 FinCore (Бухгалтерия)", 
+            route: "/finance", 
+            price: 19900, 
+            priceYear: 199000, 
+            discountPrice: 11940, 
+            desc: "Бухгалтерия, налоги, зарплата, банк, импорт Excel, закрытие месяца", 
+            trialDays: 14,
+            available: true
+        },
+        { 
+            name: "🤝 SalesHub (CRM)", 
+            route: "/crm", 
+            price: 9900, 
+            priceYear: 99000, 
+            discountPrice: 5940, 
+            desc: "Клиенты, сделки, воронка, задачи", 
+            trialDays: 14,
+            available: true
+        },
+        { 
+            name: "📦 StockFlow (Склад)", 
+            route: "/inventory", 
+            price: 9900, 
+            priceYear: 99000, 
+            discountPrice: 5940, 
+            desc: "Товары, заказы, поставщики, инвентаризация", 
+            trialDays: 7,
+            available: true
+        },
+        { 
+            name: "🔒 SecureLink (VPN)", 
+            route: "/vpn", 
+            price: 490, 
+            priceYear: 4900, 
+            discountPrice: 294, 
+            desc: "VPN для 10 сотрудников", 
+            trialDays: 3,
+            available: true
+        },
+        { 
+            name: "☁️ Nebula (Облако)", 
+            route: "/cloud", 
+            price: 150, 
+            priceYear: 1500, 
+            discountPrice: 90, 
+            desc: "Хранилище файлов (10 ГБ)", 
+            trialDays: 3,
+            available: true
+        },
+        // ===== МОДУЛИ "СКОРО" =====
+        { 
+            name: "👥 TeamSphere (Задачи)", 
+            route: "/teamsphere", 
+            price: 9900, 
+            priceYear: 99000, 
+            discountPrice: 5940, 
+            desc: "Задачи, проекты, чат, календарь", 
+            trialDays: 0,
+            available: false,
+            soon: true
+        },
+        { 
+            name: "👥 PeopleCore (HR)", 
+            route: "/hr", 
+            price: 4900, 
+            priceYear: 49000, 
+            discountPrice: 2940, 
+            desc: "Сотрудники, отпуска, кандидаты", 
+            trialDays: 0,
+            available: false,
+            soon: true
+        },
+        { 
+            name: "🚚 Logistics", 
+            route: "/logistics", 
+            price: 3900, 
+            priceYear: 39000, 
+            discountPrice: 2340, 
+            desc: "Отслеживание заказов, маршруты", 
+            trialDays: 0,
+            available: false,
+            soon: true
+        },
+        { 
+            name: "🛡️ Security Pack", 
+            route: "/security-center", 
+            price: 5900, 
+            priceYear: 59000, 
+            discountPrice: 3540, 
+            desc: "Расширенные логи, DLP, белые списки IP", 
+            trialDays: 0,
+            available: false,
+            soon: true
+        },
+        { 
+            name: "🔄 Миграция данных", 
+            route: "/migration", 
+            price: 4900, 
+            priceYear: 49000, 
+            discountPrice: 2940, 
+            desc: "Перенос из 1С, Bitrix, Амо", 
+            trialDays: 0,
+            available: false,
+            soon: true
+        }
     ];
     
-    const addons = [
-        { name: "🤖 AI-агент продаж", price: 4900, desc: "Автономный агент, который ведёт сделки" },
-        { name: "🤖 AI-аналитик", price: 3900, desc: "Прогнозы LTV, оттока, кассовых разрывов" },
-        { name: "🤖 AI-рекрутер", price: 2900, desc: "Авто-оценка резюме, подбор кандидатов" },
-        { name: "🎙️ Голосовое управление", price: 2900, desc: "Управление через голос (SpeechKit)" },
-        { name: "💬 AI-чат-бот для сайта", price: 1900, desc: "Ответы на вопросы 24/7" },
-        { name: "🔌 API Gateway", price: 2900, desc: "До 50 000 вызовов/мес" },
-        { name: "🔌 API Pro", price: 7900, desc: "До 500 000 вызовов + готовые коннекторы" },
-        { name: "🏷️ White Label", price: 19900, desc: "Свой бренд, свой домен" }
-    ];
+    // ===== АДДОНЫ (ПУСТО) =====
+    const addons = [];
     
-    const apiPlans = [
-        { name: "Free", price: 0, priceYear: 0, limit: "1 000", desc: "Тестирование" },
-        { name: "Basic", price: 990, priceYear: 9900, limit: "10 000", desc: "Интеграторы" },
-        { name: "Pro", price: 2900, priceYear: 29000, limit: "100 000", desc: "Разработчики" },
-        { name: "Enterprise", price: 9900, priceYear: 99000, limit: "1 000 000+", desc: "Крупные проекты" }
-    ];
+    // ===== FUSION API (ПУСТО) =====
+    const apiPlans = [];
     
+    // ===== NEBULA CLOUD (ТОЛЬКО ОБЛАКО) =====
     const nebulaPlans = [
-        { storage: "10 ГБ", price: 150, priceYear: 1500, desc: "Микробизнес" },
-        { storage: "50 ГБ", price: 490, priceYear: 4900, desc: "Малый бизнес" },
-        { storage: "100 ГБ", price: 790, priceYear: 7900, desc: "Средний бизнес" },
-        { storage: "500 ГБ", price: 2900, priceYear: 29000, desc: "Крупный бизнес" },
-        { storage: "1 ТБ", price: 4900, priceYear: 49000, desc: "Enterprise" }
+        { storage: "☁️ 10 ГБ", price: 150, priceYear: 1500, desc: "Для микробизнеса" },
+        { storage: "☁️ 50 ГБ", price: 490, priceYear: 4900, desc: "Для малого бизнеса" },
+        { storage: "☁️ 100 ГБ", price: 790, priceYear: 7900, desc: "Для среднего бизнеса" }
     ];
     
-    const marketplaceApps = [
-        { name: "hh.ru Полная интеграция", price: 2900, desc: "Автоимпорт резюме, публикация вакансий" },
-        { name: "Telegram Mass Mailer", price: 1900, desc: "Массовые рассылки в Telegram" },
-        { name: "1С:Комплексная", price: 4900, desc: "Полная синхронизация с 1С" },
-        { name: "Банк-клиент", price: 2900, desc: "Выписки, платежи из 10 банков" },
-        { name: "МойСклад", price: 2900, desc: "Двусторонняя синхронизация" }
-    ];
+    // ===== МАРКЕТПЛЕЙС (ПУСТО) =====
+    const marketplaceApps = [];
     
     const faq = [
-        { q: "Какой тариф выбрать для малого бизнеса?", a: "Рекомендуем тариф БИЗНЕС или ПРОФИ. Они включают все необходимые модули для эффективной работы." },
-        { q: "Есть ли бесплатный пробный период?", a: "Да, у каждого модуля свой пробный период: VPN и Облако — 3 дня, HR, Склад, Логистика — 7 дней, CRM, FinCore, TeamSphere — 14 дней." },
         { q: "Сколько стоит FinCore?", a: "FinCore (полная замена 1С) стоит 19 900 ₽/мес или 199 000 ₽/год." },
-        { q: "Что за акция для первых 10 человек?", a: "Первые 10 клиентов получают скидку 40% на первые 6 месяцев подписки. Успейте забрать своё место!" },
-        { q: "Некоторые модули отмечены как 'Скоро'. Когда они появятся?", a: "Мы активно работаем над новыми модулями. Оставьте email, и мы уведомим вас о запуске!" },
+        { q: "Что выгоднее: покупать модули отдельно или пакетом?", a: "Пакеты дают экономию до 10 340 ₽. Например, пакет 'ВСЁ ВКЛЮЧЕНО' стоит 35 000 ₽, а отдельно все модули — 45 340 ₽." },
+        { q: "Есть ли бесплатный пробный период?", a: "Да, у каждого модуля свой пробный период: VPN и Облако — 3 дня, Склад — 7 дней, CRM и FinCore — 14 дней." },
+        { q: "Что за акция для первых 10 человек?", a: "Первые 10 клиентов получают скидку 40% на первые 6 месяцев подписки. Счётчик мест обновляется автоматически!" },
         { q: "Можно ли менять тариф в процессе работы?", a: "Да, вы можете сменить тариф в любой момент в личном кабинете." },
         { q: "Как происходит оплата?", a: "Принимаем карты РФ, СБП, USDT, Bitcoin, CryptoBot." }
     ];
     
-    async function loadDevModules() {
-        try {
-            const response = await fetch('/api/dev-modules');
-            if (response.ok) {
-                const modules = await response.json();
-                devModulesRoutes = modules.map(m => m.route);
-                console.log('Модули в разработке:', devModulesRoutes);
-            }
-        } catch(e) {
-            console.error('Ошибка загрузки модулей в разработке:', e);
-        }
-    }
-    
     function notifyMe(moduleName) {
         const email = prompt(`Оставьте email, чтобы получить уведомление о запуске модуля "${moduleName}":`);
         if (email && email.includes('@')) {
-            fetch('/api/dev-modules/report-issue', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    module: moduleName,
-                    issue: 'Пользователь хочет узнать о запуске',
-                    status: 'notify_request',
-                    email: email
-                })
-            }).then(() => {
-                alert(`✅ Спасибо! Мы уведомим вас о запуске "${moduleName}"`);
-            }).catch(() => {
-                alert('❌ Ошибка, попробуйте позже');
-            });
-        } else {
+            alert(`✅ Спасибо! Мы уведомим вас о запуске "${moduleName}"`);
+        } else if (email) {
             alert('❌ Введите корректный email');
         }
     }
@@ -592,11 +924,29 @@
                 ${plan.popular ? '<div class="popular-badge">🔥 ПОПУЛЯРНЫЙ</div>' : ''}
                 <div class="plan-name">${plan.name}</div>
                 ${hasDiscount ? `<div class="plan-price"><span class="discount-price">${currentPrice.toLocaleString()} ₽</span> ${discountPrice.toLocaleString()} <span>₽/${currentBilling === 'month' ? 'мес' : 'год'}</span></div>` : `<div class="plan-price">${currentPrice.toLocaleString()} <span>₽/${currentBilling === 'month' ? 'мес' : 'год'}</span></div>`}
-                ${hasDiscount && currentBilling === 'year' ? `<div class="plan-price-year">💰 Экономия ${Math.round((1 - discountPrice/(plan.priceMonth*12)) * 100)}% + скидка 40%</div>` : (currentBilling === 'year' ? `<div class="plan-price-year">💰 Экономия ${Math.round((1 - plan.priceYear/(plan.priceMonth*12)) * 100)}%</div>` : '')}
+                ${currentBilling === 'year' ? `<div class="plan-price-year">💰 Экономия ${Math.round((1 - plan.priceYear/(plan.priceMonth*12)) * 100)}%</div>` : ''}
+                ${plan.saving ? `<div class="economy-block">💡 Экономия <strong>${plan.saving}</strong> при покупке пакетом</div>` : ''}
                 <ul class="features">${plan.features.map(f => `<li><i class="bi bi-check-circle-fill"></i> ${f}</li>`).join('')}</ul>
-                <a href="/payment?plan=${plan.name.toLowerCase()}&period=${currentBilling}&discount=${hasDiscount ? '40' : '0'}" class="btn ${hasDiscount ? 'btn-discount' : 'btn-primary'}">${hasDiscount ? '⚡ Выбрать со скидкой 40%' : 'Выбрать'}</a>
+                <a href="/payment?plan=${encodeURIComponent(plan.name)}&period=${currentBilling}&discount=${hasDiscount ? '40' : '0'}" class="btn ${hasDiscount ? 'btn-discount' : 'btn-primary'}" onclick="handlePurchase(event, this)">${hasDiscount ? '⚡ Выбрать со скидкой 40%' : 'Выбрать'}</a>
             </div>
         `}).join('');
+    }
+    
+    function handlePurchase(event, el) {
+        event.preventDefault();
+        const href = el.getAttribute('href');
+        
+        // Если есть места и это первый клиент
+        if (remainingPlaces > 0 && remainingPlaces === 10) {
+            isFirstPurchase = true;
+            showCongrats();
+            // После закрытия поздравления переходим по ссылке
+            setTimeout(() => {
+                window.location.href = href;
+            }, 100);
+        } else {
+            window.location.href = href;
+        }
     }
     
     function renderModules() {
@@ -604,19 +954,14 @@
         const hasDiscount = remainingPlaces > 0;
         
         tbody.innerHTML = modulesData.map(m => {
-            // Проверяем, в разработке ли модуль (из API или из флага isDev)
-            const isDev = devModulesRoutes.includes(m.route) || m.isDev === true;
-            
-            if (isDev) {
-                // Модуль в разработке - показываем заглушку
+            if (!m.available && m.soon) {
                 return `
-                    <tr data-module="${m.name}" data-route="${m.route}" class="module-dev-row">
-                        <tr>
+                    <tr class="module-soon">
+                        <td>
                             <strong>${m.name}</strong><br>
                             <small>${m.desc}</small>
                             <div style="margin-top: 8px;">
-                                <span class="dev-badge">🔧 В РАЗРАБОТКЕ</span>
-                                <span class="soon-badge">🌟 Скоро появится</span>
+                                <span class="soon-tag">🌟 Скоро появится</span>
                             </div>
                         </td>
                         <td class="price">—</td>
@@ -624,16 +969,15 @@
                         <td>—</td>
                         <td>
                             <button class="btn-notify" onclick="notifyMe('${m.name}')">
-                                🔔 Уведомить о запуске
+                                🔔 Уведомить
                             </button>
                         </td>
                     </tr>
                 `;
             }
             
-            // Обычный модуль - доступен для покупки
             return `
-                <tr data-module="${m.name}" data-route="${m.route}">
+                <tr>
                     <td>
                         <strong>${m.name}</strong><br>
                         <small>${m.desc}</small>
@@ -688,7 +1032,7 @@
     function renderCalculator() {
         const container = document.getElementById('modulesCheckboxes');
         const hasDiscount = remainingPlaces > 0;
-        container.innerHTML = modulesData.filter(m => !devModulesRoutes.includes(m.route) && !m.isDev).map(m => `
+        container.innerHTML = modulesData.filter(m => m.available).map(m => `
             <label><input type="checkbox" class="module-calc" value="${hasDiscount ? m.discountPrice : m.price}" data-route="${m.route}"> ${m.name} (${hasDiscount ? m.discountPrice.toLocaleString() : m.price.toLocaleString()} ₽/мес)${hasDiscount ? ' <span style="color:#f59e0b;">🔥 -40%</span>' : ''}</label><br>
         `).join('');
         updateCalculator();
@@ -706,13 +1050,21 @@
     }
     
     function applyCalculator() {
-        if (remainingPlaces > 0 && confirm('🔥 Вы участвуете в акции для первых 10 клиентов! Скидка 40% на 6 месяцев будет применена. Продолжить?')) {
+        if (remainingPlaces > 0 && remainingPlaces === 10) {
+            isFirstPurchase = true;
+            showCongrats();
+            setTimeout(() => {
+                alert('📝 Заявка отправлена! Менеджер свяжется с вами.');
+            }, 500);
+        } else if (remainingPlaces > 0 && confirm('🔥 Вы участвуете в акции для первых 10 клиентов! Скидка 40% на 6 месяцев будет применена. Продолжить?')) {
             usePromoPlace();
             renderPlans();
             renderModules();
             renderCalculator();
+            alert('📝 Заявка отправлена! Менеджер свяжется с вами.');
+        } else {
+            alert('📝 Заявка отправлена! Менеджер свяжется с вами.');
         }
-        alert('📝 Заявка отправлена! Менеджер свяжется с вами.');
     }
     
     function setBilling(period) {
@@ -750,29 +1102,11 @@
                 updateCalculator();
             }
         });
-        
-        loadDevModules().then(() => {
-            renderModules();
-            renderCalculator();
-        });
     });
 </script>
 
-<div class="ai-floating-widget">
-    <div class="ai-widget-button" onclick="openAIAssistant()">
-        🤖
-        <div class="ai-widget-badge">●</div>
-    </div>
-    <div class="ai-widget-tooltip">💬 Спросить AI ассистента</div>
-</div>
+<!-- Модальное окно с акцией -->
 <script>
-function openAIAssistant() {
-    window.open('/ai-assistant', '_blank', 'width=500,height=700,left=' + (screen.width - 520) + ',top=100');
-}
-</script>
-
-<script>
-// Модальное окно с акцией для первых 10 человек
 if (!localStorage.getItem('promo_shown')) {
     setTimeout(() => {
         const modalHtml = `
@@ -807,8 +1141,14 @@ function closePromoModal() {
 
 function usePromoPlaceFromModal() {
     if (remainingPlaces > 0) {
+        if (remainingPlaces === 10) {
+            isFirstPurchase = true;
+            showCongrats();
+        }
         remainingPlaces--;
         localStorage.setItem('promo_places_left', remainingPlaces);
+        document.getElementById('placesLeft').innerText = remainingPlaces;
+        document.getElementById('modalPlacesLeft').innerText = remainingPlaces;
     }
 }
 </script>

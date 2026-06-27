@@ -1,6 +1,8 @@
 package handlers
 
 import (
+    "encoding/json"
+    "context" 
     "database/sql"
     "fmt"
     "log"  
@@ -607,12 +609,9 @@ func DeleteJournalEntry(c *gin.Context) {
     c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
-// ========== НОВЫЕ ФУНКЦИИ ==========
-
 func CreateJournalEntrySimple(c *gin.Context) {
     tenantID := middleware.GetTenantIDFromContext(c)
 
- // ЗАПРЕЩАЕМ СОЗДАВАТЬ С ЗАГЛУШКОЙ!
     if tenantID == uuid.Nil {
         log.Printf("❌ CreateJournalEntrySimple: tenant_id not found")
         c.JSON(http.StatusUnauthorized, gin.H{
@@ -632,6 +631,8 @@ func CreateJournalEntrySimple(c *gin.Context) {
         DebitAccount    string  `json:"debit_account"`
         CreditAccount   string  `json:"credit_account"`
         Description     string  `json:"description"`
+        TagType         string  `json:"tag_type"`   // ← ДОБАВЛЕНО
+        TagName         string  `json:"tag_name"`   // ← ДОБАВЛЕНО
     }
     
     if err := c.ShouldBindJSON(&req); err != nil {
@@ -639,13 +640,13 @@ func CreateJournalEntrySimple(c *gin.Context) {
         return
     }
     
-  // Проверяем баланс (оставляем для безопасности)
-if req.DebitAmount != req.CreditAmount {
-    c.JSON(http.StatusBadRequest, gin.H{
-        "error": "Сумма дебета должна равняться сумме кредита",
-    })
-    return
-}    
+    if req.DebitAmount != req.CreditAmount {
+        c.JSON(http.StatusBadRequest, gin.H{
+            "error": "Сумма дебета должна равняться сумме кредита",
+        })
+        return
+    }
+    
     operationDate, err := time.Parse("2006-01-02", req.OperationDate)
     if err != nil {
         operationDate = time.Now()
@@ -653,7 +654,6 @@ if req.DebitAmount != req.CreditAmount {
     
     id := uuid.New()
     
-    // ИСПРАВЛЕНО: добавляем поле amount
     _, err = database.Pool.Exec(c.Request.Context(), `
         INSERT INTO journal_entries (
             id, tenant_id, operation_date, document_number, document_type,
@@ -666,7 +666,7 @@ if req.DebitAmount != req.CreditAmount {
         req.DebitAmount, req.CreditAmount,
         req.DebitAccount, req.CreditAccount, 
         req.Description,
-        req.DebitAmount, // ← ВОТ ОН! amount = debit_amount
+        req.DebitAmount,
     )
     
     if err != nil {
@@ -676,6 +676,39 @@ if req.DebitAmount != req.CreditAmount {
             "details": err.Error(),
         })
         return
+    }
+    
+    // ✅ АВТОМАТИЧЕСКАЯ ПРИВЯЗКА ТЕГА
+    if req.TagType != "" && req.TagName != "" {
+        go func() {
+            var tagID string
+            err := database.Pool.QueryRow(context.Background(), `
+                SELECT id FROM fincore_analytics_tags
+                WHERE tenant_id = $1 AND type = $2 AND name = $3 AND is_active = true
+            `, tenantID, req.TagType, req.TagName).Scan(&tagID)
+            
+            if err != nil {
+                err = database.Pool.QueryRow(context.Background(), `
+                    INSERT INTO fincore_analytics_tags (tenant_id, name, type, color, created_at)
+                    VALUES ($1, $2, $3, '#667eea', NOW())
+                    RETURNING id
+                `, tenantID, req.TagName, req.TagType).Scan(&tagID)
+                if err != nil {
+                    return
+                }
+            }
+            
+            if tagID != "" {
+                _, err = database.Pool.Exec(context.Background(), `
+                    INSERT INTO journal_entry_tags (entry_id, tag_id)
+                    VALUES ($1, $2)
+                    ON CONFLICT DO NOTHING
+                `, id, tagID)
+                if err != nil {
+                    log.Printf("⚠️ Ошибка привязки тега: %v", err)
+                }
+            }
+        }()
     }
     
     c.JSON(http.StatusOK, gin.H{
@@ -904,6 +937,8 @@ func UpdateJournalEntrySimple(c *gin.Context) {
         DebitAccount    string  `json:"debit_account"`
         CreditAccount   string  `json:"credit_account"`
         Description     string  `json:"description"`
+        TagType         string  `json:"tag_type"`  
+        TagName         string  `json:"tag_name"`  
     }
 
 
@@ -1220,7 +1255,6 @@ func CreateCashOperation(c *gin.Context) {
 func GetJournalEntriesSimple(c *gin.Context) {
     log.Println("🔍 === START GetJournalEntriesSimple ===")
     
-    // Получаем tenant_id из контекста
     tenantIDValue, exists := c.Get("tenant_id")
     if !exists {
         log.Println("❌ tenant_id not found in context")
@@ -1228,7 +1262,6 @@ func GetJournalEntriesSimple(c *gin.Context) {
         return
     }
     
-    // Преобразуем строку в UUID
     tenantIDStr, ok := tenantIDValue.(string)
     if !ok {
         log.Printf("❌ Invalid tenant_id type: %T", tenantIDValue)
@@ -1245,16 +1278,26 @@ func GetJournalEntriesSimple(c *gin.Context) {
     
     log.Printf("✅ tenant_id = %s", tenantID)
     
-    // Выполняем запрос - все строковые поля используем как sql.NullString
+    // ✅ ИСПРАВЛЕНО: Добавлен подзапрос для загрузки тегов
     rows, err := database.Pool.Query(c.Request.Context(), `
-        SELECT id, operation_date, document_number, document_type,
-               counterparty_name, counterparty_inn, debit_amount, credit_amount, 
-               debit_account, credit_account, description, created_at, 
-               COALESCE(status, 'draft') as status, amount
-        FROM journal_entries
-        WHERE tenant_id = $1
-        ORDER BY operation_date DESC
-        LIMIT 100
+        SELECT 
+            j.id, j.operation_date, j.document_number, j.document_type,
+            j.counterparty_name, j.counterparty_inn, 
+            j.debit_amount, j.credit_amount, 
+            j.debit_account, j.credit_account, 
+            j.description, j.created_at, 
+            COALESCE(j.status, 'draft') as status, j.amount,
+            COALESCE(
+                (SELECT json_agg(json_build_object('id', t.id, 'name', t.name))
+                 FROM journal_entry_tags jet
+                 JOIN fincore_analytics_tags t ON jet.tag_id = t.id
+                 WHERE jet.entry_id = j.id AND t.is_active = true),
+                '[]'::json
+            ) as tags
+        FROM journal_entries j
+        WHERE j.tenant_id = $1
+        ORDER BY j.operation_date DESC
+        LIMIT 200
     `, tenantID)
     
     if err != nil {
@@ -1275,8 +1318,8 @@ func GetJournalEntriesSimple(c *gin.Context) {
         var createdAt time.Time
         var status string
         var amount sql.NullFloat64
+        var tagsJSON []byte
         
-        // ВСЕ строковые поля, которые могут быть NULL - используем sql.NullString
         var documentNumber, documentType, counterpartyName, counterpartyINN, description sql.NullString
         var debitAccount, creditAccount sql.NullString
         
@@ -1288,13 +1331,22 @@ func GetJournalEntriesSimple(c *gin.Context) {
             &debitAccount, &creditAccount,
             &description, &createdAt,
             &status, &amount,
+            &tagsJSON,
         )
         if err != nil {
             log.Printf("❌ Scan error row %d: %v", rowNum, err)
             continue
         }
         
-        // Преобразуем NullString в строки с значением по умолчанию
+        // Парсим теги
+        var tags []gin.H
+        if len(tagsJSON) > 0 {
+            if err := json.Unmarshal(tagsJSON, &tags); err != nil {
+                log.Printf("⚠️ Ошибка парсинга тегов: %v", err)
+                tags = []gin.H{}
+            }
+        }
+        
         docNumberStr := ""
         if documentNumber.Valid {
             docNumberStr = documentNumber.String
@@ -1330,8 +1382,6 @@ func GetJournalEntriesSimple(c *gin.Context) {
             creditAccountStr = creditAccount.String
         }
         
-        log.Printf("✅ Row %d: id=%s, date=%s, debit=%.2f", rowNum, id, opDate.Format("2006-01-02"), debit)
-        
         displayAmount := debit
         if amount.Valid && amount.Float64 > 0 {
             displayAmount = amount.Float64
@@ -1352,6 +1402,7 @@ func GetJournalEntriesSimple(c *gin.Context) {
             "created_at":        createdAt,
             "status":            status,
             "amount":            displayAmount,
+            "tags":              tags, // ✅ ТЕПЕРЬ ЕСТЬ ТЕГИ!
         })
     }
     
@@ -2516,3 +2567,277 @@ func DeleteTemplatePosting(c *gin.Context) {
     c.JSON(http.StatusOK, gin.H{"success": true, "message": "Шаблон удалён"})
 }
 
+// ========== УВЕДОМЛЕНИЯ О ПРЕВЫШЕНИИ БЮДЖЕТА ==========
+func CheckBudgetAlerts(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Unauthorized"})
+        return
+    }
+
+    tagID := c.Query("tag_id")
+    year := c.Query("year")
+
+    if tagID == "" || year == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "tag_id and year required"})
+        return
+    }
+
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT month, planned, actual
+        FROM budgets
+        WHERE tag_id = $1 AND year = $2
+        ORDER BY month
+    `, tagID, year)
+
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    defer rows.Close()
+
+    var alerts []gin.H
+    months := []string{"Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"}
+
+    for rows.Next() {
+        var month int
+        var planned, actual float64
+        rows.Scan(&month, &planned, &actual)
+
+        if planned > 0 && actual > planned*1.1 {
+            alerts = append(alerts, gin.H{
+                "month":     months[month-1],
+                "planned":   planned,
+                "actual":    actual,
+                "overspend": actual - planned,
+                "percent":   (actual - planned) / planned * 100,
+                "message":   fmt.Sprintf("⚠️ Расходы за %s превысили план на %.0f%%", months[month-1], ((actual-planned)/planned*100)),
+            })
+        }
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "alerts":  alerts,
+        "count":   len(alerts),
+    })
+}
+
+// ========== ПРОГНОЗИРОВАНИЕ ==========
+func GetForecast(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Unauthorized"})
+        return
+    }
+
+    months := 6
+    if m := c.Query("months"); m != "" {
+        if val, err := strconv.Atoi(m); err == nil && val > 0 {
+            months = val
+        }
+    }
+
+    // Получаем исторические данные за последние 12 месяцев
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT 
+            DATE_TRUNC('month', operation_date) as month,
+            SUM(debit_amount) as revenue,
+            SUM(debit_amount - credit_amount) as profit
+        FROM journal_entries
+        WHERE tenant_id = $1 
+            AND operation_date >= NOW() - INTERVAL '12 months'
+        GROUP BY DATE_TRUNC('month', operation_date)
+        ORDER BY month DESC
+    `, tenantID)
+
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    defer rows.Close()
+
+    var history []gin.H
+    for rows.Next() {
+        var month time.Time
+        var revenue, profit float64
+        rows.Scan(&month, &revenue, &profit)
+        history = append(history, gin.H{
+            "month":   month.Format("2006-01"),
+            "revenue": revenue,
+            "profit":  profit,
+        })
+    }
+
+    // Простой прогноз: среднее за последние 3 месяца
+    var avgRevenue, avgProfit float64
+    if len(history) >= 3 {
+        for i := 0; i < 3 && i < len(history); i++ {
+            if rev, ok := history[i]["revenue"].(float64); ok {
+                avgRevenue += rev
+            }
+            if prof, ok := history[i]["profit"].(float64); ok {
+                avgProfit += prof
+            }
+        }
+        avgRevenue /= 3
+        avgProfit /= 3
+    }
+
+    var forecast []gin.H
+    now := time.Now()
+    for i := 1; i <= months; i++ {
+        futureMonth := now.AddDate(0, i, 0)
+        forecast = append(forecast, gin.H{
+            "month":   futureMonth.Format("2006-01"),
+            "revenue": avgRevenue * (1 + float64(i)*0.02),
+            "profit":  avgProfit * (1 + float64(i)*0.015),
+        })
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "success":     true,
+        "history":     history,
+        "forecast":    forecast,
+        "avg_revenue": avgRevenue,
+        "avg_profit":  avgProfit,
+    })
+}
+
+// ========== УПРАВЛЕНЧЕСКИЙ ДАШБОРД ==========
+func GetManagementDashboard(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Unauthorized"})
+        return
+    }
+
+    dateFrom := c.Query("start_date")
+    dateTo := c.Query("end_date")
+
+    if dateFrom == "" || dateTo == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "start_date and end_date required"})
+        return
+    }
+
+    // Деньги на счетах
+    var cashBalance float64
+    database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COALESCE(SUM(debit_amount - credit_amount), 0)
+        FROM journal_entries
+        WHERE tenant_id = $1 AND operation_date BETWEEN $2 AND $3
+    `, tenantID, dateFrom, dateTo).Scan(&cashBalance)
+
+    // Дебиторская задолженность
+    var receivables float64
+    database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COALESCE(SUM(debit_amount), 0)
+        FROM journal_entries
+        WHERE tenant_id = $1 AND operation_date BETWEEN $2 AND $3
+            AND debit_account LIKE '62%'
+    `, tenantID, dateFrom, dateTo).Scan(&receivables)
+
+    // Кредиторская задолженность
+    var payables float64
+    database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COALESCE(SUM(credit_amount), 0)
+        FROM journal_entries
+        WHERE tenant_id = $1 AND operation_date BETWEEN $2 AND $3
+            AND credit_account LIKE '60%'
+    `, tenantID, dateFrom, dateTo).Scan(&payables)
+
+    // Чистая прибыль
+    var profit float64
+    database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COALESCE(SUM(debit_amount - credit_amount), 0)
+        FROM journal_entries
+        WHERE tenant_id = $1 AND operation_date BETWEEN $2 AND $3
+    `, tenantID, dateFrom, dateTo).Scan(&profit)
+
+    c.JSON(http.StatusOK, gin.H{
+        "success":      true,
+        "cash_balance": cashBalance,
+        "receivables":  receivables,
+        "payables":     payables,
+        "profit":       profit,
+    })
+}
+
+// ========== ОТЧЁТ ПО ТЕГАМ (ДЛЯ ABC-АНАЛИЗА) ==========
+func GetFincoreReportByTag(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = c.GetString("tenant_id_string")
+    }
+    if tenantID == "" {
+        c.JSON(http.StatusOK, gin.H{"data": []interface{}{}})
+        return
+    }
+
+    startDate := c.Query("start_date")
+    endDate := c.Query("end_date")
+
+    // Строим фильтр по датам
+    dateFilter := ""
+    args := []interface{}{tenantID}
+    argIndex := 2
+
+    if startDate != "" && endDate != "" {
+        dateFilter = fmt.Sprintf(" AND j.operation_date BETWEEN $%d AND $%d", argIndex, argIndex+1)
+        args = append(args, startDate, endDate)
+        argIndex += 2
+    }
+
+    query := fmt.Sprintf(`
+        SELECT 
+            t.id,
+            t.name,
+            t.type,
+            t.color,
+            COALESCE(SUM(j.debit_amount), 0) as total_debit,
+            COALESCE(SUM(j.credit_amount), 0) as total_credit,
+            COALESCE(SUM(j.debit_amount - j.credit_amount), 0) as balance
+        FROM fincore_analytics_tags t
+        LEFT JOIN journal_entry_tags jet ON jet.tag_id = t.id
+        LEFT JOIN journal_entries j ON jet.entry_id = j.id
+        WHERE t.tenant_id = $1 AND t.is_active = true
+        %s
+        GROUP BY t.id, t.name, t.type, t.color
+        ORDER BY balance DESC
+    `, dateFilter)
+
+    rows, err := database.Pool.Query(c.Request.Context(), query, args...)
+    if err != nil {
+        c.JSON(http.StatusOK, gin.H{"data": []interface{}{}})
+        return
+    }
+    defer rows.Close()
+
+    var result []gin.H
+    for rows.Next() {
+        var id uuid.UUID
+        var name, tagType, color string
+        var totalDebit, totalCredit, balance float64
+
+        err := rows.Scan(&id, &name, &tagType, &color, &totalDebit, &totalCredit, &balance)
+        if err != nil {
+            continue
+        }
+
+        result = append(result, gin.H{
+            "tag_id":       id,
+            "tag_name":     name,
+            "tag_type":     tagType,
+            "tag_color":    color,
+            "total_debit":  totalDebit,
+            "total_credit": totalCredit,
+            "balance":      balance,
+        })
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "data":    result,
+        "total":   len(result),
+    })
+}

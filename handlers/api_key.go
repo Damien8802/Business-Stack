@@ -236,7 +236,11 @@ func EnsureAPIKeyForTelegram(c *gin.Context) {
 
         randomPass := uuid.New().String()[:12]
 
-        newUser, err := models.CreateUser(email, randomPass, name)
+        tenantID := c.GetString("tenant_id")
+if tenantID == "" {
+    tenantID = uuid.New().String()
+}
+newUser, err := models.CreateUser(email, randomPass, name, tenantID)
         if err != nil {
             log.Printf("Failed to create user: %v", err)
             c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})

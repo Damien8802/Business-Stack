@@ -16,6 +16,9 @@ type User struct {
     Login            string    `json:"login"`
     Name             string    `json:"name"`
     Role             string    `json:"role"`
+    Phone            string    `json:"phone"`
+    OrganizationName string    `json:"organization_name"`
+    OrganizationInn  string    `json:"organization_inn"`
     EmailVerified    bool      `json:"email_verified"`
     TelegramID       *int64    `json:"telegram_id,omitempty"`
     PasswordChangedAt time.Time `json:"password_changed_at"`
@@ -27,10 +30,15 @@ type User struct {
 func GetUserByEmail(email string) (*User, error) {
     var user User
     err := database.Pool.QueryRow(context.Background(), `
-        SELECT id, email, password_hash, name, role, email_verified, telegram_id, password_changed_at, created_at, updated_at
+        SELECT id, email, password_hash, name, role, 
+               COALESCE(phone, '') as phone,
+               COALESCE(organization_name, '') as organization_name,
+               COALESCE(organization_inn, '') as organization_inn,
+               email_verified, telegram_id, password_changed_at, created_at, updated_at
         FROM users WHERE email = $1
     `, email).Scan(
         &user.ID, &user.Email, &user.PasswordHash, &user.Name, &user.Role,
+        &user.Phone, &user.OrganizationName, &user.OrganizationInn,
         &user.EmailVerified, &user.TelegramID, &user.PasswordChangedAt,
         &user.CreatedAt, &user.UpdatedAt,
     )
@@ -43,10 +51,15 @@ func GetUserByEmail(email string) (*User, error) {
 func GetUserByID(id string) (*User, error) {
     var user User
     err := database.Pool.QueryRow(context.Background(), `
-        SELECT id, email, password_hash, name, role, email_verified, telegram_id, password_changed_at, created_at, updated_at
+        SELECT id, email, password_hash, name, role, 
+               COALESCE(phone, '') as phone,
+               COALESCE(organization_name, '') as organization_name,
+               COALESCE(organization_inn, '') as organization_inn,
+               email_verified, telegram_id, password_changed_at, created_at, updated_at
         FROM users WHERE id = $1
     `, id).Scan(
         &user.ID, &user.Email, &user.PasswordHash, &user.Name, &user.Role,
+        &user.Phone, &user.OrganizationName, &user.OrganizationInn,
         &user.EmailVerified, &user.TelegramID, &user.PasswordChangedAt,
         &user.CreatedAt, &user.UpdatedAt,
     )
@@ -56,16 +69,21 @@ func GetUserByID(id string) (*User, error) {
     return &user, nil
 }
 
-func CreateUser(email, passwordHash, name string) (*User, error) {
+func CreateUser(email, passwordHash, name, tenantID string) (*User, error) {
     var user User
-    defaultTenantID := "11111111-1111-1111-1111-111111111111"
-    
+    defaultRole := "client"
+
     err := database.Pool.QueryRow(context.Background(), `
-        INSERT INTO users (email, password_hash, name, tenant_id, password_changed_at)
-        VALUES ($1, $2, $3, $4, NOW())
-        RETURNING id, email, password_hash, name, role, email_verified, telegram_id, password_changed_at, created_at, updated_at
-    `, email, passwordHash, name, defaultTenantID).Scan(
+        INSERT INTO users (email, password_hash, name, role, tenant_id, password_changed_at)
+        VALUES ($1, $2, $3, $4, $5, NOW())
+        RETURNING id, email, password_hash, name, role, 
+                  COALESCE(phone, '') as phone,
+                  COALESCE(organization_name, '') as organization_name,
+                  COALESCE(organization_inn, '') as organization_inn,
+                  email_verified, telegram_id, password_changed_at, created_at, updated_at
+    `, email, passwordHash, name, defaultRole, tenantID).Scan(
         &user.ID, &user.Email, &user.PasswordHash, &user.Name, &user.Role,
+        &user.Phone, &user.OrganizationName, &user.OrganizationInn,
         &user.EmailVerified, &user.TelegramID, &user.PasswordChangedAt,
         &user.CreatedAt, &user.UpdatedAt,
     )
@@ -74,6 +92,7 @@ func CreateUser(email, passwordHash, name string) (*User, error) {
     }
     return &user, nil
 }
+
 func UpdateUserPassword(userID string, newPasswordHash string) error {
     _, err := database.Pool.Exec(context.Background(), `
         UPDATE users SET password_hash = $1, password_changed_at = NOW(), updated_at = NOW()
@@ -128,5 +147,3 @@ func UpdatePassword(userID string, newPasswordHash string) error {
     `, newPasswordHash, userID)
     return err
 }
-
-

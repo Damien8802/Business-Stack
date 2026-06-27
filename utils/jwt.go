@@ -2,6 +2,8 @@ package utils
 
 import (
     "errors"
+     "fmt"           
+    "net/url"   
     "time"
 
     "github.com/golang-jwt/jwt/v5"
@@ -151,4 +153,17 @@ func RefreshToken(refreshToken string, tenantID string) (string, error) {
     }
     newToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
     return newToken.SignedString([]byte(cfg.JWTSecret))
+}
+// GenerateQRCode - генерирует QR-код для TOTP
+func GenerateQRCode(secret, email, issuer string) string {
+    otpauthURL := fmt.Sprintf(
+        "otpauth://totp/%s:%s?secret=%s&issuer=%s",
+        url.QueryEscape(issuer),
+        url.QueryEscape(email),
+        secret,
+        url.QueryEscape(issuer),
+    )
+    
+    return fmt.Sprintf("https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=%s", 
+        url.QueryEscape(otpauthURL))
 }

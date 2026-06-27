@@ -301,6 +301,205 @@
         @media (max-width: 480px) {
             .stats-row, .metrics-row { grid-template-columns: 1fr; }
         }
+
+/* ========== ИСПРАВЛЕНИЕ ЦВЕТОВ ========== */
+
+/* 1. Исправляем select (выпадающие списки) - фон и текст */
+.form-select,
+select,
+#tagType,
+#abcPeriodSelect,
+#budgetTagSelect,
+#budgetYearSelect,
+#reportDateFrom,
+#reportDateTo,
+#compareFrom1,
+#compareTo1,
+#compareFrom2,
+#compareTo2 {
+    background-color: rgba(30, 30, 60, 0.9) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(102, 126, 234, 0.4) !important;
+}
+
+/* 2. Исправляем option внутри select */
+.form-select option,
+select option,
+#tagType option,
+#abcPeriodSelect option,
+#budgetTagSelect option,
+#budgetYearSelect option {
+    background-color: #1a1a2e !important;
+    color: #ffffff !important;
+}
+
+/* 3. Исправляем input поля */
+.form-control,
+input[type="text"],
+input[type="date"],
+input[type="number"],
+input[type="color"],
+#tagName,
+#reportDateFrom,
+#reportDateTo,
+#compareFrom1,
+#compareTo1,
+#compareFrom2,
+#compareTo2 {
+    background-color: rgba(30, 30, 60, 0.9) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(102, 126, 234, 0.4) !important;
+}
+
+/* 4. Плейсхолдеры */
+.form-control::placeholder,
+input::placeholder {
+    color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* 5. Исправляем label (подписи) */
+.form-label,
+label {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* 6. Исправляем теги (tag-item) - название на белом */
+.tag-item {
+    color: #ffffff !important;
+}
+.tag-item span {
+    color: #ffffff !important;
+}
+.tag-item strong {
+    color: #ffffff !important;
+}
+
+/* 7. Исправляем отображение тегов в списке */
+#tagsContainer .tag-item {
+    color: #ffffff !important;
+}
+#tagsContainer .tag-item .tag-name {
+    color: #ffffff !important;
+}
+
+/* 8. Исправляем ABC-анализ - select и option */
+#abcPeriodSelect {
+    background-color: rgba(30, 30, 60, 0.9) !important;
+    color: #ffffff !important;
+}
+#abcPeriodSelect option {
+    background-color: #1a1a2e !important;
+    color: #ffffff !important;
+}
+
+/* 9. Исправляем KPI карточки */
+.kpi-card {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(102, 126, 234, 0.2) !important;
+    border-radius: 16px !important;
+    padding: 20px !important;
+    text-align: center !important;
+}
+.kpi-value {
+    font-size: 28px !important;
+    font-weight: 700 !important;
+    color: #ffffff !important;
+}
+.kpi-label {
+    font-size: 13px !important;
+    color: rgba(255, 255, 255, 0.6) !important;
+}
+.kpi-trend {
+    font-size: 12px !important;
+    margin-top: 5px !important;
+}
+
+/* 10. Исправляем топ тегов */
+.top-tag-item {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 10px 15px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+.top-tag-name {
+    color: #ffffff !important;
+}
+.top-tag-value {
+    color: #a5b4fc !important;
+    font-weight: 600 !important;
+}
+
+/* 11. Исправляем таблицу отчёта */
+#reportTable td {
+    color: #e2e8f0 !important;
+}
+#reportTable .amount {
+    color: #a5b4fc !important;
+}
+.badge-project {
+    padding: 4px 12px !important;
+    border-radius: 20px !important;
+    font-weight: 600 !important;
+    font-size: 0.8rem !important;
+}
+
+/* 12. Исправляем ABC-анализ таблицу */
+#abcContainer .table td,
+#abcContainer .table th {
+    color: #e2e8f0 !important;
+}
+#abcContainer .table .amount {
+    color: #a5b4fc !important;
+}
+.abc-category-a {
+    background: rgba(16, 185, 129, 0.15) !important;
+}
+.abc-category-b {
+    background: rgba(245, 158, 11, 0.15) !important;
+}
+.abc-category-c {
+    background: rgba(239, 68, 68, 0.15) !important;
+}
+
+/* 13. Исправляем план-факт таблицу */
+#budgetContainer .table td,
+#budgetContainer .table th {
+    color: #e2e8f0 !important;
+}
+.budget-positive {
+    color: #10b981 !important;
+}
+.budget-negative {
+    color: #ef4444 !important;
+}
+#budgetContainer .total {
+    background: rgba(102, 126, 234, 0.2) !important;
+    font-weight: bold !important;
+}
+#budgetContainer .total td {
+    color: #ffffff !important;
+}
+
+/* 14. Исправляем сравнение периодов */
+#compareContainer .metric-card {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(102, 126, 234, 0.2) !important;
+    border-radius: 16px !important;
+    padding: 20px !important;
+    text-align: center !important;
+}
+
+/* 15. Исправляем уведомления о бюджете */
+#alertsContainer .alert {
+    color: #ffffff !important;
+}
+#alertsContainer .alert strong {
+    color: #ffffff !important;
+}
+#alertsContainer .alert span {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
     </style>
 </head>
 <body>
@@ -515,6 +714,30 @@
         </div>
         <div id="budgetContainer"><div class="text-center py-4">Выберите тег и год для анализа</div></div>
     </div>
+
+<!-- ========== СРАВНЕНИЕ ПЕРИОДОВ ========== -->
+<div class="card animate">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h4><i class="fas fa-chart-bar"></i> 📊 Сравнение периодов</h4>
+        <div>
+            <input type="date" class="form-control" id="compareFrom1" style="width: 150px; display: inline-block;">
+            <input type="date" class="form-control" id="compareTo1" style="width: 150px; display: inline-block;">
+            <span style="color: rgba(255,255,255,0.5); margin: 0 10px;">vs</span>
+            <input type="date" class="form-control" id="compareFrom2" style="width: 150px; display: inline-block;">
+            <input type="date" class="form-control" id="compareTo2" style="width: 150px; display: inline-block;">
+            <button class="btn-primary" onclick="loadCompare()"><i class="fas fa-chart-line"></i> Сравнить</button>
+        </div>
+    </div>
+    <div id="compareContainer">
+        <div class="text-center py-4">Выберите два периода для сравнения</div>
+    </div>
+</div>
+
+<!-- ========== УВЕДОМЛЕНИЯ О БЮДЖЕТЕ ========== -->
+<div class="card animate">
+    <div class="card-header"><h4><i class="fas fa-bell"></i> 🔔 Уведомления о превышении бюджета</h4></div>
+    <div id="alertsContainer"><div class="text-center py-4">Нет превышений</div></div>
+</div>
 
     <!-- ========== ДЕТАЛЬНЫЙ ОТЧЁТ ПО ТЕГАМ ========== -->
     <div class="card animate">
@@ -731,33 +954,114 @@
         } catch(e) { console.error(e); }
     }
 
-    async function loadBudgetData() {
-        const tagId = document.getElementById('budgetTagSelect').value, year = document.getElementById('budgetYearSelect').value;
-        if (!tagId) { showToast('Выберите тег для анализа', true); return; }
-        const container = document.getElementById('budgetContainer');
-        container.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Загрузка...</div>';
-        try {
-            const res = await fetch(`/api/fincore/budgets?tag_id=${tagId}&year=${year}`, { headers: { 'Authorization': 'Bearer ' + token } });
-            const data = await res.json();
-            const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
-            let html = '<div class="table-responsive"><table class="table"><thead><tr><th>Месяц</th><th>План, ₽</th><th>Факт, ₽</th><th>Отклонение</th><th>Выполнение</th><th></th></tr></thead><tbody>';
-            let totalPlanned = 0, totalActual = 0;
-            for (let i = 1; i <= 12; i++) {
-                const budget = data.data?.find(b => parseInt(b.month) === i) || { planned: 0, actual: 0 };
-                totalPlanned += budget.planned; totalActual += budget.actual;
-                const variance = budget.actual - budget.planned;
-                const percent = budget.planned === 0 ? (budget.actual === 0 ? 0 : 100) : (budget.actual / budget.planned * 100).toFixed(1);
-                const varianceClass = variance >= 0 ? 'budget-positive' : 'budget-negative';
-                html += `<tr><td><strong>${months[i-1]}</strong></td><td>${budget.planned.toLocaleString()} ₽</td><td>${budget.actual.toLocaleString()} ₽</td><td class="${varianceClass}">${variance >= 0 ? '+' : ''}${variance.toLocaleString()} ₽</td><td><div class="progress" style="height: 6px; width: 100px;"><div class="progress-bar ${percent >= 100 ? 'bg-success' : percent >= 80 ? 'bg-warning' : 'bg-danger'}" style="width: ${Math.min(percent, 100)}%"></div></div> ${percent}%</td><td><button class="btn-outline" style="padding: 5px 12px;" onclick="editBudget('${tagId}', '${year}', ${i}, ${budget.planned})"><i class="fas fa-edit"></i></button></td></tr>`;
-            }
-            const totalVariance = totalActual - totalPlanned;
-            const totalPercent = totalPlanned === 0 ? (totalActual === 0 ? 0 : 100) : (totalActual / totalPlanned * 100).toFixed(1);
-            html += `<tr class="total"><td><strong>ИТОГО</strong></td><td><strong>${totalPlanned.toLocaleString()} ₽</strong></td><td><strong>${totalActual.toLocaleString()} ₽</strong></td><td class="${totalVariance >= 0 ? 'budget-positive' : 'budget-negative'}"><strong>${totalVariance >= 0 ? '+' : ''}${totalVariance.toLocaleString()} ₽</strong></td><td><strong>${totalPercent}%</strong></td><td></td></tr>`;
-            html += '</tbody></table></div>';
-            container.innerHTML = html;
-        } catch(e) { container.innerHTML = '<div class="text-center py-4 text-danger">Ошибка загрузки данных</div>'; }
+  async function loadBudgetData() {
+    const tagId = document.getElementById('budgetTagSelect').value;
+    const year = document.getElementById('budgetYearSelect').value;
+    
+    if (!tagId) {
+        showToast('Выберите тег для анализа', true);
+        return;
     }
-
+    
+    const container = document.getElementById('budgetContainer');
+    container.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Загрузка...</div>';
+    
+    try {
+        const res = await fetch(`/api/fincore/budgets?tag_id=${tagId}&year=${year}`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        
+        const data = await res.json();
+        const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+        
+        let html = `
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Месяц</th>
+                            <th>План, ₽</th>
+                            <th>Факт, ₽</th>
+                            <th>Отклонение</th>
+                            <th>Выполнение</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        let totalPlanned = 0;
+        let totalActual = 0;
+        
+        for (let i = 1; i <= 12; i++) {
+            const budget = data.data?.find(b => parseInt(b.month) === i) || { planned: 0, actual: 0 };
+            
+            totalPlanned += budget.planned;
+            totalActual += budget.actual;
+            
+            const variance = budget.actual - budget.planned;
+            const percent = budget.planned === 0 
+                ? (budget.actual === 0 ? 0 : 100) 
+                : (budget.actual / budget.planned * 100).toFixed(1);
+            
+            const varianceClass = variance >= 0 ? 'budget-positive' : 'budget-negative';
+            
+            html += `
+                <tr>
+                    <td><strong>${months[i-1]}</strong></td>
+                    <td>${budget.planned.toLocaleString()} ₽</td>
+                    <td>${budget.actual.toLocaleString()} ₽</td>
+                    <td class="${varianceClass}">${variance >= 0 ? '+' : ''}${variance.toLocaleString()} ₽</td>
+                    <td>
+                        <div class="progress" style="height: 6px; width: 100px;">
+                            <div class="progress-bar ${percent >= 100 ? 'bg-success' : percent >= 80 ? 'bg-warning' : 'bg-danger'}" 
+                                 style="width: ${Math.min(percent, 100)}%">
+                            </div>
+                        </div>
+                        ${percent}%
+                    </td>
+                    <td>
+                        <button class="btn-outline" style="padding: 5px 12px;" 
+                                onclick="editBudget('${tagId}', '${year}', ${i}, ${budget.planned})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+        
+        const totalVariance = totalActual - totalPlanned;
+        const totalPercent = totalPlanned === 0 
+            ? (totalActual === 0 ? 0 : 100) 
+            : (totalActual / totalPlanned * 100).toFixed(1);
+        
+        html += `
+                    <tr class="total">
+                        <td><strong>ИТОГО</strong></td>
+                        <td><strong>${totalPlanned.toLocaleString()} ₽</strong></td>
+                        <td><strong>${totalActual.toLocaleString()} ₽</strong></td>
+                        <td class="${totalVariance >= 0 ? 'budget-positive' : 'budget-negative'}">
+                            <strong>${totalVariance >= 0 ? '+' : ''}${totalVariance.toLocaleString()} ₽</strong>
+                        </td>
+                        <td><strong>${totalPercent}%</strong></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        `;
+        
+        container.innerHTML = html;
+        
+        // ✅ ВЫЗЫВАЕМ УВЕДОМЛЕНИЯ ПОСЛЕ ЗАГРУЗКИ
+        loadBudgetAlerts();
+        
+    } catch(e) {
+        container.innerHTML = '<div class="text-center py-4 text-danger">Ошибка загрузки данных</div>';
+        showToast('❌ Ошибка загрузки бюджета', true);
+        console.error('loadBudgetData error:', e);
+    }
+}
     function editBudget(tagId, year, month, currentPlanned) {
         const newPlanned = prompt(`Введите плановую сумму на ${month}-${year}:`, currentPlanned || 0);
         if (newPlanned === null) return;
@@ -776,6 +1080,7 @@
             updateStats();
             loadTopTags();
             loadBudgetSelect();
+            loadBudgetAlerts(); 
             loadReport();
             loadKPIDashboard();
             loadABCAnalysis();
@@ -951,6 +1256,114 @@
             if (data.success) { showToast('Печать загружена'); document.getElementById('stampPreview').innerHTML = `<img src="${data.stamp_url}?t=${Date.now()}" style="max-height: 80px;">`; loadCompanySettings(); }
             else { showToast('Ошибка: ' + (data.error || 'Неизвестная ошибка'), true); }
         } catch(e) { showToast('Ошибка загрузки', true); }
+    }
+
+    // ========== СРАВНЕНИЕ ПЕРИОДОВ ==========
+    async function loadCompare() {
+        const from1 = document.getElementById('compareFrom1').value;
+        const to1 = document.getElementById('compareTo1').value;
+        const from2 = document.getElementById('compareFrom2').value;
+        const to2 = document.getElementById('compareTo2').value;
+
+        if (!from1 || !to1 || !from2 || !to2) {
+            showToast('Выберите оба периода', true);
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/fincore/extra/compare?current_from=${from1}&current_to=${to1}&prev_from=${from2}&prev_to=${to2}`, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const data = await res.json();
+            const container = document.getElementById('compareContainer');
+
+            if (data.success) {
+                const c = data.current;
+                const p = data.previous;
+                const ch = data.changes;
+                container.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 style="color: #fff;">📅 Текущий период</h5>
+                            <p style="color: rgba(255,255,255,0.8);">Выручка: <strong style="color: #10b981;">${(c.revenue || 0).toLocaleString()} ₽</strong></p>
+                            <p style="color: rgba(255,255,255,0.8);">Прибыль: <strong style="color: #667eea;">${(c.profit || 0).toLocaleString()} ₽</strong></p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 style="color: #fff;">📅 Предыдущий период</h5>
+                            <p style="color: rgba(255,255,255,0.8);">Выручка: <strong style="color: #10b981;">${(p.revenue || 0).toLocaleString()} ₽</strong></p>
+                            <p style="color: rgba(255,255,255,0.8);">Прибыль: <strong style="color: #667eea;">${(p.profit || 0).toLocaleString()} ₽</strong></p>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="metric-card" style="background: ${(ch.revenue || 0) >= 0 ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'};">
+                                <div class="metric-value" style="color: ${(ch.revenue || 0) >= 0 ? '#10b981' : '#ef4444'};">
+                                    ${(ch.revenue || 0) >= 0 ? '+' : ''}${(ch.revenue || 0).toLocaleString()} ₽
+                                </div>
+                                <div class="metric-label">Изменение выручки (${((ch.revenue_percent || 0)).toFixed(1)}%)</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="metric-card" style="background: ${(ch.profit || 0) >= 0 ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'};">
+                                <div class="metric-value" style="color: ${(ch.profit || 0) >= 0 ? '#10b981' : '#ef4444'};">
+                                    ${(ch.profit || 0) >= 0 ? '+' : ''}${(ch.profit || 0).toLocaleString()} ₽
+                                </div>
+                                <div class="metric-label">Изменение прибыли (${((ch.profit_percent || 0)).toFixed(1)}%)</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                showToast('✅ Сравнение периодов загружено');
+            } else {
+                container.innerHTML = '<div class="text-center py-4 text-danger">❌ Ошибка загрузки данных</div>';
+            }
+        } catch(e) {
+            console.error(e);
+            showToast('❌ Ошибка загрузки сравнения', true);
+        }
+    }
+
+    // ========== УВЕДОМЛЕНИЯ О БЮДЖЕТЕ ==========
+    async function loadBudgetAlerts() {
+        const tagId = document.getElementById('budgetTagSelect').value;
+        const year = document.getElementById('budgetYearSelect').value;
+        const container = document.getElementById('alertsContainer');
+        
+        if (!tagId) {
+            container.innerHTML = '<div class="text-center py-4">Выберите тег для проверки</div>';
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/fincore/extra/budget-alerts?tag_id=${tagId}&year=${year}`, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const data = await res.json();
+
+            if (data.success && data.alerts && data.alerts.length > 0) {
+                let html = '';
+                data.alerts.forEach(alert => {
+                    html += `
+                        <div class="alert" style="background: rgba(239,68,68,0.15); border: 1px solid #ef4444; border-radius: 12px; padding: 15px; margin-bottom: 10px;">
+                            <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
+                            <strong style="color: #fff;">${alert.message}</strong>
+                            <br>
+                            <span style="font-size: 13px; color: rgba(255,255,255,0.7);">
+                                📊 План: ${(alert.planned || 0).toLocaleString()} ₽ | 
+                                📈 Факт: ${(alert.actual || 0).toLocaleString()} ₽ | 
+                                ⚠️ Превышение: ${(alert.overspend || 0).toLocaleString()} ₽ (${(alert.percent || 0).toFixed(1)}%)
+                            </span>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<div class="text-center py-4 text-success">✅ Все бюджеты в норме! 👍</div>';
+            }
+        } catch(e) {
+            console.error(e);
+            container.innerHTML = '<div class="text-center py-4 text-danger">❌ Ошибка загрузки уведомлений</div>';
+        }
     }
 
     // ---------- DOM CONTENT LOADED ----------

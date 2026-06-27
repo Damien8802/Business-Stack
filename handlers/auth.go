@@ -88,40 +88,86 @@ func VerifyPhoneCode(c *gin.Context) {
         return
     }
 
-    var userID uuid.UUID
+    // ===== ПРОВЕРКА: существует ли пользователь =====
+    var existingUserID uuid.UUID
+    var existingName string
     err = database.Pool.QueryRow(c.Request.Context(), `
-        SELECT id FROM users WHERE phone = $1
-    `, req.Phone).Scan(&userID)
+        SELECT id, name FROM users WHERE phone = $1
+    `, req.Phone).Scan(&existingUserID, &existingName)
 
-    userName := req.Name
-    if userName == "" {
-        userName = "User_" + req.Phone[len(req.Phone)-4:]
-    }
+    if err == nil {
+        // Пользователь уже существует
+        var tenantID string
+        database.Pool.QueryRow(c.Request.Context(), `
+            SELECT tenant_id FROM users WHERE id = $1
+        `, existingUserID).Scan(&tenantID)
 
-    if err != nil {
-        email := fmt.Sprintf("%s@phone.Business Stack.ru", generateRandomStringAuth(8))
-       tenantID := uuid.New().String()
-err = database.Pool.QueryRow(c.Request.Context(), `
-    INSERT INTO users (phone, name, email, role, tenant_id, password_changed_at, email_verified) 
-    VALUES ($1, $2, $3, 'user', $4, NOW(), true) 
-    RETURNING id
-`, req.Phone, userName, email, tenantID).Scan(&userID)
+        accessToken, refreshToken, err := utils.GenerateTokens(
+            existingUserID.String(), existingName, "", "client", tenantID)
         if err != nil {
-            c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
             return
         }
+
+        database.Pool.Exec(c.Request.Context(), "DELETE FROM phone_auth_codes WHERE phone = $1", req.Phone)
+
+        c.JSON(http.StatusOK, gin.H{
+            "access_token":  accessToken,
+            "refresh_token": refreshToken,
+            "user": gin.H{
+                "id":   existingUserID,
+                "name": existingName,
+            },
+        })
+        return
     }
 
-    token, err := GenerateJWTForUser(userID)
+    // ===== СОЗДАЕМ НОВОГО ПОЛЬЗОВАТЕЛЯ =====
+    userName := req.Name
+    if userName == "" {
+        userName = "Пользователь_" + req.Phone
+    }
+
+    email := fmt.Sprintf("%s@phone.businessstack.ru", generateRandomStringAuth(8))
+
+    tenantID := uuid.New().String()
+    tenantName := userName + "'s Company"
+    subdomain := "user_" + req.Phone
+
+    _, err = database.Pool.Exec(c.Request.Context(), `
+        INSERT INTO tenants (id, name, subdomain, status, settings, created_at, updated_at)
+        VALUES ($1, $2, $3, 'active', '{}', NOW(), NOW())
+    `, tenantID, tenantName, subdomain)
+
     if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create tenant"})
+        return
+    }
+
+    var userID uuid.UUID
+    err = database.Pool.QueryRow(c.Request.Context(), `
+        INSERT INTO users (phone, name, email, role, tenant_id, password_changed_at, email_verified) 
+        VALUES ($1, $2, $3, 'client', $4, NOW(), true) 
+        RETURNING id
+    `, req.Phone, userName, email, tenantID).Scan(&userID)
+
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+        return
+    }
+
+    accessToken, refreshToken, err := utils.GenerateTokens(
+        userID.String(), userName, email, "client", tenantID)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
         return
     }
 
     database.Pool.Exec(c.Request.Context(), "DELETE FROM phone_auth_codes WHERE phone = $1", req.Phone)
 
     c.JSON(http.StatusOK, gin.H{
-        "token": token,
+        "access_token":  accessToken,
+        "refresh_token": refreshToken,
         "user": gin.H{
             "id":   userID,
             "name": userName,
@@ -129,6 +175,7 @@ err = database.Pool.QueryRow(c.Request.Context(), `
     })
 }
 
+// LoginHandler обрабатывает вход пользователя
 // LoginHandler обрабатывает вход пользователя
 func LoginHandler(c *gin.Context) {
     var req struct {
@@ -147,15 +194,15 @@ func LoginHandler(c *gin.Context) {
     var isDeveloper bool
     var developerLevel int
 
-   err := database.Pool.QueryRow(c.Request.Context(),
-    `SELECT id, email, password_hash, name, role, 
+    err := database.Pool.QueryRow(c.Request.Context(),
+        `SELECT id, email, password_hash, name, role, 
             tenant_id,
             COALESCE(is_developer, false) as is_developer,
             COALESCE(developer_level, 0) as developer_level
      FROM users WHERE email = $1`,
-    req.Email).Scan(
-    &user.ID, &user.Email, &user.PasswordHash, &user.Name, &user.Role,
-    &tenantID, &isDeveloper, &developerLevel)
+        req.Email).Scan(
+        &user.ID, &user.Email, &user.PasswordHash, &user.Name, &user.Role,
+        &tenantID, &isDeveloper, &developerLevel)
     if err != nil {
         c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
         return
@@ -180,7 +227,7 @@ func LoginHandler(c *gin.Context) {
         log.Printf("[LOGIN] 🔧 Разработчик %s получил роль admin", req.Email)
     }
 
-    if req.Email == "dev@businesstack.ru" {
+    if req.Email == "dev@businessstack.ru" {
         user.Role = "owner"
         log.Printf("[LOGIN] 👑 ВЛАДЕЛЕЦ %s авторизован", req.Email)
     }
@@ -190,12 +237,12 @@ func LoginHandler(c *gin.Context) {
         accessExpiry = 30 * 24 * time.Hour
         refreshExpiry = 90 * 24 * time.Hour
     } else {
-        accessExpiry = 15 * time.Minute
-        refreshExpiry = 24 * time.Hour
+        accessExpiry = 24 * time.Hour
+        refreshExpiry = 30 * 24 * time.Hour
     }
 
     accessToken, refreshToken, err := utils.GenerateTokensWithExpiry(
-    user.ID.String(), user.Name, user.Email, user.Role, user.TenantID, accessExpiry, refreshExpiry)
+        user.ID.String(), user.Name, user.Email, user.Role, tenantID, accessExpiry, refreshExpiry)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
         return
@@ -211,10 +258,55 @@ func LoginHandler(c *gin.Context) {
         log.Printf("⚠️ Failed to save refresh token: %v", err)
     }
 
-    database.Pool.Exec(context.Background(),
-        `INSERT INTO login_history (user_id, ip_address, user_agent, login_time, tenant_id) 
-         VALUES ($1, $2, $3, NOW(), $4)`,
-        user.ID.String(), c.ClientIP(), c.GetHeader("User-Agent"), user.TenantID)
+    // ✅ ЗАПИСЬ В ИСТОРИЮ ВХОДОВ - ИСПРАВЛЕНО (login_time вместо created_at)
+_, err = database.Pool.Exec(c.Request.Context(),
+    `INSERT INTO login_history (user_id, ip_address, user_agent, login_time, tenant_id) 
+     VALUES ($1, $2, $3, NOW(), $4)`,
+    user.ID.String(), c.ClientIP(), c.GetHeader("User-Agent"), user.TenantID)
+if err != nil {
+    log.Printf("⚠️ Ошибка записи в login_history: %v", err)
+}
+    if err != nil {
+        log.Printf("⚠️ Ошибка записи в login_history: %v", err)
+    }
+
+    // ✅ СОЗДАЕМ СЕССИЮ
+    deviceName := c.GetHeader("X-Device-Name")
+    if deviceName == "" {
+        deviceName = c.GetHeader("User-Agent")
+        if len(deviceName) > 50 {
+            deviceName = deviceName[:50] + "..."
+        }
+    }
+    
+    if err := CreateUserSession(
+        c.Request.Context(),
+        user.ID.String(),
+        user.TenantID,
+        c.ClientIP(),
+        c.GetHeader("User-Agent"),
+        deviceName,
+    ); err != nil {
+        log.Printf("⚠️ Ошибка создания сессии: %v", err)
+    }
+
+ // ✅ СОЗДАЕМ ДОВЕРЕННОЕ УСТРОЙСТВО (ВСЕГДА)
+deviceName = c.GetHeader("X-Device-Name")
+if deviceName == "" {
+    deviceName = parseBrowser(c.GetHeader("User-Agent"))
+}
+
+err = CreateTrustedDevice(
+    c.Request.Context(),
+    user.ID.String(),
+    user.TenantID,
+    c.ClientIP(),
+    c.GetHeader("User-Agent"),
+    deviceName,
+)
+if err != nil {
+    log.Printf("⚠️ Ошибка создания доверенного устройства: %v", err)
+}
 
     log.Printf("[LOGIN] ✅ Успешный вход: %s (%s), роль=%s", user.Name, user.Email, user.Role)
 
@@ -232,7 +324,6 @@ func LoginHandler(c *gin.Context) {
         },
     })
 }
-
 // LogoutHandler обрабатывает выход пользователя
 func LogoutHandler(c *gin.Context) {
     var req struct {
@@ -259,8 +350,6 @@ func LogoutHandler(c *gin.Context) {
     })
 }
 
-// RefreshHandler обновляет access token
-// RefreshHandler обновляет access token
 // RefreshHandler обновляет access token
 func RefreshHandler(c *gin.Context) {
     var req struct {
@@ -305,6 +394,7 @@ func RefreshHandler(c *gin.Context) {
         "access_token": newAccessToken,
     })
 }
+
 // ResendVerificationHandler отправляет код подтверждения повторно
 func ResendVerificationHandler(c *gin.Context) {
     var req struct {
@@ -380,7 +470,7 @@ func LoginByIDHandler(c *gin.Context) {
         return
     }
 
-   accessToken, refreshToken, err := utils.GenerateTokens(user.ID.String(), user.Name, user.Email, user.Role, user.TenantID)
+    accessToken, refreshToken, err := utils.GenerateTokens(user.ID.String(), user.Name, user.Email, user.Role, user.TenantID)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
         return
@@ -413,7 +503,7 @@ func RegisterByIDHandler(c *gin.Context) {
 
     var exists bool
     database.Pool.QueryRow(c.Request.Context(),
-        "SELECT EXISTS(SELECT 1 FROM users WHERE id = $1 OR email = $1)", req.ID).Scan(&exists)
+        "SELECT EXISTS(SELECT 1 FROM users WHERE id = $1 OR email = $2)", req.ID, req.ID+"@id.businessstack.ru").Scan(&exists)
 
     if exists {
         c.JSON(http.StatusBadRequest, gin.H{"error": "ID already registered"})
@@ -426,20 +516,44 @@ func RegisterByIDHandler(c *gin.Context) {
         return
     }
 
-    userID := uuid.New()
-    email := req.ID + "@id.Business Stack.ru"
+    // ===== СОЗДАЕМ ОТДЕЛЬНЫЙ TENANT =====
+    tenantID := uuid.New().String()
+    subdomain := strings.ToLower(req.ID)
+    
+    _, err = database.Pool.Exec(c.Request.Context(), `
+        INSERT INTO tenants (id, name, subdomain, status, settings, created_at, updated_at)
+        VALUES ($1, $2, $3, 'active', '{}', NOW(), NOW())
+    `, tenantID, req.Name+"'s Company", subdomain)
 
-    _, err = database.Pool.Exec(c.Request.Context(),
-        `INSERT INTO users (id, name, email, password_hash, role, tenant_id, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, 'user', '11111111-1111-1111-1111-111111111111', NOW(), NOW())`,
-        userID, req.Name, email, string(hashedPassword))
+    if err != nil {
+        // Если subdomain занят, генерируем уникальный
+        subdomain = subdomain + "_" + uuid.New().String()[:4]
+        _, err = database.Pool.Exec(c.Request.Context(), `
+            INSERT INTO tenants (id, name, subdomain, status, settings, created_at, updated_at)
+            VALUES ($1, $2, $3, 'active', '{}', NOW(), NOW())
+        `, tenantID, req.Name+"'s Company", subdomain)
+        
+        if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create tenant"})
+            return
+        }
+    }
+
+    // ===== СОЗДАЕМ ПОЛЬЗОВАТЕЛЯ С ПРИВЯЗКОЙ К TENANT =====
+    userID := uuid.New()
+    email := req.ID + "@id.businessstack.ru"
+
+    _, err = database.Pool.Exec(c.Request.Context(), `
+        INSERT INTO users (id, name, email, password_hash, role, tenant_id, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, 'client', $5, NOW(), NOW())
+    `, userID, req.Name, email, string(hashedPassword), tenantID)
 
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
         return
     }
 
-accessToken, refreshToken, err := utils.GenerateTokens(userID.String(), req.Name, email, "user", "11111111-1111-1111-1111-111111111111")
+    accessToken, refreshToken, err := utils.GenerateTokens(userID.String(), req.Name, email, "client", tenantID)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
         return
@@ -448,8 +562,9 @@ accessToken, refreshToken, err := utils.GenerateTokens(userID.String(), req.Name
     c.JSON(http.StatusOK, gin.H{
         "access_token":  accessToken,
         "refresh_token": refreshToken,
-        "user":          gin.H{"id": userID, "email": email, "name": req.Name, "role": "user"},
+        "user":          gin.H{"id": userID, "email": email, "name": req.Name, "role": "client"},
         "message":       "Registration by ID successful",
+        "tenant_id":     tenantID,
     })
 }
 
@@ -498,14 +613,12 @@ func RegisterHandler(c *gin.Context) {
         return
     }
 
-   // Используем DOMAIN или BASE_URL из настроек
-// НОВЫЙ КОД (работает с .env)
-baseURL := os.Getenv("BASE_URL")
-if baseURL == "" {
-    baseURL = "http://localhost:8080"
-}
+    baseURL := os.Getenv("BASE_URL")
+    if baseURL == "" {
+        baseURL = "http://localhost:8080"
+    }
 
-verifyLink := fmt.Sprintf("%s/verify-email?token=%s", baseURL, token)
+    verifyLink := fmt.Sprintf("%s/verify-email?token=%s", baseURL, token)
     log.Printf("📧 Ссылка для подтверждения: %s", verifyLink)
 
     emailService := utils.NewEmailService(config.Load())
@@ -600,7 +713,7 @@ func VerifyEmailHandler(c *gin.Context) {
         return
     }
 
-    // ✅ ПРАВИЛЬНАЯ РОЛЬ - "client" (обычный клиент)
+    // РОЛЬ - "client" (обычный клиент)
     userID := uuid.New()
     _, err = database.Pool.Exec(c.Request.Context(),
         `INSERT INTO users (id, tenant_id, email, password_hash, name, role, email_verified, created_at, updated_at)
@@ -671,7 +784,7 @@ func ForgotPasswordHandler(c *gin.Context) {
         return
     }
 
-    resetLink := fmt.Sprintf("https://businesstack.ru/reset-password?token=%s", resetToken)
+    resetLink := fmt.Sprintf("https://businessstack.ru/reset-password?token=%s", resetToken)
 
     emailService := utils.NewEmailService(config.Load())
     go func() {
@@ -852,32 +965,40 @@ func ResetPasswordHandler(c *gin.Context) {
     })
 }
 
+
+// GenerateResetQRHandler - генерация QR кода для сброса пароля
 // GenerateResetQRHandler - генерация QR кода для сброса пароля
 func GenerateResetQRHandler(c *gin.Context) {
     qrToken := uuid.New().String()
 
     _, err := database.Pool.Exec(c.Request.Context(), `
-        INSERT INTO qr_reset_sessions (session_token, expires_at, created_at)
-        VALUES ($1, NOW() + INTERVAL '5 minutes', NOW())
+        INSERT INTO qr_reset_sessions (session_token, user_id, expires_at, created_at)
+        VALUES ($1, NULL, NOW() + INTERVAL '5 minutes', NOW())
     `, qrToken)
 
     if err != nil {
-        log.Printf("❌ Ошибка генерации QR: %v", err)
+        log.Printf("❌ [QR] Ошибка генерации: %v", err)
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка генерации QR"})
         return
     }
 
-    deeplink := fmt.Sprintf("Business Stack://reset-password?token=%s", qrToken)
-    qrImageUrl := fmt.Sprintf("https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=%s", deeplink)
+    // ✅ БЕРЁМ ИЗ .ENV
+    baseURL := os.Getenv("BASE_URL")
+    if baseURL == "" {
+        baseURL = "http://localhost:8080"  // fallback для разработки
+    }
+    qrURL := fmt.Sprintf("%s/qr/confirm-reset?token=%s", baseURL, qrToken)
+    qrImageUrl := fmt.Sprintf("https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=%s", qrURL)
+
+    log.Printf("🔗 [QR] Ссылка: %s", qrURL)
 
     c.JSON(http.StatusOK, gin.H{
         "session_token": qrToken,
         "qr_data_url":   qrImageUrl,
-        "deeplink":      deeplink,
+        "deeplink":      qrURL,
         "expires_in":    300,
     })
 }
-
 // CheckResetQRStatusHandler - проверка статуса QR кода
 func CheckResetQRStatusHandler(c *gin.Context) {
     token := c.Query("token")
@@ -886,26 +1007,43 @@ func CheckResetQRStatusHandler(c *gin.Context) {
         return
     }
 
+    log.Printf("🔍 [QR] Проверка токена: %s", token)
+
     var status string
-    var userID string
+    var userID string // ← Используем string, а не uuid.UUID
     var expiresAt time.Time
 
+    // ✅ ИСПРАВЛЕНО: Используем правильный запрос
     err := database.Pool.QueryRow(c.Request.Context(), `
-        SELECT status, COALESCE(user_id, '') as user_id, expires_at 
+        SELECT COALESCE(status, 'pending') as status, 
+               COALESCE(user_id::text, '') as user_id, 
+               expires_at
         FROM qr_reset_sessions 
         WHERE session_token = $1
     `, token).Scan(&status, &userID, &expiresAt)
 
     if err != nil {
-        c.JSON(http.StatusOK, gin.H{"status": "expired"})
+        log.Printf("❌ [QR] Ошибка поиска сессии: %v", err)
+        c.JSON(http.StatusOK, gin.H{
+            "status":  "expired",
+            "message": "Session not found",
+        })
         return
     }
 
-    if time.Now().After(expiresAt) {
-        c.JSON(http.StatusOK, gin.H{"status": "expired"})
+    log.Printf("✅ [QR] Найдена сессия: status=%s, user_id=%s, expires_at=%s", status, userID, expiresAt)
+
+    // Проверяем истекла ли сессия
+    if expiresAt.Before(time.Now()) {
+        log.Printf("⏰ [QR] Сессия истекла")
+        c.JSON(http.StatusOK, gin.H{
+            "status":  "expired",
+            "message": "QR code expired",
+        })
         return
     }
 
+    // Если статус "approved" и есть user_id
     if status == "approved" && userID != "" {
         resetToken := uuid.New().String()
         _, err = database.Pool.Exec(c.Request.Context(), `
@@ -917,14 +1055,17 @@ func CheckResetQRStatusHandler(c *gin.Context) {
             c.JSON(http.StatusOK, gin.H{
                 "status":      "approved",
                 "reset_token": resetToken,
+                "redirect":    "/reset-password?token=" + resetToken,
             })
             return
         }
     }
 
-    c.JSON(http.StatusOK, gin.H{"status": status})
+    c.JSON(http.StatusOK, gin.H{
+        "status":  status,
+        "user_id": userID,
+    })
 }
-
 // ConfirmResetQRHandler - подтверждение сброса через QR (вызывается из мобильного приложения)
 func ConfirmResetQRHandler(c *gin.Context) {
     var req struct {
@@ -1047,7 +1188,7 @@ func RegisterEmailHandler(c *gin.Context) {
     
     _, err = database.Pool.Exec(c.Request.Context(), `
         INSERT INTO users (id, tenant_id, email, password_hash, name, role, email_verified, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, 'owner', true, NOW(), NOW())
+        VALUES ($1, $2, $3, $4, $5, 'client', true, NOW(), NOW())
     `, userID, tenantID, req.Email, string(hashedPassword), req.Name)
 
     if err != nil {
@@ -1061,7 +1202,8 @@ func RegisterEmailHandler(c *gin.Context) {
     }
 
     // Генерируем токены
-    accessToken, refreshToken, err := utils.GenerateTokens(userID.String(), req.Name, req.Email, "owner", tenantID.String())
+    accessToken, refreshToken, err := utils.GenerateTokens(
+        userID.String(), req.Name, req.Email, "client", tenantID.String())
     if err != nil {
         log.Printf("❌ Ошибка генерации токенов: %v", err)
         c.JSON(http.StatusInternalServerError, gin.H{
@@ -1083,7 +1225,115 @@ func RegisterEmailHandler(c *gin.Context) {
             "id":    userID.String(),
             "email": req.Email,
             "name":  req.Name,
-            "role":  "owner",
+            "role":  "client",
         },
     })
+}
+// GetCurrentUserForQR - получение текущего пользователя для QR-подтверждения
+func GetCurrentUserForQR(c *gin.Context) {
+    userID := c.GetString("user_id")
+    if userID == "" {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+        return
+    }
+
+    var email, name string
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT email, COALESCE(name, '') as name 
+        FROM users 
+        WHERE id = $1
+    `, userID).Scan(&email, &name)
+
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "user": gin.H{
+            "id":    userID,
+            "email": email,
+            "name":  name,
+        },
+    })
+}
+
+// ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ СЕССИЙ ====================
+
+// parseOS - парсит операционную систему из User-Agent
+func parseOSAuth(userAgent string) string {
+    userAgent = strings.ToLower(userAgent)
+    if strings.Contains(userAgent, "windows") {
+        return "Windows"
+    }
+    if strings.Contains(userAgent, "mac") || strings.Contains(userAgent, "macintosh") {
+        return "macOS"
+    }
+    if strings.Contains(userAgent, "linux") && !strings.Contains(userAgent, "android") {
+        return "Linux"
+    }
+    if strings.Contains(userAgent, "android") {
+        return "Android"
+    }
+    if strings.Contains(userAgent, "ios") || strings.Contains(userAgent, "iphone") || strings.Contains(userAgent, "ipad") {
+        return "iOS"
+    }
+    return "Unknown"
+}
+// CreateUserSession - создает сессию для пользователя
+func CreateUserSession(ctx context.Context, userID, tenantID, ip, userAgent, deviceName string) error {
+    sessionID := uuid.New().String()
+    token := uuid.New().String() // ← Генерируем токен для сессии (обязательно!)
+    
+    browser := parseBrowser(userAgent)
+    os := parseOSAuth(userAgent)
+    
+    if deviceName == "" {
+        deviceName = fmt.Sprintf("%s на %s", browser, os)
+    }
+    
+    // ✅ Используем все колонки которые есть в таблице
+    _, err := database.Pool.Exec(ctx, `
+        INSERT INTO user_sessions (
+            id, user_id, token, device_name, device_type, ip, location, 
+            user_agent, created_at, expires_at, last_active, revoked, is_current, tenant_id
+        ) VALUES (
+            $1, $2, $3, $4, $5, $6, $7, 
+            $8, NOW(), NOW() + INTERVAL '30 days', NOW(), false, true, $9
+        )
+    `, sessionID, userID, token, deviceName, "browser", ip, "Локальный", userAgent, tenantID)
+    
+    if err != nil {
+        log.Printf("⚠️ Ошибка создания сессии: %v", err)
+        return err
+    }
+    
+    log.Printf("✅ Создана сессия %s для пользователя %s (устройство: %s)", sessionID, userID, deviceName)
+    return nil
+}
+// CreateTrustedDevice - создает доверенное устройство
+func CreateTrustedDevice(ctx context.Context, userID, tenantID, ip, userAgent, deviceName string) error {
+    if deviceName == "" {
+        browser := parseBrowser(userAgent)
+        os := parseOSAuth(userAgent)
+        deviceName = fmt.Sprintf("%s на %s", browser, os)
+    }
+    
+    recordID := uuid.New().String()
+    deviceID := "device-" + uuid.New().String()[:8] // Генерируем device_id
+    
+    _, err := database.Pool.Exec(ctx, `
+        INSERT INTO trusted_devices (
+            id, user_id, device_id, device_name, ip_address, 
+            user_agent, expires_at, last_used_at, created_at, tenant_id
+        ) VALUES ($1, $2, $3, $4, $5, $6, NOW() + INTERVAL '365 days', NOW(), NOW(), $7)
+    `, recordID, userID, deviceID, deviceName, ip, userAgent, tenantID)
+    
+    if err != nil {
+        log.Printf("⚠️ Ошибка создания доверенного устройства: %v", err)
+        return err
+    }
+    
+    log.Printf("✅ Создано доверенное устройство '%s' для пользователя %s", deviceName, userID)
+    return nil
 }

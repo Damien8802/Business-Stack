@@ -2,114 +2,804 @@
 <html lang="ru">
 <head>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">    
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Приемка товаров | Business Stack</title>
+
+    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
+        /* ============================================
+           ГЛОБАЛЬНЫЕ СТИЛИ
+           ============================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0e17;
+            color: #e0e6ed;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            min-height: 100vh;
+        }
+
+        /* ============================================
+           САЙДБАР
+           ============================================ */
         .sidebar {
             min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 20px 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
         }
-        .sidebar a {
-            color: rgba(255,255,255,0.8);
+
+        .sidebar .brand {
+            padding: 0 20px 30px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .sidebar .brand h4 {
+            color: #fff;
+            font-weight: 700;
+            font-size: 20px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar .brand h4 i {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.6);
             text-decoration: none;
-            padding: 10px 15px;
-            display: block;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .sidebar .nav-link:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+            border-left-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .sidebar .nav-link.active {
+            color: #fff;
+            background: rgba(102, 126, 234, 0.1);
+            border-left-color: #667eea;
+        }
+
+        .sidebar .nav-link i {
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
+
+        /* ============================================
+           ОСНОВНОЙ КОНТЕНТ
+           ============================================ */
+        .main-content {
+            padding: 30px 40px;
+            min-height: 100vh;
+        }
+
+        /* ============================================
+           ХЕДЕР
+           ============================================ */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .page-header h2 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #fff;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .page-header h2 i {
+            color: #667eea;
+        }
+
+        .page-header .subtitle {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 14px;
+            margin-top: 4px;
+        }
+
+        /* ============================================
+           КНОПКИ
+           ============================================ */
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            color: #fff;
+            padding: 10px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(102, 126, 234, 0.3);
+            color: #fff;
+        }
+
+        .btn-outline-custom {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.6);
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.3s;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-outline-custom:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        .btn-success-custom {
+            background: linear-gradient(135deg, #2ed573, #26de81);
+            border: none;
+            color: #fff;
+            padding: 10px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .btn-success-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(46, 213, 115, 0.3);
+            color: #fff;
+        }
+
+        .btn-danger-custom {
+            background: rgba(255, 71, 87, 0.15);
+            border: 1px solid rgba(255, 71, 87, 0.2);
+            color: #ff4757;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .btn-danger-custom:hover {
+            background: rgba(255, 71, 87, 0.25);
+        }
+
+        /* ============================================
+           СТАТИСТИКА
+           ============================================ */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 20px 24px;
             transition: all 0.3s;
         }
-        .sidebar a:hover, .sidebar a.active {
-            background: rgba(255,255,255,0.1);
-            color: white;
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(102, 126, 234, 0.3);
+            box-shadow: 0 20px 60px rgba(102, 126, 234, 0.1);
         }
-        .main-content {
-            padding: 20px;
-        }
-        .receipt-card {
-            background: white;
+
+        .stat-card .stat-icon {
+            width: 44px;
+            height: 44px;
             border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            border-left: 4px solid #28a745;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-bottom: 12px;
         }
-        .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+        .stat-card .stat-icon.purple {
+            background: rgba(102, 126, 234, 0.15);
+            color: #667eea;
+        }
+        .stat-card .stat-icon.green {
+            background: rgba(46, 213, 115, 0.15);
+            color: #2ed573;
+        }
+        .stat-card .stat-icon.orange {
+            background: rgba(255, 159, 67, 0.15);
+            color: #ff9f43;
+        }
+        .stat-card .stat-icon.blue {
+            background: rgba(54, 162, 235, 0.15);
+            color: #36a2eb;
+        }
+
+        .stat-card .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1.2;
+        }
+
+        .stat-card .stat-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 4px;
+        }
+
+        /* ============================================
+           КАРТОЧКА ПРИЕМКИ
+           ============================================ */
+        .receipt-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 16px;
-            padding: 20px;
-            color: white;
+            padding: 20px 24px;
+            margin-bottom: 16px;
+            transition: all 0.3s;
+            cursor: pointer;
         }
-        .stat-number {
-            font-size: 32px;
-            font-weight: bold;
+
+        .receipt-card:hover {
+            border-color: rgba(102, 126, 234, 0.2);
+            transform: translateX(4px);
         }
+
+        .receipt-card .receipt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .receipt-card .receipt-number {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .receipt-card .receipt-number .badge-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-left: 12px;
+        }
+
+        .badge-status.completed {
+            background: rgba(46, 213, 115, 0.15);
+            color: #2ed573;
+        }
+        .badge-status.draft {
+            background: rgba(255, 159, 67, 0.15);
+            color: #ff9f43;
+        }
+        .badge-status.cancelled {
+            background: rgba(255, 71, 87, 0.15);
+            color: #ff4757;
+        }
+
+        .receipt-card .receipt-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .receipt-card .receipt-details .detail-item {
+            font-size: 13px;
+        }
+
+        .receipt-card .receipt-details .detail-item .label {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .receipt-card .receipt-details .detail-item .value {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* ============================================
+           МОДАЛЬНОЕ ОКНО
+           ============================================ */
+        .modal-content-custom {
+            background: #141b2b;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+        }
+
+        .modal-content-custom .modal-header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 20px 24px;
+        }
+
+        .modal-content-custom .modal-header .modal-title {
+            color: #fff;
+            font-weight: 600;
+            font-size: 20px;
+        }
+
+        .modal-content-custom .modal-header .btn-close {
+            filter: invert(1) brightness(200%);
+            opacity: 0.5;
+        }
+
+        .modal-content-custom .modal-header .btn-close:hover {
+            opacity: 1;
+        }
+
+        .modal-content-custom .modal-body {
+            padding: 24px;
+        }
+
+        .modal-content-custom .modal-body label {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .modal-content-custom .modal-body .form-control,
+        .modal-content-custom .modal-body .form-select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            color: #fff;
+            padding: 10px 14px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .modal-content-custom .modal-body .form-control:focus,
+        .modal-content-custom .modal-body .form-select:focus {
+            border-color: rgba(102, 126, 234, 0.4);
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .modal-content-custom .modal-body .form-select option {
+            background: #141b2b;
+            color: #fff;
+        }
+
+        .modal-content-custom .modal-body .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* ============================================
+           ПОЗИЦИИ ТОВАРОВ В МОДАЛКЕ
+           ============================================ */
         .item-row {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.3s;
         }
+
+        .item-row:hover {
+            border-color: rgba(102, 126, 234, 0.2);
+        }
+
+        .item-row .row {
+            align-items: center;
+        }
+
+        /* ============================================
+           TOAST УВЕДОМЛЕНИЯ
+           ============================================ */
         .toast-container {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1050;
+            bottom: 30px;
+            right: 30px;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast-custom {
+            background: #141b2b;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px 24px;
+            min-width: 300px;
+            max-width: 500px;
+            animation: toastIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .toast-custom.success {
+            border-left: 3px solid #2ed573;
+        }
+        .toast-custom.error {
+            border-left: 3px solid #ff4757;
+        }
+        .toast-custom.warning {
+            border-left: 3px solid #ff9f43;
+        }
+        .toast-custom.info {
+            border-left: 3px solid #667eea;
+        }
+
+        .toast-custom .toast-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .toast-custom.success .toast-icon {
+            color: #2ed573;
+        }
+        .toast-custom.error .toast-icon {
+            color: #ff4757;
+        }
+        .toast-custom.warning .toast-icon {
+            color: #ff9f43;
+        }
+        .toast-custom.info .toast-icon {
+            color: #667eea;
+        }
+
+        .toast-custom .toast-content {
+            flex: 1;
+        }
+        .toast-custom .toast-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+        }
+        .toast-custom .toast-message {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* ============================================
+           КНОПКА НАЗАД
+           ============================================ */
+        .back-button {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.6);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            transition: all 0.3s;
+            z-index: 1000;
+            cursor: pointer;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            transform: scale(1.1);
+        }
+
+        /* ============================================
+           AI WIDGET
+           ============================================ */
+        .ai-floating-widget {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 999;
+            cursor: pointer;
+        }
+
+        .ai-widget-button {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .ai-widget-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 40px rgba(102, 126, 234, 0.6);
+        }
+
+        .ai-widget-badge {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 12px;
+            height: 12px;
+            background: #2ed573;
+            border-radius: 50%;
+            border: 2px solid #141b2b;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        .ai-widget-tooltip {
+            position: absolute;
+            bottom: 70px;
+            right: 0;
+            background: #141b2b;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 8px 16px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+            white-space: nowrap;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s;
+            pointer-events: none;
+        }
+
+        .ai-floating-widget:hover .ai-widget-tooltip {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ============================================
+           АДАПТИВНОСТЬ
+           ============================================ */
+        @media (max-width: 992px) {
+            .sidebar {
+                min-height: auto;
+                height: auto;
+                position: relative;
+            }
+            .main-content {
+                padding: 20px;
+            }
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .receipt-card .receipt-header {
+                flex-direction: column;
+            }
+            .receipt-card .receipt-details {
+                grid-template-columns: 1fr 1fr;
+            }
+            .item-row .row>div {
+                margin-bottom: 8px;
+            }
+            .modal-content-custom .modal-body {
+                padding: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main-content {
+                padding: 12px;
+            }
+            .receipt-card .receipt-details {
+                grid-template-columns: 1fr;
+            }
+            .back-button {
+                bottom: 100px;
+                left: 16px;
+                width: 44px;
+                height: 44px;
+            }
+            .ai-floating-widget {
+                bottom: 16px;
+                right: 16px;
+            }
+            .ai-widget-button {
+                width: 50px;
+                height: 50px;
+                font-size: 24px;
+            }
         }
     </style>
 </head>
 <body>
+
+    <!-- ============================================
+    ОСНОВНОЙ КОНТЕЙНЕР
+    ============================================ -->
     <div class="container-fluid">
         <div class="row">
+
+            <!-- ===== САЙДБАР ===== -->
             <div class="col-md-2 p-0 sidebar">
-                <div class="p-3">
-                    <h4 class="text-white mb-4">Business Stack</h4>
-                    <a href="/dashboard-improved"><i class="bi bi-speedometer2 me-2"></i> Дашборд</a>
-                    <a href="/inventory"><i class="bi bi-boxes me-2"></i> Склад</a>
-                    <a href="/suppliers"><i class="bi bi-truck me-2"></i> Поставщики</a>
-                    <a href="/goods-receipts" class="active"><i class="bi bi-archive me-2"></i> Приемка</a>
-                    <a href="/settings"><i class="bi bi-gear me-2"></i> Настройки</a>
+                <div class="brand">
+                    <h4><i class="bi bi-boxes"></i> Business Stack</h4>
                 </div>
+
+                <nav>
+                    <a href="/dashboard-improved" class="nav-link">
+                        <i class="bi bi-speedometer2"></i> Дашборд
+                    </a>
+                    <a href="/inventory" class="nav-link">
+                        <i class="bi bi-boxes"></i> Склад
+                    </a>
+                    <a href="/suppliers" class="nav-link">
+                        <i class="bi bi-truck"></i> Поставщики
+                    </a>
+                    <a href="/goods-receipts" class="nav-link active">
+                        <i class="bi bi-archive"></i> Приемка
+                    </a>
+                    <a href="/purchase-orders" class="nav-link">
+                        <i class="bi bi-cart-check"></i> Заказы
+                    </a>
+                    <a href="/settings" class="nav-link">
+                        <i class="bi bi-gear"></i> Настройки
+                    </a>
+                </nav>
             </div>
 
+            <!-- ===== ОСНОВНОЙ КОНТЕНТ ===== -->
             <div class="col-md-10 main-content">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2><i class="bi bi-archive me-2"></i>Приемка товаров</h2>
-                    <button class="btn btn-primary" onclick="showCreateModal()">
-                        <i class="bi bi-plus-lg me-2"></i>Новая приемка
+
+                <!-- ХЕДЕР -->
+                <div class="page-header">
+                    <div>
+                        <h2>
+                            <i class="bi bi-archive"></i>
+                            Приемка товаров
+                        </h2>
+                        <div class="subtitle">Управление поступлением товаров на склад</div>
+                    </div>
+                    <button class="btn-primary-custom" onclick="showCreateModal()">
+                        <i class="bi bi-plus-lg"></i> Новая приемка
                     </button>
                 </div>
 
-                <div class="row mb-4">
-                    <div class="col-md-3">
-                        <div class="stat-card">
-                            <div class="stat-number" id="totalReceipts">0</div>
-                            <div>Всего приемок</div>
-                        </div>
+                <!-- СТАТИСТИКА -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon purple"><i class="bi bi-archive"></i></div>
+                        <div class="stat-value" id="totalReceipts">0</div>
+                        <div class="stat-label">Всего приемок</div>
                     </div>
-                    <div class="col-md-3">
-                        <div class="stat-card">
-                            <div class="stat-number" id="totalAmount">0 ₽</div>
-                            <div>На сумму</div>
-                        </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green"><i class="bi bi-currency-ruble"></i></div>
+                        <div class="stat-value" id="totalAmount">0 ₽</div>
+                        <div class="stat-label">На сумму</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange"><i class="bi bi-calendar-today"></i></div>
+                        <div class="stat-value" id="receiptsToday">0</div>
+                        <div class="stat-label">Сегодня</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon blue"><i class="bi bi-box"></i></div>
+                        <div class="stat-value" id="totalItems">0</div>
+                        <div class="stat-label">Всего позиций</div>
                     </div>
                 </div>
 
-                <div id="receiptsContainer"></div>
+                <!-- СПИСОК ПРИЕМОК -->
+                <div id="receiptsContainer">
+                    <div class="text-center py-5" style="color:rgba(255,255,255,0.2);">
+                        <i class="bi bi-archive" style="font-size:48px;display:block;margin-bottom:16px;"></i>
+                        Загрузка приемок...
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
 
-    <!-- Modal создания приемки -->
-    <div class="modal fade" id="receiptModal" tabindex="-1">
+    <!-- ============================================
+    МОДАЛЬНОЕ ОКНО - СОЗДАНИЕ ПРИЕМКИ
+    ============================================ -->
+    <div class="modal fade" id="receiptModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
-            <div class="modal-content">
+            <div class="modal-content modal-content-custom">
                 <div class="modal-header">
-                    <h5 class="modal-title">Новая приемка товаров</h5>
+                    <h5 class="modal-title">
+                        <i class="bi bi-plus-circle" style="color:#667eea;"></i>
+                        Новая приемка товаров
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+
+                    <!-- Основная информация -->
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label>Заказ поставщику (опционально)</label>
@@ -122,111 +812,300 @@
                             <input type="date" id="receiptDate" class="form-control">
                         </div>
                     </div>
+
                     <div class="mb-3">
                         <label>Примечание</label>
-                        <textarea id="receiptNotes" class="form-control" rows="2"></textarea>
+                        <textarea id="receiptNotes" class="form-control" rows="2" placeholder="Дополнительная информация"></textarea>
                     </div>
-                    
-                    <h5>Товары</h5>
-                    <div id="receiptItemsList"></div>
-                    <button class="btn btn-sm btn-outline-primary mt-2" onclick="addReceiptItem()">
-                        <i class="bi bi-plus"></i> Добавить товар
-                    </button>
-                    
-                    <div class="mt-3 text-end">
-                        <h4>Итого: <span id="receiptTotal">0</span> ₽</h4>
-                        <button class="btn btn-success" onclick="submitReceipt()">
-                            <i class="bi bi-check-lg"></i> Оприходовать
+
+                    <hr style="border-color:rgba(255,255,255,0.05);">
+
+                    <!-- Товары -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold" style="color:#fff;">
+                            <i class="bi bi-box" style="color:#667eea;"></i>
+                            Товары
+                        </h6>
+                        <button class="btn-outline-custom" style="padding:6px 16px;font-size:13px;" onclick="addReceiptItem()">
+                            <i class="bi bi-plus"></i> Добавить товар
                         </button>
                     </div>
+
+                    <div id="receiptItemsList">
+                        <!-- Товары будут добавляться сюда -->
+                    </div>
+
+                    <!-- Итого -->
+                    <div class="mt-4 pt-3" style="border-top:1px solid rgba(255,255,255,0.05);">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span style="color:rgba(255,255,255,0.4);">Итого:</span>
+                                <span class="fw-bold" style="font-size:24px;color:#fff;" id="receiptTotal">0</span>
+                                <span style="color:rgba(255,255,255,0.4);"> ₽</span>
+                            </div>
+                            <button class="btn-success-custom" onclick="submitReceipt()">
+                                <i class="bi bi-check-lg"></i> Оприходовать
+                            </button>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="toast-container"></div>
+    <!-- ============================================
+    TOAST КОНТЕЙНЕР
+    ============================================ -->
+    <div class="toast-container" id="toastContainer"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- ============================================
+    КНОПКА НАЗАД
+    ============================================ -->
+    <a href="javascript:history.back()" class="back-button" title="Назад">
+        <i class="fas fa-arrow-left fa-lg"></i>
+    </a>
+
+    <!-- ============================================
+    AI ВИДЖЕТ
+    ============================================ -->
+    <div class="ai-floating-widget" onclick="openAIAssistant()">
+        <div class="ai-widget-button">
+            🤖
+            <div class="ai-widget-badge"></div>
+        </div>
+        <div class="ai-widget-tooltip">💬 Спросить AI ассистента</div>
+    </div>
+
+    <!-- ============================================
+    JAVASCRIPT
+    ============================================ -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
+    </script>
+
     <script>
-        let productsList = [];
-        let receiptItems = [];
-        let purchaseOrdersList = [];
+        // ============================================
+        // 1. СОСТОЯНИЕ
+        // ============================================
+        const state = {
+            receipts: [],
+            products: [],
+            purchaseOrders: [],
+            receiptItems: [],
+            modal: null,
+        };
 
-        function showToast(message, type = 'success') {
-            const container = document.querySelector('.toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast align-items-center text-white bg-${type} border-0`;
-            toast.innerHTML = `<div class="d-flex"><div class="toast-body">${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
-            container.appendChild(toast);
-            const bsToast = new bootstrap.Toast(toast);
-            bsToast.show();
-            toast.addEventListener('hidden.bs.toast', () => toast.remove());
-        }
+        // ============================================
+        // 2. ИНИЦИАЛИЗАЦИЯ
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            // Инициализируем модалку
+            state.modal = new bootstrap.Modal(document.getElementById('receiptModal'));
 
+            // Устанавливаем дату по умолчанию
+            document.getElementById('receiptDate').value = new Date().toISOString().split('T')[0];
+
+            // Загружаем данные
+            loadReceipts();
+            loadProducts();
+            loadPurchaseOrders();
+        });
+
+        // ============================================
+        // 3. API КЛИЕНТ
+        // ============================================
+        const api = {
+            getReceipts: async () => {
+                const response = await fetch('/api/goods-receipts');
+                if (!response.ok) throw new Error('Ошибка загрузки приемок');
+                return response.json();
+            },
+
+            getProducts: async () => {
+                const response = await fetch('/api/inventory/products');
+                if (!response.ok) throw new Error('Ошибка загрузки товаров');
+                return response.json();
+            },
+
+            getPurchaseOrders: async () => {
+                const response = await fetch('/api/purchase-orders');
+                if (!response.ok) throw new Error('Ошибка загрузки заказов');
+                return response.json();
+            },
+
+            createReceipt: async (data) => {
+                const response = await fetch('/api/goods-receipts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                });
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Ошибка создания приемки');
+                }
+                return response.json();
+            },
+
+            getStats: async () => {
+                const response = await fetch('/api/goods-receipts/stats');
+                if (!response.ok) throw new Error('Ошибка загрузки статистики');
+                return response.json();
+            }
+        };
+
+        // ============================================
+        // 4. ЗАГРУЗКА ДАННЫХ
+        // ============================================
+
+        // Загрузка приемок
         async function loadReceipts() {
             try {
-                const response = await fetch('/api/goods-receipts');
-                const data = await response.json();
-                const receipts = data.receipts || [];
-                
-                document.getElementById('totalReceipts').textContent = receipts.length;
-                const totalAmount = receipts.reduce((sum, r) => sum + (r.total_amount || 0), 0);
-                document.getElementById('totalAmount').textContent = totalAmount.toLocaleString() + ' ₽';
-                
-                const container = document.getElementById('receiptsContainer');
-                if (!receipts.length) {
-                    container.innerHTML = '<div class="alert alert-info">Нет приемок. Создайте первую!</div>';
-                    return;
-                }
-                
-                container.innerHTML = receipts.map(r => `
-                    <div class="receipt-card">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h5>${r.receipt_number}</h5>
-                                <div>Поставщик: ${r.supplier_name || '-'}</div>
-                                <div>Дата: ${new Date(r.receipt_date).toLocaleDateString()}</div>
-                            </div>
-                            <div class="text-end">
-                                <div class="fw-bold">${(r.total_amount || 0).toLocaleString()} ₽</div>
-                                <div><small>${new Date(r.created_at).toLocaleString()}</small></div>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
+                const data = await api.getReceipts();
+                state.receipts = data.receipts || [];
+
+                renderReceipts();
+                renderStats();
+
             } catch (error) {
-                console.error('Error:', error);
+                console.error('Load receipts error:', error);
+                showToast('Ошибка загрузки', error.message, 'error');
+
+                document.getElementById('receiptsContainer').innerHTML = `
+                        <div class="text-center py-5" style="color:rgba(255,255,255,0.2);">
+                            <i class="bi bi-exclamation-circle" style="font-size:48px;display:block;margin-bottom:16px;"></i>
+                            Не удалось загрузить приемки
+                        </div>
+                    `;
             }
         }
 
+        // Загрузка товаров
         async function loadProducts() {
             try {
-                const response = await fetch('/api/inventory/products');
-                const data = await response.json();
-                productsList = data.products || [];
+                const data = await api.getProducts();
+                state.products = data.products || [];
             } catch (error) {
-                console.error('Error loading products:', error);
+                console.error('Load products error:', error);
             }
         }
 
+        // Загрузка заказов поставщикам
         async function loadPurchaseOrders() {
             try {
-                const response = await fetch('/api/purchase-orders');
-                const data = await response.json();
-                purchaseOrdersList = data.orders || [];
-                
+                const data = await api.getPurchaseOrders();
+                state.purchaseOrders = data.purchase_orders || [];
+
+                // Обновляем select
                 const select = document.getElementById('purchaseOrderSelect');
-                select.innerHTML = '<option value="">-- Без заказа --</option>' + 
-                    purchaseOrdersList.filter(o => o.status !== 'received').map(o => 
-                        `<option value="${o.id}">${o.order_number} - ${o.supplier_name || 'Нет поставщика'} (${(o.total_amount || 0).toLocaleString()} ₽)</option>`
-                    ).join('');
+                const options = state.purchaseOrders
+                    .filter(o => o.status !== 'delivered' && o.status !== 'cancelled')
+                    .map(o => `
+                            <option value="${o.id}">
+                                ${o.order_number} - ${o.supplier_name || 'Нет поставщика'} 
+                                (${(o.total_amount || 0).toLocaleString()} ₽)
+                            </option>
+                        `).join('');
+
+                select.innerHTML = `
+                        <option value="">-- Без заказа --</option>
+                        ${options}
+                    `;
+
             } catch (error) {
-                console.error('Error loading orders:', error);
+                console.error('Load purchase orders error:', error);
             }
         }
 
+        // Загрузка статистики
+        async function renderStats() {
+            try {
+                const data = await api.getStats();
+                const stats = data.stats || {};
+
+                document.getElementById('totalReceipts').textContent = stats.total_receipts || 0;
+                document.getElementById('totalAmount').textContent = (stats.total_amount || 0).toLocaleString() + ' ₽';
+                document.getElementById('receiptsToday').textContent = stats.receipts_today || 0;
+                document.getElementById('totalItems').textContent = stats.total_items || 0;
+
+            } catch (error) {
+                console.error('Stats error:', error);
+            }
+        }
+
+        // ============================================
+        // 5. РЕНДЕРИНГ
+        // ============================================
+
+        // Рендер приемок
+        function renderReceipts() {
+            const container = document.getElementById('receiptsContainer');
+
+            if (state.receipts.length === 0) {
+                container.innerHTML = `
+                        <div class="text-center py-5" style="color:rgba(255,255,255,0.2);">
+                            <i class="bi bi-archive" style="font-size:48px;display:block;margin-bottom:16px;"></i>
+                            Нет приемок
+                            <br><small>Нажмите "Новая приемка" чтобы создать первую</small>
+                        </div>
+                    `;
+                return;
+            }
+
+            container.innerHTML = state.receipts.map(receipt => {
+                const statusClass = receipt.status === 'completed' ? 'completed' :
+                    receipt.status === 'draft' ? 'draft' : 'cancelled';
+                const statusLabel = receipt.status === 'completed' ? '✅ Завершена' :
+                    receipt.status === 'draft' ? '📝 Черновик' : '❌ Отменена';
+
+                return `
+                        <div class="receipt-card">
+                            <div class="receipt-header">
+                                <div>
+                                    <div class="receipt-number">
+                                        ${receipt.receipt_number}
+                                        <span class="badge-status ${statusClass}">${statusLabel}</span>
+                                    </div>
+                                </div>
+                                <div style="text-align:right;">
+                                    <div style="font-size:20px;font-weight:700;color:#fff;">
+                                        ${(receipt.total_amount || 0).toLocaleString()} ₽
+                                    </div>
+                                    <div style="font-size:12px;color:rgba(255,255,255,0.2);">
+                                        ${new Date(receipt.created_at).toLocaleString()}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="receipt-details">
+                                <div class="detail-item">
+                                    <div class="label">Поставщик</div>
+                                    <div class="value">${receipt.supplier_name || '—'}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="label">Дата приемки</div>
+                                    <div class="value">${new Date(receipt.receipt_date).toLocaleDateString('ru-RU')}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="label">Принял</div>
+                                    <div class="value">${receipt.received_by || '—'}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="label">Примечание</div>
+                                    <div class="value">${receipt.notes || '—'}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+            }).join('');
+        }
+
+        // ============================================
+        // 6. РАБОТА С ТОВАРАМИ В МОДАЛКЕ
+        // ============================================
+
+        // Добавить позицию
         function addReceiptItem() {
-            receiptItems.push({
+            state.receiptItems.push({
                 product_id: '',
                 product_name: '',
                 quantity: 1,
@@ -235,227 +1114,353 @@
                 price: 0,
                 rejection_reason: '',
                 batch_number: '',
-                storage_location: ''
+                storage_location: '',
             });
             renderReceiptItems();
         }
 
+        // Рендер позиций
         function renderReceiptItems() {
             const container = document.getElementById('receiptItemsList');
-            container.innerHTML = receiptItems.map((item, index) => `
-                <div class="item-row">
-                    <div class="row mb-2">
-                        <div class="col-md-5">
-                            <select class="form-select" onchange="updateReceiptItem(${index}, 'product_id', this.value)">
-                                <option value="">Выберите товар</option>
-                                ${productsList.map(p => `<option value="${p.id}" ${item.product_id === p.id ? 'selected' : ''}>${p.name} (${p.price} ₽)</option>`).join('')}
-                            </select>
+
+            if (state.receiptItems.length === 0) {
+                container.innerHTML = `
+                        <div class="text-center py-4" style="color:rgba(255,255,255,0.2);">
+                            <i class="bi bi-box" style="font-size:32px;display:block;margin-bottom:8px;"></i>
+                            Добавьте товары для приемки
                         </div>
-                        <div class="col-md-2">
-                            <input type="number" class="form-control" placeholder="Кол-во" value="${item.quantity}" onchange="updateReceiptItem(${index}, 'quantity', parseInt(this.value))">
+                    `;
+                updateReceiptTotal();
+                return;
+            }
+
+            container.innerHTML = state.receiptItems.map((item, index) => `
+                    <div class="item-row">
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <select class="form-select" 
+                                        onchange="updateReceiptItem(${index}, 'product_id', this.value)">
+                                    <option value="">Выберите товар</option>
+                                    ${state.products.map(p => `
+                                        <option value="${p.id}" ${item.product_id === p.id ? 'selected' : ''}>
+                                            ${p.name} (${(p.price || 0).toLocaleString()} ₽)
+                                        </option>
+                                    `).join('')}
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <input type="number" class="form-control" 
+                                       placeholder="Кол-во" 
+                                       value="${item.quantity}"
+                                       min="1"
+                                       onchange="updateReceiptItem(${index}, 'quantity', parseInt(this.value) || 0)">
+                            </div>
+                            <div class="col-md-2">
+                                <input type="number" class="form-control" 
+                                       placeholder="Принято" 
+                                       value="${item.accepted_quantity}"
+                                       min="0"
+                                       onchange="updateReceiptItem(${index}, 'accepted_quantity', parseInt(this.value) || 0)">
+                            </div>
+                            <div class="col-md-2">
+                                <input type="number" class="form-control" 
+                                       placeholder="Цена" 
+                                       value="${item.price}"
+                                       step="0.01"
+                                       min="0"
+                                       onchange="updateReceiptItem(${index}, 'price', parseFloat(this.value) || 0)">
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn-danger-custom" onclick="removeReceiptItem(${index})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
                         </div>
-                        <div class="col-md-2">
-                            <input type="number" class="form-control" placeholder="Принято" value="${item.accepted_quantity}" onchange="updateReceiptItem(${index}, 'accepted_quantity', parseInt(this.value))">
-                        </div>
-                        <div class="col-md-2">
-                            <input type="number" class="form-control" placeholder="Цена" value="${item.price}" step="0.01" onchange="updateReceiptItem(${index}, 'price', parseFloat(this.value))">
-                        </div>
-                        <div class="col-md-1">
-                            <button class="btn btn-sm btn-danger" onclick="removeReceiptItem(${index})">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </div>
+                        ${item.rejected_quantity > 0 ? `
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <input type="text" class="form-control" 
+                                           placeholder="Причина брака" 
+                                           value="${item.rejection_reason}"
+                                           onchange="updateReceiptItem(${index}, 'rejection_reason', this.value)">
+                                </div>
+                                <div class="col-md-6">
+                                    <input type="text" class="form-control" 
+                                           placeholder="Партия" 
+                                           value="${item.batch_number}"
+                                           onchange="updateReceiptItem(${index}, 'batch_number', this.value)">
+                                </div>
+                            </div>
+                        ` : ''}
                     </div>
-                </div>
-            `).join('');
+                `).join('');
+
             updateReceiptTotal();
         }
 
+        // Обновить позицию
         function updateReceiptItem(index, field, value) {
-            receiptItems[index][field] = value;
-            if (field === 'product_id') {
-                const product = productsList.find(p => p.id === value);
+            state.receiptItems[index][field] = value;
+
+            // Если выбран товар - подставляем цену
+            if (field === 'product_id' && value) {
+                const product = state.products.find(p => p.id === value);
                 if (product) {
-                    receiptItems[index].product_name = product.name;
-                    if (receiptItems[index].price === 0) {
-                        receiptItems[index].price = product.price;
+                    state.receiptItems[index].product_name = product.name;
+                    if (state.receiptItems[index].price === 0) {
+                        state.receiptItems[index].price = product.price || 0;
                     }
                 }
             }
-            if (field === 'accepted_quantity' && receiptItems[index].accepted_quantity > receiptItems[index].quantity) {
-                receiptItems[index].accepted_quantity = receiptItems[index].quantity;
+
+            // Корректируем принятое количество
+            if (field === 'quantity' || field === 'accepted_quantity') {
+                const qty = state.receiptItems[index].quantity || 0;
+                const accepted = state.receiptItems[index].accepted_quantity || 0;
+                if (accepted > qty) {
+                    state.receiptItems[index].accepted_quantity = qty;
+                }
+                state.receiptItems[index].rejected_quantity = qty - accepted;
             }
+
             renderReceiptItems();
         }
 
+        // Удалить позицию
         function removeReceiptItem(index) {
-            receiptItems.splice(index, 1);
+            state.receiptItems.splice(index, 1);
             renderReceiptItems();
         }
 
+        // Обновить итоговую сумму
         function updateReceiptTotal() {
-            const total = receiptItems.reduce((sum, item) => sum + (item.accepted_quantity * item.price), 0);
+            const total = state.receiptItems.reduce((sum, item) => {
+                return sum + (item.accepted_quantity * item.price);
+            }, 0);
             document.getElementById('receiptTotal').textContent = total.toLocaleString();
         }
 
+        // ============================================
+        // 7. СОЗДАНИЕ ПРИЕМКИ
+        // ============================================
+
+        // Показать модалку
+        function showCreateModal() {
+            // Сбрасываем форму
+            document.getElementById('receiptDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('receiptNotes').value = '';
+            state.receiptItems = [];
+
+            // Загружаем заказы
+            loadPurchaseOrders();
+
+            // Открываем модалку
+            state.modal.show();
+
+            // Рендерим пустой список товаров
+            renderReceiptItems();
+        }
+
+        // Отправить приемку
         async function submitReceipt() {
-            const validItems = receiptItems.filter(item => item.product_id && item.accepted_quantity > 0);
+            // Фильтруем валидные позиции
+            const validItems = state.receiptItems.filter(item =>
+                item.product_id &&
+                item.accepted_quantity > 0 &&
+                item.price > 0
+            );
+
             if (validItems.length === 0) {
-                showToast('Добавьте хотя бы один товар', 'warning');
+                showToast('Ошибка', 'Добавьте хотя бы один товар с корректными данными', 'warning');
                 return;
             }
-            
+
             const data = {
                 purchase_order_id: document.getElementById('purchaseOrderSelect').value || null,
                 receipt_date: document.getElementById('receiptDate').value || new Date().toISOString().split('T')[0],
                 notes: document.getElementById('receiptNotes').value,
+                received_by: 'Система',
                 items: validItems.map(item => ({
                     product_id: item.product_id,
-                    quantity: item.quantity,
+                    quantity: item.quantity || item.accepted_quantity,
                     accepted_quantity: item.accepted_quantity,
                     rejected_quantity: item.rejected_quantity || 0,
                     price: item.price,
-                    rejection_reason: item.rejection_reason,
-                    batch_number: item.batch_number,
-                    storage_location: item.storage_location
+                    rejection_reason: item.rejection_reason || '',
+                    batch_number: item.batch_number || '',
+                    storage_location: item.storage_location || '',
+                    notes: ''
                 }))
             };
-            
+
             try {
-                const response = await fetch('/api/goods-receipts', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(data)
-                });
-                
-                const result = await response.json();
-                if (response.ok) {
-                    showToast(result.message || 'Товары оприходованы!');
-                    bootstrap.Modal.getInstance(document.getElementById('receiptModal')).hide();
-                    receiptItems = [];
-                    loadReceipts();
-                    loadProducts();
+                const result = await api.createReceipt(data);
+
+                if (result.success) {
+                    showToast('Успех', result.message || 'Товары успешно оприходованы!', 'success');
+
+                    // Закрываем модалку
+                    state.modal.hide();
+
+                    // Обновляем данные
+                    await loadReceipts();
+                    await loadProducts();
                 } else {
-                    showToast(result.error || 'Ошибка', 'danger');
+                    showToast('Ошибка', result.error || 'Неизвестная ошибка', 'error');
                 }
+
             } catch (error) {
-                console.error('Error:', error);
-                showToast('Ошибка создания приемки', 'danger');
+                console.error('Submit error:', error);
+                showToast('Ошибка', error.message || 'Не удалось создать приемку', 'error');
             }
         }
 
-        function showCreateModal() {
-            document.getElementById('receiptDate').value = new Date().toISOString().split('T')[0];
-            document.getElementById('receiptNotes').value = '';
-            receiptItems = [];
-            renderReceiptItems();
-            loadPurchaseOrders();
-            new bootstrap.Modal(document.getElementById('receiptModal')).show();
+        // ============================================
+        // 8. TOAST УВЕДОМЛЕНИЯ
+        // ============================================
+        function showToast(title, message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+
+            const icons = {
+                success: 'bi-check-circle-fill',
+                error: 'bi-x-circle-fill',
+                warning: 'bi-exclamation-triangle-fill',
+                info: 'bi-info-circle-fill',
+            };
+
+            const colors = {
+                success: '#2ed573',
+                error: '#ff4757',
+                warning: '#ff9f43',
+                info: '#667eea',
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `toast-custom ${type}`;
+            toast.innerHTML = `
+                    <div class="toast-icon">
+                        <i class="bi ${icons[type] || icons.info}" style="color:${colors[type] || colors.info};"></i>
+                    </div>
+                    <div class="toast-content">
+                        <div class="toast-title">${title}</div>
+                        <div class="toast-message">${message}</div>
+                    </div>
+                `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(40px)';
+                setTimeout(() => toast.remove(), 400);
+            }, 4000);
         }
 
-        loadReceipts();
-        loadProducts();
+        // ============================================
+        // 9. AI АССИСТЕНТ
+        // ============================================
+        function openAIAssistant() {
+            window.open('/ai-assistant', '_blank',
+                'width=500,height=700,left=' + (screen.width - 520) + ',top=100');
+        }
+
+        // ============================================
+        // 10. WEBSOCKET ДЛЯ РЕАЛЬНОГО ВРЕМЕНИ
+        // ============================================
+        function connectWebSocket() {
+            const ws = new WebSocket('ws://localhost:8080/ws/receipts');
+
+            ws.onopen = () => {
+                console.log('✅ WebSocket connected (receipts)');
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('📡 Receipt event:', data);
+
+                    switch (data.type) {
+                        case 'receipt_created':
+                        case 'receipt_updated':
+                            loadReceipts();
+                            break;
+                        case 'alert':
+                            showToast('⚠️ Внимание', data.message, 'warning');
+                            break;
+                    }
+                } catch (e) {
+                    console.error('WebSocket parse error:', e);
+                }
+            };
+
+            ws.onclose = () => {
+                console.log('❌ WebSocket disconnected, reconnecting in 5s...');
+                setTimeout(connectWebSocket, 5000);
+            };
+        }
+
+        // Подключаем WebSocket через 2 секунды
+        setTimeout(connectWebSocket, 2000);
+
+        // ============================================
+        // 11. PWA И PUSH УВЕДОМЛЕНИЯ
+        // ============================================
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(reg => {
+                    console.log('Service Worker registered:', reg);
+                })
+                .catch(err => {
+                    console.error('Service Worker registration failed:', err);
+                });
+        }
+
+        // Функция подписки на push
+        async function subscribeToPush() {
+            if (!('PushManager' in window)) {
+                console.log('Push messaging is not supported');
+                return;
+            }
+
+            try {
+                const registration = await navigator.serviceWorker.ready;
+                const subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array('YOUR_VAPID_PUBLIC_KEY')
+                });
+
+                await fetch('/api/push/subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(subscription)
+                });
+
+                console.log('Push subscription successful');
+            } catch (err) {
+                console.error('Push subscription failed:', err);
+            }
+        }
+
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding)
+                .replace(/\-/g, '+')
+                .replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+        // Предлагаем подписаться на push через 5 секунд
+        setTimeout(() => {
+            if (confirm('📬 Хотите получать push-уведомления о новых приемках?')) {
+                subscribeToPush();
+            }
+        }, 5000);
     </script>
-<!-- PWA регистрация -->
-<script>
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/service-worker.js')
-        .then(reg => {
-            console.log('Service Worker registered:', reg);
-        })
-        .catch(err => {
-            console.error('Service Worker registration failed:', err);
-        });
-}
 
-// Запрос разрешения на push-уведомления
-async function subscribeToPush() {
-    if (!('PushManager' in window)) {
-        console.log('Push messaging is not supported');
-        return;
-    }
-    
-    try {
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array('YOUR_VAPID_PUBLIC_KEY')
-        });
-        
-        await fetch('/api/push/subscribe', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(subscription)
-        });
-        
-        console.log('Push subscription successful');
-    } catch (err) {
-        console.error('Push subscription failed:', err);
-    }
-}
-
-function urlBase64ToUint8Array(base64String) {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding)
-        .replace(/\-/g, '+')
-        .replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-}
-
-// Предлагаем подписаться при заходе на сайт
-setTimeout(() => {
-    if (confirm('Хотите получать push-уведомления?')) {
-        subscribeToPush();
-    }
-}, 5000);
-</script>
-<style>
-.back-button {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    transition: all 0.3s;
-    z-index: 1000;
-    cursor: pointer;
-}
-.back-button:hover {
-    transform: scale(1.1);
-    background: linear-gradient(135deg, #764ba2, #667eea);
-    color: white;
-}
-</style>
-<a href="javascript:history.back()" class="back-button" title="Go Back">
-    <i class="fas fa-arrow-left fa-lg"></i>
-</a>
-<div class="ai-floating-widget">
-    <div class="ai-widget-button" onclick="openAIAssistant()">
-        🤖
-        <div class="ai-widget-badge">●</div>
-    </div>
-    <div class="ai-widget-tooltip">💬 Спросить AI ассистента</div>
-</div>
-<script>
-function openAIAssistant() {
-    window.open('/ai-assistant', '_blank', 'width=500,height=700,left=' + (screen.width - 520) + ',top=100');
-}
-</script>
 </body>
 </html>
-
-
-

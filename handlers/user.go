@@ -1,7 +1,6 @@
 package handlers
 
 import (
-    
     "net/http"
     "subscription-system/database"
     "subscription-system/models"
@@ -9,21 +8,21 @@ import (
 )
 
 func GetUserProfile(c *gin.Context) {
-    // tenantID := middleware.GetTenantIDFromContext(c)
-    userID, exists := c.Get("userID")
-    if !exists {
+    // ===== ИСПРАВЛЕНО: используем c.GetString("user_id") =====
+    userID := c.GetString("user_id")
+    if userID == "" {
         c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
         return
     }
 
     // Получаем пользователя из БД через модель
-    user, err := models.GetUserByID(userID.(string))
+    user, err := models.GetUserByID(userID)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "user not found"})
         return
     }
 
-    // Количество AI-запросов (если таблица ai_requests существует)
+    // Количество AI-запросов
     var aiCount int
     _ = database.Pool.QueryRow(c.Request.Context(),
         "SELECT COUNT(*) FROM ai_requests WHERE user_id = $1", userID).Scan(&aiCount)
@@ -73,14 +72,20 @@ func GetUserProfile(c *gin.Context) {
         }
     }
 
+    // ===== ДОБАВЛЯЕМ ВСЕ ПОЛЯ ПОЛЬЗОВАТЕЛЯ =====
     response := gin.H{
         "user": gin.H{
-            "id":         user.ID,
-            "email":      user.Email,
-            "name":       user.Name,
-            "role":       user.Role,
-            "created_at": user.CreatedAt,
-            "updated_at": user.UpdatedAt,
+            "id":                 user.ID,
+            "email":              user.Email,
+            "name":               user.Name,
+            "role":               user.Role,
+            "phone":              user.Phone,              // ← ДОБАВЛЕНО
+            "organization_name":  user.OrganizationName,   // ← ДОБАВЛЕНО
+            "organization_inn":   user.OrganizationInn,    // ← ДОБАВЛЕНО
+            "created_at":         user.CreatedAt,
+            "updated_at":         user.UpdatedAt,
+            "email_verified":     user.EmailVerified,      // ← ДОБАВЛЕНО
+            "telegram_id":        user.TelegramID,         // ← ДОБАВЛЕНО
         },
         "ai_requests_count": aiCount,
     }
@@ -106,5 +111,3 @@ func GetUserProfile(c *gin.Context) {
 
     c.JSON(http.StatusOK, response)
 }
-
-

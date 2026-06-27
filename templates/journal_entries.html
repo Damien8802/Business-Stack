@@ -530,6 +530,160 @@
     from { opacity: 1; transform: translateY(0) scale(1); }
     to { opacity: 0; transform: translateY(-30px) scale(0.9); }
 }
+/* ===== ШИКАРНЫЕ КНОПКИ ДЕЙСТВИЙ ===== */
+.action-btn {
+    min-width: 36px;
+    min-height: 36px;
+    padding: 4px 6px !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 10px !important;
+    background: rgba(255,255,255,0.02) !important;
+    border: 1px solid transparent !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+.action-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    background: rgba(255,255,255,0.06) !important;
+    border-color: rgba(255,255,255,0.08) !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+.action-btn:active {
+    transform: scale(0.92);
+}
+.action-btn i {
+    font-size: 16px !important;
+    display: block;
+    margin: 0 auto 2px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    transition: all 0.3s ease;
+}
+.action-btn:hover i {
+    transform: scale(1.15);
+    filter: drop-shadow(0 4px 12px rgba(102,126,234,0.3));
+}
+.action-btn span {
+    font-size: 8px !important;
+    opacity: 0.6;
+    display: block;
+    text-align: center;
+    line-height: 1.1;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    transition: all 0.3s ease;
+}
+.action-btn:hover span {
+    opacity: 1;
+    color: #fff !important;
+}
+
+/* ЦВЕТА ДЛЯ РАЗНЫХ КНОПОК ПРИ НАВЕДЕНИИ */
+.action-btn[style*="color: #a5b4fc"]:hover {
+    background: rgba(165,180,252,0.15) !important;
+    border-color: rgba(165,180,252,0.2) !important;
+}
+.action-btn[style*="color: #f59e0b"]:hover {
+    background: rgba(245,158,11,0.15) !important;
+    border-color: rgba(245,158,11,0.2) !important;
+}
+.action-btn[style*="color: #10b981"]:hover {
+    background: rgba(16,185,129,0.15) !important;
+    border-color: rgba(16,185,129,0.2) !important;
+}
+.action-btn[style*="color: #3b82f6"]:hover {
+    background: rgba(59,130,246,0.15) !important;
+    border-color: rgba(59,130,246,0.2) !important;
+}
+.action-btn[style*="color: #ef4444"]:hover {
+    background: rgba(239,68,68,0.15) !important;
+    border-color: rgba(239,68,68,0.2) !important;
+}
+.action-btn[style*="color: #f59e0b"]:hover {
+    background: rgba(245,158,11,0.15) !important;
+    border-color: rgba(245,158,11,0.2) !important;
+}
+
+/* ===== АНИМАЦИЯ ПУЛЬСАЦИИ ДЛЯ КНОПКИ "ПРОВЕСТИ" ===== */
+.action-btn-post {
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(59,130,246,0);
+    }
+    50% {
+        box-shadow: 0 0 20px 2px rgba(59,130,246,0.2);
+    }
+}
+
+/* ===== СВЕТЛАЯ ТЕМА ===== */
+body.light-theme {
+    background: #f0f2f5;
+    color: #1a1a2e;
+}
+body.light-theme .navbar {
+    background: rgba(255,255,255,0.95);
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+body.light-theme .navbar-brand {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+body.light-theme .nav-link {
+    color: rgba(0,0,0,0.7);
+}
+body.light-theme .nav-link:hover,
+body.light-theme .nav-link.active {
+    color: #667eea;
+    background: rgba(102,126,234,0.1);
+}
+body.light-theme .premium-card {
+    background: white;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+body.light-theme .journal-table tbody td {
+    color: #1a1a2e;
+}
+body.light-theme .journal-table tbody tr {
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+body.light-theme .journal-table tbody tr:hover {
+    background: rgba(102,126,234,0.05);
+}
+body.light-theme .stat-value {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+body.light-theme .filter-bar .form-control,
+body.light-theme .filter-bar .form-select {
+    background: white !important;
+    color: #1a1a2e !important;
+    border-color: rgba(0,0,0,0.2) !important;
+}
+body.light-theme .modal-content {
+    background: white !important;
+    color: #1a1a2e !important;
+}
+body.light-theme .modal-header .modal-title {
+    color: #1a1a2e !important;
+}
+body.light-theme .modal-body label {
+    color: #1a1a2e !important;
+}
+body.light-theme .tag-filter-card {
+    background: rgba(0,0,0,0.03);
+    border-color: rgba(0,0,0,0.1);
+}
+body.light-theme .tag-filter-card .tag-name {
+    color: #1a1a2e;
+}
     </style>
 </head>
 <body>
@@ -550,6 +704,9 @@
             <a href="/import-excel" class="nav-link"><i class="fas fa-upload"></i> Импорт</a>
             <a href="/month-end" class="nav-link"><i class="fas fa-calendar-check"></i> Закрытие</a>
             <a href="/client-data" class="nav-link"><i class="fas fa-database"></i> Мои данные</a> 
+            <button class="theme-toggle" onclick="toggleTheme()" style="background: none; border: none; color: #a5b4fc; font-size: 20px; cursor: pointer; padding: 4px 12px; border-radius: 8px;">
+    <i class="fas fa-moon" id="themeIcon"></i>
+</button>
         </div>
     </div>
 </nav>
@@ -702,29 +859,62 @@
 </div>
 
     <div class="premium-card">
-        <div class="p-3 border-bottom" style="border-color: rgba(102,126,234,0.15);">
-            <div class="d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="fas fa-list-ul" style="color: #667eea;"></i>
-                    <h3 style="font-size: 16px; font-weight: 600; margin: 0; color: white;">Все проводки</h3>
-                </div>
+    <!-- ===== ПАГИНАЦИЯ ВВЕРХУ ===== -->
+    <div class="p-3 border-bottom" style="border-color: rgba(102,126,234,0.15);">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-list-ul" style="color: #667eea;"></i>
+                <h3 style="font-size: 16px; font-weight: 600; margin: 0; color: white;">Все проводки</h3>
                 <span style="font-size: 11px; color: #64748b;" id="lastUpdate">—</span>
             </div>
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <div class="d-flex align-items-center gap-2">
+                    <span style="color: #94a3b8; font-size: 13px;">Показывать:</span>
+                    <select id="itemsPerPageSelect" class="form-select" style="width: 80px; background: rgba(0,0,0,0.6); color: white; border: 1px solid rgba(102,126,234,0.3); border-radius: 8px; padding: 6px 10px;">
+                        <option value="10">10</option>
+                        <option value="20" selected>20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                        <option value="200">200</option>
+                    </select>
+                    <span style="color: #94a3b8; font-size: 13px;">записей</span>
+                </div>
+            </div>
         </div>
+    </div>
         <div style="overflow-x: auto;">
             <table class="journal-table">
-              <thead>
+           <thead>
     <tr>
         <th class="checkbox-col"><input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()"></th>
-        <th>Дата</th>
-        <th>№ документа</th>
-        <th>Дебет счёт</th>
-        <th>Кредит счёт</th>
-        <th>Партнер</th>
-        <th>Сумма</th>
-        <th>Статус</th>
-        <th>Описание</th>
-        <th style="width: 120px;">Действия</th>
+        <th onclick="sortTable('operation_date')" style="cursor: pointer; user-select: none;">
+            Дата <i class="fas fa-sort" id="sort-icon-operation_date"></i>
+        </th>
+        <th onclick="sortTable('document_number')" style="cursor: pointer; user-select: none;">
+            № документа <i class="fas fa-sort" id="sort-icon-document_number"></i>
+        </th>
+        <th onclick="sortTable('debit_account')" style="cursor: pointer; user-select: none;">
+            Дебет счёт <i class="fas fa-sort" id="sort-icon-debit_account"></i>
+        </th>
+        <th onclick="sortTable('credit_account')" style="cursor: pointer; user-select: none;">
+            Кредит счёт <i class="fas fa-sort" id="sort-icon-credit_account"></i>
+        </th>
+        <th onclick="sortTable('counterparty_name')" style="cursor: pointer; user-select: none;">
+            Партнер <i class="fas fa-sort" id="sort-icon-counterparty_name"></i>
+        </th>
+        <th onclick="sortTable('amount')" style="cursor: pointer; user-select: none;">
+            Сумма <i class="fas fa-sort" id="sort-icon-amount"></i>
+        </th>
+        <th onclick="sortTable('tags')" style="cursor: pointer; user-select: none;">
+            Теги <i class="fas fa-sort" id="sort-icon-tags"></i>
+        </th>
+        <th onclick="sortTable('status')" style="cursor: pointer; user-select: none;">
+            Статус <i class="fas fa-sort" id="sort-icon-status"></i>
+        </th>
+        <th onclick="sortTable('description')" style="cursor: pointer; user-select: none;">
+            Описание <i class="fas fa-sort" id="sort-icon-description"></i>
+        </th>
+        <th style="width: 150px;">Действия</th>
     </tr>
 </thead>
                <tbody id="entriesTable">
@@ -741,6 +931,20 @@
             <table>
         </div>
         <div class="pagination" id="pagination"></div>
+
+<!-- ===== ПАГИНАЦИЯ ВНИЗУ (НОВАЯ) ===== -->
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mt-3">
+    <span id="paginationInfo" style="color: #94a3b8; font-size: 14px;">Показано 1-20 из 33</span>
+    <div class="d-flex align-items-center gap-2">
+        <button class="btn-outline" onclick="goToPage(currentPage - 1)" style="padding: 6px 14px; font-size: 13px; min-width: 40px;" id="prevPageBtn">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <span id="paginationPages" class="d-flex gap-1"></span>
+        <button class="btn-outline" onclick="goToPage(currentPage + 1)" style="padding: 6px 14px; font-size: 13px; min-width: 40px;" id="nextPageBtn">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>
+</div>
     </div>
 </div>
 
@@ -805,6 +1009,7 @@
         </div>
     </div>
 </div>
+
 
 <!-- Модальное окно редактирования -->
 <div class="modal fade" id="editEntryModal" tabindex="-1">
@@ -896,10 +1101,12 @@ async function loadCompanyName() {
         brand.textContent = `🚀 ${companyName}`;
     }
 }
-    let allEntries = [];
-    let currentPage = 1;
-    let itemsPerPage = 20;
-    let filteredEntries = [];
+   let allEntries = [];
+let currentPage = 1;
+let itemsPerPage = 20;
+let filteredEntries = [];
+let sortColumn = null;
+let sortDirection = 'asc';
 
 async function loadEntries() {
  // ✅ ПРИНУДИТЕЛЬНАЯ ЗАГРУЗКА НАЗВАНИЯ КОМПАНИИ
@@ -1021,30 +1228,47 @@ const notification = new Notification('📒 FinCore — Журнал прово�
         renderTable();
     }
 
-   function renderTable() {
+function renderTable() {
+    // ✅ БЕРЁМ ЗНАЧЕНИЕ ИЗ СЕЛЕКТА
+    itemsPerPage = parseInt(document.getElementById('itemsPerPageSelect').value) || 20;
+    
     const tbody = document.getElementById('entriesTable');
     const start = (currentPage - 1) * itemsPerPage;
     const pageEntries = filteredEntries.slice(start, start + itemsPerPage);
     
     if (pageEntries.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 60px;"><i class="fas fa-inbox" style="font-size: 48px; color: #475569;"></i><p style="color: #64748b; margin-top: 16px;">Нет проводок</p><\/tr>';
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align: center; padding: 60px;"><i class="fas fa-inbox" style="font-size: 48px; color: #475569;"></i><p style="color: #64748b; margin-top: 16px;">Нет проводок</p></tr>';
         document.getElementById('pagination').innerHTML = '';
+        updatePagination();
         return;
     }
     
     let html = '';
+    
+    const getTagsHtml = (entry) => {
+        if (!entry) return '-';
+        const tags = entry.tags;
+        if (!tags || !Array.isArray(tags) || tags.length === 0) return '-';
+        const validTags = tags.filter(t => t && t.name);
+        if (validTags.length === 0) return '-';
+        return validTags.map(t => {
+            const color = t.color || '#667eea';
+            return `<span style="background: ${color}33; padding: 2px 10px; border-radius: 12px; font-size: 11px; margin: 2px; display: inline-block; color: ${color}; border: 1px solid ${color}44;">
+                #${t.name}
+            </span>`;
+        }).join(' ');
+    };
+    
     for (let e of pageEntries) {
         const amount = (e.debit_amount || 0) + (e.credit_amount || 0);
+        const tagsHtml = getTagsHtml(e);
         
-        // Определяем класс строки для черновиков
         let rowClass = e.status === 'draft' ? 'class="draft-row"' : '';
         
-        // Определяем бейдж статуса
         let statusBadge = e.status === 'draft' 
-            ? '<span class="badge bg-secondary" style="background: #6c757d !important;">📝 Черновик</span>'
-            : '<span class="badge bg-success" style="background: #10b981 !important;">✅ Проведена</span>';
+            ? '<span class="badge bg-secondary" style="background: #6c757d !important;">&#128221; Черновик</span>'
+            : '<span class="badge bg-success" style="background: #10b981 !important;">&#9989; Проведена</span>';
         
-        // Кнопка "Провести" только для черновиков
         let postButton = '';
         if (e.status === 'draft') {
             postButton = `<button class="post-btn" onclick="postEntry('${e.id}')" title="Провести" style="background: none; border: none; color: #3b82f6; cursor: pointer; margin-right: 8px;">
@@ -1052,37 +1276,52 @@ const notification = new Notification('📒 FinCore — Журнал прово�
             </button>`;
         }
         
-       html += `
-    <tr ${rowClass}>
-       <td class="checkbox-col"><input type="checkbox" class="entry-checkbox" data-id="${e.id}" data-status="${e.status || 'draft'}" onclick="updateSelectedCount()"></td>
-        <td>${e.operation_date || '-'}</td>
-        <td><code style="background: rgba(102,126,234,0.15); padding: 4px 8px; border-radius: 6px;">${e.document_number || '-'}</code></td>
-        <td><span class="badge-debit">${e.debit_account || '—'}</span></td>
-        <td><span class="badge-credit">${e.credit_account || '—'}</span></td>
-        <td>${e.counterparty_name || '-'}</td>
-        <td>${amount > 0 ? (e.debit_amount > 0 ? '<span style="color:#10b981;">' + amount.toLocaleString() + ' ₽</span>' : '<span style="color:#ef4444;">' + amount.toLocaleString() + ' ₽</span>') : '0 ₽'}</td>
-        <td style="text-align: center;">${statusBadge}</td>
-        <td style="max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${e.description || '-'}</td>
-        <td>
-          <button class="edit-btn" onclick='editEntryDirect("${e.id}", "${e.debit_account || ''}", "${e.credit_account || ''}", ${amount}, "${(e.description || '').replace(/'/g, "\\'")}", "${e.counterparty_name || ''}", "${e.document_number || ''}", "${e.operation_date || ''}")'>
-    <i class="fas fa-edit"></i>
-</button>
-            <button class="copy-btn" onclick='copyEntry("${e.id}")' title="Копировать">
-                <i class="fas fa-copy"></i>
-            </button>
-            <button class="archive-btn" onclick='moveToArchive("${e.id}")' title="В архив">
-                <i class="fas fa-archive"></i>
-            </button>
-            ${postButton}
-            <button class="delete-btn" onclick="deleteEntry('${e.id}')">
-                <i class="fas fa-trash"></i>
-            </button>
-        </td>
-    </tr>
-`;
+        html += `
+            <tr ${rowClass}>
+                <td class="checkbox-col"><input type="checkbox" class="entry-checkbox" data-id="${e.id}" data-status="${e.status || 'draft'}" onclick="updateSelectedCount()"></td>
+                <td>${e.operation_date || '-'}</td>
+                <td><code style="background: rgba(102,126,234,0.15); padding: 4px 8px; border-radius: 6px;">${e.document_number || '-'}</code></td>
+                <td><span class="badge-debit">${e.debit_account || '—'}</span></td>
+                <td><span class="badge-credit">${e.credit_account || '—'}</span></td>
+                <td>${e.counterparty_name || '-'}</td>
+                <td>${amount > 0 ? (e.debit_amount > 0 ? '<span style="color:#10b981;">' + amount.toLocaleString() + ' ₽</span>' : '<span style="color:#ef4444;">' + amount.toLocaleString() + ' ₽</span>') : '0 ₽'}</td>
+                <td style="max-width: 150px;">${tagsHtml}</td>
+                <td style="text-align: center;">${statusBadge}</td>
+                <td style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${e.description || '-'}</td>
+                <td>
+                    <div class="d-flex align-items-center gap-1" style="flex-wrap: wrap; justify-content: center;">
+                        <button class="action-btn" onclick='loadTagsForEntry("${e.id}")' title="Теги" style="color: #a5b4fc;">
+                            <i class="fas fa-tags"></i>
+                            <span>Теги</span>
+                        </button>
+                        <button class="action-btn" onclick='editEntryDirect("${e.id}", "${e.debit_account || ''}", "${e.credit_account || ''}", ${amount}, "${(e.description || '').replace(/'/g, "\\'")}", "${e.counterparty_name || ''}", "${e.document_number || ''}", "${e.operation_date || ''}")' title="Правка" style="color: #f59e0b;">
+                            <i class="fas fa-pen"></i>
+                            <span>Правка</span>
+                        </button>
+                        <button class="action-btn" onclick='copyEntry("${e.id}")' title="Копия" style="color: #10b981;">
+                            <i class="fas fa-copy"></i>
+                            <span>Копия</span>
+                        </button>
+                        <button class="action-btn" onclick='moveToArchive("${e.id}")' title="Архив" style="color: #f59e0b;">
+                            <i class="fas fa-box-archive"></i>
+                            <span>Архив</span>
+                        </button>
+                        ${e.status === 'draft' ? `
+                        <button class="action-btn action-btn-post" onclick="postEntry('${e.id}')" title="Провести" style="color: #3b82f6;">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Провести</span>
+                        </button>
+                        ` : ''}
+                        <button class="action-btn" onclick="deleteEntry('${e.id}')" title="Удалить" style="color: #ef4444;">
+                            <i class="fas fa-trash-can"></i>
+                            <span>Удалить</span>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
     }
     
-    // Рассчитываем итог по странице
     let pageTotal = 0;
     for (let e of pageEntries) {
         pageTotal += (e.debit_amount || 0) + (e.credit_amount || 0);
@@ -1096,12 +1335,12 @@ const notification = new Notification('📒 FinCore — Журнал прово�
         paginationHtml += `<button class="${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
     }
     document.getElementById('pagination').innerHTML = paginationHtml;
-    // Сброс выделения после перерисовки
+    
     const selectAllCheckbox = document.getElementById('selectAllCheckbox');
     if (selectAllCheckbox) selectAllCheckbox.checked = false;
     updateSelectedCount();
+    updatePagination();
 }
-
 
 function goToPage(page) {
     currentPage = page;
@@ -1529,6 +1768,80 @@ if ('Notification' in window && Notification.permission === 'granted') {
                         .toolbar { display: none; }
                         body { padding: 0; }
                     }
+/* ===== КОМПАКТНЫЕ КНОПКИ ДЕЙСТВИЙ ===== */
+.action-btn {
+    min-width: 36px;
+    min-height: 36px;
+    padding: 4px 6px !important;
+    transition: all 0.2s ease;
+    border-radius: 8px !important;
+    background: rgba(255,255,255,0.03) !important;
+    border: 1px solid transparent !important;
+}
+.action-btn:hover {
+    transform: translateY(-2px);
+    background: rgba(255,255,255,0.08) !important;
+    border-color: rgba(255,255,255,0.1) !important;
+}
+.action-btn i {
+    font-size: 14px !important;
+    display: block;
+    margin: 0 auto 1px;
+}
+.action-btn span {
+    font-size: 8px !important;
+    opacity: 0.7;
+    display: block;
+    text-align: center;
+    line-height: 1.1;
+}
+.action-btn:hover span {
+    opacity: 1;
+    color: #fff !important;
+}
+
+/* ===== НОРМАЛЬНАЯ ТАБЛИЦА ===== */
+.journal-table tbody td {
+    padding: 10px 12px !important;
+    font-size: 13px !important;
+    vertical-align: middle !important;
+}
+.journal-table thead th {
+    padding: 10px 12px !important;
+    font-size: 11px !important;
+    letter-spacing: 0.3px;
+}
+
+/* ===== НОРМАЛЬНЫЕ БЕЙДЖИ СТАТУСА ===== */
+.journal-table .badge {
+    font-size: 11px !important;
+    padding: 3px 10px !important;
+    border-radius: 16px !important;
+}
+
+/* ===== НОРМАЛЬНЫЕ ТЕГИ ===== */
+.journal-table .tag-item {
+    font-size: 11px !important;
+    padding: 2px 8px !important;
+    border-radius: 12px !important;
+}
+
+/* ===== КОД ДОКУМЕНТА ===== */
+.journal-table code {
+    font-size: 12px !important;
+    padding: 2px 8px !important;
+}
+
+/* ===== СТОЛБЕЦ СУММЫ ===== */
+.journal-table td:nth-child(7) {
+    font-weight: 600 !important;
+    font-size: 13px !important;
+}
+
+/* ===== ОПИСАНИЕ ===== */
+.journal-table td:nth-child(10) {
+    font-size: 12px !important;
+}
                 </style>
             </head>
             <body>
@@ -1718,7 +2031,14 @@ function requestNotificationPermission() {
     }
     document.getElementById('new_operation_date').value = new Date().toISOString().split('T')[0];
     loadEntries();
+    loadTheme(); 
     setInterval(loadEntries, 60000);
+
+document.getElementById('itemsPerPageSelect').addEventListener('change', function() {
+    itemsPerPage = parseInt(this.value);
+    currentPage = 1;
+    renderTable();
+});
     
     // ✅ Запрос разрешения на уведомления (только если ещё не запрашивали)
     if ('Notification' in window && Notification.permission === 'default') {
@@ -2535,6 +2855,1032 @@ async function deleteTemplate(templateId) {
         showNotification('❌ Ошибка: ' + e.message, 'error');
     }
 }
+
+// ============================================================
+// ===== УПРАВЛЕНЧЕСКИЕ ТЕГИ ==================================
+// ============================================================
+
+let currentEntryIdForTags = null;
+let selectedTags = [];
+
+// Загрузить теги для проводки
+async function loadTagsForEntry(entryId) {
+    currentEntryIdForTags = entryId;
+    selectedTags = [];
+    
+    try {
+        // Загружаем все теги
+        const res = await fetch('/api/fincore/tags', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        const allTags = data || [];
+        
+        // Загружаем теги этой проводки
+        const entryRes = await fetch(`/api/fincore/assign/entry/${entryId}/tags`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const entryData = await entryRes.json();
+        const assignedTagIds = entryData.tags ? entryData.tags.map(t => t.id) : [];
+        
+        // Формируем чекбоксы с кнопкой удаления
+        const container = document.getElementById('tagsCheckboxes');
+        if (allTags.length === 0) {
+            container.innerHTML = '<p style="color: #64748b;">Нет созданных тегов. Создайте новый ниже.</p>';
+        } else {
+            let html = '';
+            for (let tag of allTags) {
+                const checked = assignedTagIds.includes(tag.id) ? 'checked' : '';
+                html += `
+                    <div class="tag-checkbox-item" style="display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.3); border-radius: 20px; padding: 4px 14px 4px 10px;">
+                        <input type="checkbox" id="tag_${tag.id}" value="${tag.id}" ${checked} style="accent-color: #667eea; width: 16px; height: 16px;">
+                        <label for="tag_${tag.id}" style="color: #e2e8f0; font-size: 13px; cursor: pointer; margin: 0;">${tag.name}</label>
+                        <span style="color: #64748b; font-size: 10px;">#${tag.id.substring(0, 4)}</span>
+                        <button onclick="event.stopPropagation(); deleteTagFromSystem('${tag.id}', '${tag.name}')" 
+                                style="background: rgba(239,68,68,0.2); border: none; color: #ef4444; border-radius: 8px; padding: 2px 8px; cursor: pointer; font-size: 12px;"
+                                onmouseover="this.style.background='rgba(239,68,68,0.4)'"
+                                onmouseout="this.style.background='rgba(239,68,68,0.2)'"
+                                title="Удалить тег навсегда">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+        
+        // Открываем модалку
+        new bootstrap.Modal(document.getElementById('tagsModal')).show();
+        
+    } catch(e) {
+        console.error('❌ Ошибка загрузки тегов:', e);
+        showNotification('❌ Ошибка: ' + e.message, 'error');
+    }
+}
+// Сохранить теги для проводки
+async function saveTagsForEntry() {
+    if (!currentEntryIdForTags) {
+        showNotification('❌ Ошибка: проводка не выбрана', 'error');
+        return;
+    }
+    
+    const checkboxes = document.querySelectorAll('#tagsCheckboxes input[type="checkbox"]:checked');
+    const tagIds = Array.from(checkboxes).map(cb => cb.value);
+    
+    try {
+        const res = await fetch(`/api/fincore/assign/entry/${currentEntryIdForTags}/tags`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ tag_ids: tagIds })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            showNotification(`✅ Теги сохранены (${tagIds.length} шт.)`, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('tagsModal')).hide();
+            loadEntries(); // Обновляем таблицу
+        } else {
+            showNotification('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'), 'error');
+        }
+    } catch(e) {
+        console.error('❌ Ошибка сохранения тегов:', e);
+        showNotification('❌ Ошибка: ' + e.message, 'error');
+    }
+}
+
+
+
+// Создать новый тег и сразу назначить проводке
+async function createTagAndAssign() {
+    const input = document.getElementById('newTagInput');
+    const name = input.value.trim();
+    if (!name) {
+        showNotification('❌ Введите название тега', 'error');
+        return;
+    }
+    
+    const btn = document.querySelector('#tagsModal .btn-gradient:last-child');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Создание...';
+    }
+    
+    try {
+        const res = await fetch('/api/fincore/tags', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ 
+                name: name,
+                type: 'custom',
+                color: '#667eea'
+            })
+        });
+        const data = await res.json();
+        
+        console.log('📥 Ответ сервера:', data);
+        
+        if (data.success) {
+            showNotification(`✅ Тег "${name}" создан`, 'success');
+            input.value = '';
+            
+            // ✅ ЗАКРЫВАЕМ МОДАЛКУ И ОБНОВЛЯЕМ ТАБЛИЦУ
+            const modal = bootstrap.Modal.getInstance(document.getElementById('tagsModal'));
+            if (modal) modal.hide();
+            
+            // ✅ УБИРАЕМ ЗАТЕМНЕНИЕ
+            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            
+            // ✅ ОБНОВЛЯЕМ ТАБЛИЦУ
+            await loadEntries();
+            
+        } else {
+            showNotification('❌ Ошибка: ' + (data.error || 'Не удалось создать'), 'error');
+        }
+    } catch(e) {
+        console.error('❌ Ошибка:', e);
+        showNotification('❌ Ошибка: ' + e.message, 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = 'Создать';
+        }
+    }
+}
+// Обновить список тегов в текущей модалке
+async function refreshTagsList() {
+    // ✅ ПРОВЕРЯЕМ, ОТКРЫТА ЛИ МОДАЛКА
+    const modalElement = document.getElementById('tagsModal');
+    if (!modalElement || !modalElement.classList.contains('show')) {
+        console.log('ℹ️ Модалка не открыта, пропускаем обновление');
+        return;
+    }
+    
+    if (!currentEntryIdForTags) {
+        console.warn('⚠️ currentEntryIdForTags не установлен');
+        return;
+    }
+    
+    try {
+        const res = await fetch('/api/fincore/tags', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        const allTags = data || [];
+        
+        const entryRes = await fetch(`/api/fincore/assign/entry/${currentEntryIdForTags}/tags`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const entryData = await entryRes.json();
+        const assignedTagIds = entryData.tags ? entryData.tags.map(t => t.id) : [];
+        
+        const container = document.getElementById('tagsCheckboxes');
+        if (!container) {
+            console.warn('⚠️ Контейнер tagsCheckboxes не найден');
+            return;
+        }
+        
+        if (allTags.length === 0) {
+            container.innerHTML = '<p style="color: #64748b;">Нет созданных тегов. Создайте новый ниже.</p>';
+            return;
+        }
+        
+        let html = '';
+        for (let tag of allTags) {
+            const checked = assignedTagIds.includes(tag.id) ? 'checked' : '';
+            html += `
+                <div class="tag-checkbox-item" style="display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.3); border-radius: 20px; padding: 4px 14px 4px 10px;">
+                    <input type="checkbox" id="tag_${tag.id}" value="${tag.id}" ${checked} style="accent-color: #667eea; width: 16px; height: 16px;">
+                    <label for="tag_${tag.id}" style="color: #e2e8f0; font-size: 13px; cursor: pointer; margin: 0;">${tag.name}</label>
+                    <span style="color: #64748b; font-size: 10px;">#${tag.id.substring(0, 4)}</span>
+                    <button onclick="event.stopPropagation(); deleteTagFromSystem('${tag.id}', '${tag.name}')" 
+                            style="background: rgba(239,68,68,0.2); border: none; color: #ef4444; border-radius: 8px; padding: 2px 8px; cursor: pointer; font-size: 12px;"
+                            onmouseover="this.style.background='rgba(239,68,68,0.4)'"
+                            onmouseout="this.style.background='rgba(239,68,68,0.2)'"
+                            title="Удалить тег навсегда">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+        }
+        container.innerHTML = html;
+        
+        console.log('✅ Список тегов обновлен, всего:', allTags.length);
+        
+    } catch(e) {
+        console.error('❌ Ошибка обновления списка тегов:', e);
+    }
+}
+// ===== ПЕРЕМЕННЫЕ ДЛЯ ФИЛЬТРА ПО ТЕГАМ =====
+let selectedFilterTags = [];
+
+async function showFilterTagsModal() {
+    const modalElement = document.getElementById('filterTagsModal');
+    if (!modalElement) {
+        showNotification('❌ Ошибка: модальное окно не найдено', 'error');
+        return;
+    }
+    
+    const countElement = document.getElementById('filterTagsCount');
+    if (countElement) {
+        countElement.innerText = selectedFilterTags.length > 0 ? `${selectedFilterTags.length} выбрано` : '0 выбрано';
+    }
+    
+    try {
+        const res = await fetch('/api/fincore/tags', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        const allTags = data || [];
+        
+        console.log('📥 Загружено тегов:', allTags.length);
+        
+        const container = document.getElementById('filterTagsList');
+        const noTagsMsg = document.getElementById('noTagsMessage');
+        
+        if (!container || !noTagsMsg) {
+            showNotification('❌ Ошибка: элементы не найдены', 'error');
+            return;
+        }
+        
+        if (allTags.length === 0) {
+            container.style.display = 'none';
+            noTagsMsg.style.display = 'block';
+            new bootstrap.Modal(modalElement).show();
+            return;
+        }
+        
+        container.style.display = 'flex';
+        noTagsMsg.style.display = 'none';
+        
+        let tagStats = {};
+        for (let e of allEntries) {
+            if (e.tags && Array.isArray(e.tags)) {
+                for (let t of e.tags) {
+                    if (t && t.id) {
+                        tagStats[t.id] = (tagStats[t.id] || 0) + 1;
+                    }
+                }
+            }
+        }
+        
+        const colors = ['#667eea', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
+        let html = '';
+        
+        for (let i = 0; i < allTags.length; i++) {
+            const tag = allTags[i];
+            const count = tagStats[tag.id] || 0;
+            const color = colors[i % colors.length];
+            
+            const isSelected = selectedFilterTags.includes(tag.id);
+            const selectedClass = isSelected ? 'selected' : '';
+            
+            html += `
+                <div class="tag-filter-card ${selectedClass}" data-tag-id="${tag.id}" onclick="toggleFilterTag('${tag.id}')">
+                    <div class="tag-icon" style="background: ${color}33; color: ${color};">
+                        <i class="fas fa-tag"></i>
+                    </div>
+                    <span class="tag-name">${tag.name}</span>
+                    <span class="tag-count">${count} шт.</span>
+                    <div class="tag-check">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <button onclick="event.stopPropagation(); deleteTagFromSystem('${tag.id}', '${tag.name}')" 
+                            style="background: rgba(239,68,68,0.2); border: none; color: #ef4444; border-radius: 8px; padding: 2px 8px; cursor: pointer; font-size: 12px; margin-left: 4px;"
+                            onmouseover="this.style.background='rgba(239,68,68,0.4)'"
+                            onmouseout="this.style.background='rgba(239,68,68,0.2)'"
+                            title="Удалить тег навсегда">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+        }
+        container.innerHTML = html;
+        
+        if (countElement) {
+            countElement.innerText = selectedFilterTags.length > 0 ? `${selectedFilterTags.length} выбрано` : '0 выбрано';
+        }
+        
+        new bootstrap.Modal(modalElement).show();
+        
+    } catch(e) {
+        console.error('❌ Ошибка:', e);
+        showNotification('❌ Ошибка загрузки тегов: ' + e.message, 'error');
+    }
+}
+// ✅ ПЕРЕКЛЮЧИТЬ ВЫБОР ТЕГА (МГНОВЕННО МЕНЯЕТ СОСТОЯНИЕ)
+function toggleFilterTag(tagId) {
+    const card = document.querySelector(`.tag-filter-card[data-tag-id="${tagId}"]`);
+    if (!card) return;
+    
+    const index = selectedFilterTags.indexOf(tagId);
+    if (index > -1) {
+        selectedFilterTags.splice(index, 1);
+        card.classList.remove('selected');
+        console.log('❌ Тег снят:', tagId);
+    } else {
+        selectedFilterTags.push(tagId);
+        card.classList.add('selected');
+        console.log('✅ Тег выбран:', tagId);
+    }
+    
+    const count = selectedFilterTags.length;
+    const countElement = document.getElementById('filterTagsCount');
+    if (countElement) {
+        countElement.innerText = count > 0 ? `${count} выбрано` : '0 выбрано';
+    }
+    
+    // ✅ ОБНОВЛЯЕМ КНОПКУ ФИЛЬТРА В РЕАЛЬНОМ ВРЕМЕНИ
+    updateFilterButton();
+    
+    console.log('📥 Выбрано тегов:', selectedFilterTags);
+}
+
+// ✅ ОБНОВИТЬ КНОПКУ ФИЛЬТРА
+function updateFilterButton() {
+    const filterBtn = document.querySelector('.filter-bar .btn-outline[onclick="showFilterTagsModal()"]');
+    if (filterBtn) {
+        if (selectedFilterTags.length > 0) {
+            filterBtn.innerHTML = `<i class="fas fa-tags"></i> Теги (${selectedFilterTags.length})`;
+        } else {
+            filterBtn.innerHTML = `<i class="fas fa-tags"></i> Теги`;
+        }
+    }
+}
+
+// ✅ СНЯТЬ ВСЕ ТЕГИ
+function clearTagFilterSelection() {
+    selectedFilterTags = [];
+    document.querySelectorAll('.tag-filter-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    document.getElementById('filterTagsCount').innerText = '0 выбрано';
+    updateFilterButton();
+    showNotification('🔄 Все теги сняты', 'info');
+}
+
+// ✅ ПРИМЕНИТЬ ФИЛЬТР
+async function applyTagFilter() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('filterTagsModal'));
+    if (modal) modal.hide();
+    
+    if (selectedFilterTags.length === 0) {
+        showNotification('⚠️ Фильтр снят, показаны все проводки', 'info');
+        filteredEntries = [...allEntries];
+        currentPage = 1;
+        renderTable();
+        updateFilterButton();
+        return;
+    }
+    
+    try {
+        const filteredIds = new Set(selectedFilterTags);
+        
+        filteredEntries = allEntries.filter(entry => {
+            if (!entry.tags || !Array.isArray(entry.tags)) return false;
+            return entry.tags.some(tag => filteredIds.has(tag.id));
+        });
+        
+        currentPage = 1;
+        renderTable();
+        updateFilterButton();
+        
+        if (filteredEntries.length === 0) {
+            showNotification('🔍 Нет проводок с выбранными тегами', 'warning');
+        } else {
+            showNotification(`🔍 Найдено ${filteredEntries.length} проводок`, 'success');
+        }
+        
+    } catch(e) {
+        console.error('❌ Ошибка фильтрации:', e);
+        showNotification('❌ Ошибка: ' + e.message, 'error');
+    }
+}
+
+// Закрыть модалку (сохраняет текущее состояние и ОБНОВЛЯЕТ ТАБЛИЦУ)
+function closeFilterModal() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('filterTagsModal'));
+    if (modal) modal.hide();
+    
+    // ✅ ЕСЛИ ТЕГОВ НЕТ - ПОКАЗЫВАЕМ ВСЕ ПРОВОДКИ
+    if (selectedFilterTags.length === 0) {
+        filteredEntries = [...allEntries];
+        currentPage = 1;
+        renderTable();
+        showNotification('🔄 Все теги сняты, показаны все проводки', 'info');
+    } else {
+        // ✅ ЕСЛИ ТЕГИ ЕСТЬ - ПРИМЕНЯЕМ ФИЛЬТР
+        applyTagFilter();
+    }
+    
+    updateFilterButton();
+}
+// ✅ СБРОСИТЬ ФИЛЬТР (ПОКАЗАТЬ ВСЕ ПРОВОДКИ)
+function resetTagFilter() {
+    selectedFilterTags = [];
+    document.querySelectorAll('.tag-filter-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    document.getElementById('filterTagsCount').innerText = '0 выбрано';
+    
+    filteredEntries = [...allEntries];
+    currentPage = 1;
+    renderTable();
+    updateFilterButton();
+    
+    showNotification('🔓 Фильтр сброшен, показаны все проводки', 'success');
+}
+// Переключить выбор тега для фильтра
+function toggleFilterTag(tagId) {
+    const card = document.querySelector(`.tag-filter-card[data-tag-id="${tagId}"]`);
+    if (!card) return;
+    
+    const index = selectedFilterTags.indexOf(tagId);
+    if (index > -1) {
+        // ✅ УБИРАЕМ ТЕГ
+        selectedFilterTags.splice(index, 1);
+        card.classList.remove('selected');
+        console.log('❌ Тег снят:', tagId);
+    } else {
+        // ✅ ДОБАВЛЯЕМ ТЕГ
+        selectedFilterTags.push(tagId);
+        card.classList.add('selected');
+        console.log('✅ Тег выбран:', tagId);
+    }
+    
+    // ✅ ОБНОВЛЯЕМ СЧЕТЧИК
+    const count = selectedFilterTags.length;
+    const countElement = document.getElementById('filterTagsCount');
+    if (countElement) {
+        countElement.innerText = count > 0 ? `${count} выбрано` : '0 выбрано';
+    }
+    
+    console.log('📥 Выбрано тегов:', selectedFilterTags);
+}
+
+// ✅ ОЧИСТИТЬ ВЫБОР ТЕГОВ (СНЯТЬ ВСЕ)
+function clearTagFilterSelection() {
+    // ✅ ОЧИЩАЕМ МАССИВ
+    selectedFilterTags = [];
+    console.log('🔄 Очищаем все теги');
+    
+    // ✅ СНИМАЕМ ВЫДЕЛЕНИЕ СО ВСЕХ КАРТОЧЕК
+    document.querySelectorAll('.tag-filter-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // ✅ ОБНОВЛЯЕМ СЧЕТЧИК
+    const countElement = document.getElementById('filterTagsCount');
+    if (countElement) {
+        countElement.innerText = '0 выбрано';
+    }
+    
+    showNotification('🔄 Все теги сняты', 'info');
+}
+
+// Применить фильтр по выбранным тегам
+async function applyTagFilter() {
+    if (selectedFilterTags.length === 0) {
+        showNotification('⚠️ Выберите хотя бы один тег', 'warning');
+        return;
+    }
+    
+    bootstrap.Modal.getInstance(document.getElementById('filterTagsModal')).hide();
+    showNotification(`🔍 Фильтр по ${selectedFilterTags.length} тегам...`, 'info');
+    
+    try {
+        const filteredIds = new Set(selectedFilterTags);
+        
+        filteredEntries = allEntries.filter(entry => {
+            if (!entry.tags || !Array.isArray(entry.tags)) return false;
+            return entry.tags.some(tag => filteredIds.has(tag.id));
+        });
+        
+        currentPage = 1;
+        renderTable();
+        
+        const tagNames = selectedFilterTags.map(id => {
+            const card = document.querySelector(`.tag-filter-card[data-tag-id="${id}"] .tag-name`);
+            return card ? card.textContent : id;
+        });
+        
+        if (filteredEntries.length === 0) {
+            showNotification(`🔍 Нет проводок с тегами: ${tagNames.join(', ')}`, 'warning');
+        } else {
+            showNotification(`🔍 Найдено ${filteredEntries.length} проводок с тегами: ${tagNames.join(', ')}`, 'success');
+        }
+        
+        // Обновляем кнопку фильтра
+        const filterBtn = document.querySelector('.filter-bar .btn-outline[onclick="showFilterTagsModal()"]');
+        if (filterBtn) {
+            filterBtn.innerHTML = `<i class="fas fa-tags"></i> Теги (${selectedFilterTags.length})`;
+        }
+        
+    } catch(e) {
+        console.error('❌ Ошибка фильтрации:', e);
+        showNotification('❌ Ошибка: ' + e.message, 'error');
+    }
+}
+
+// ✅ СБРОСИТЬ ФИЛЬТР (ПОКАЗАТЬ ВСЕ ПРОВОДКИ)
+function resetTagFilter() {
+    // ✅ ОЧИЩАЕМ МАССИВ
+    selectedFilterTags = [];
+    console.log('🔄 Сброс фильтра');
+    
+    // ✅ СНИМАЕМ ВЫДЕЛЕНИЕ СО ВСЕХ КАРТОЧЕК
+    document.querySelectorAll('.tag-filter-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // ✅ ОБНОВЛЯЕМ СЧЕТЧИК
+    const countElement = document.getElementById('filterTagsCount');
+    if (countElement) {
+        countElement.innerText = '0 выбрано';
+    }
+    
+    // ✅ ПОКАЗЫВАЕМ ВСЕ ПРОВОДКИ
+    filteredEntries = [...allEntries];
+    currentPage = 1;
+    renderTable();
+    
+    showNotification('🔓 Фильтр сброшен, показаны все проводки', 'success');
+    
+    // Обновляем кнопку фильтра
+    const filterBtn = document.querySelector('.filter-bar .btn-outline[onclick="showFilterTagsModal()"]');
+    if (filterBtn) {
+        filterBtn.innerHTML = `<i class="fas fa-tags"></i> Теги`;
+    }
+}
+// Переключить выбор тега для фильтра
+function toggleFilterTag(tagId) {
+    const card = document.querySelector(`.tag-filter-card[data-tag-id="${tagId}"]`);
+    if (!card) return;
+    
+    const index = selectedFilterTags.indexOf(tagId);
+    if (index > -1) {
+        selectedFilterTags.splice(index, 1);
+        card.classList.remove('selected');
+    } else {
+        selectedFilterTags.push(tagId);
+        card.classList.add('selected');
+    }
+    
+    const count = selectedFilterTags.length;
+    document.getElementById('filterTagsCount').innerText = count > 0 ? `${count} выбрано` : '0 выбрано';
+}
+// Очистить выбор тегов (снять выделение со всех)
+function clearTagFilterSelection() {
+    selectedFilterTags = [];
+    document.querySelectorAll('.tag-filter-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    document.getElementById('filterTagsCount').innerText = '0 выбрано';
+    
+    showNotification('🔄 Все теги сняты', 'info');
+}
+// Применить фильтр по выбранным тегам
+async function applyTagFilter() {
+    if (selectedFilterTags.length === 0) {
+        showNotification('⚠️ Выберите хотя бы один тег', 'warning');
+        return;
+    }
+    
+    bootstrap.Modal.getInstance(document.getElementById('filterTagsModal')).hide();
+    showNotification(`🔍 Фильтр по ${selectedFilterTags.length} тегам...`, 'info');
+    
+    try {
+        // ✅ ФИЛЬТРУЕМ НАПРЯМУЮ В allEntries
+        const filteredIds = new Set(selectedFilterTags);
+        
+        filteredEntries = allEntries.filter(entry => {
+            if (!entry.tags || !Array.isArray(entry.tags)) return false;
+            // Проверяем, есть ли у проводки хотя бы один выбранный тег
+            return entry.tags.some(tag => filteredIds.has(tag.id));
+        });
+        
+        currentPage = 1;
+        renderTable();
+        
+        // Показываем названия тегов
+        const tagNames = selectedFilterTags.map(id => {
+            const card = document.querySelector(`.tag-filter-card[data-tag-id="${id}"] .tag-name`);
+            return card ? card.textContent : id;
+        });
+        
+        showNotification(`🔍 Найдено ${filteredEntries.length} проводок с тегами: ${tagNames.join(', ')}`, 'success');
+        
+        // Обновляем кнопку фильтра
+        const filterBtn = document.querySelector('.filter-bar .btn-outline[onclick="showFilterTagsModal()"]');
+        if (filterBtn) {
+            filterBtn.innerHTML = `<i class="fas fa-tags"></i> Теги (${selectedFilterTags.length})`;
+        }
+        
+    } catch(e) {
+        console.error('❌ Ошибка фильтрации:', e);
+        showNotification('❌ Ошибка: ' + e.message, 'error');
+    }
+}
+// Сбросить фильтр по тегам (показать все проводки)
+function resetTagFilter() {
+    // Очищаем выбранные теги
+    selectedFilterTags = [];
+    
+    // Снимаем выделение со всех карточек
+    document.querySelectorAll('.tag-filter-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    document.getElementById('filterTagsCount').innerText = '0 выбрано';
+    
+    // Показываем все проводки
+    filteredEntries = [...allEntries];
+    currentPage = 1;
+    renderTable();
+    
+    showNotification('🔓 Фильтр сброшен, показаны все проводки', 'success');
+    
+    // Обновляем кнопку фильтра
+    const filterBtn = document.querySelector('.filter-bar .btn-outline[onclick="showFilterTagsModal()"]');
+    if (filterBtn) {
+        filterBtn.innerHTML = `<i class="fas fa-tags"></i> Теги`;
+    }
+}
+
+// Удалить тег из системы (навсегда)
+async function deleteTagFromSystem(tagId, tagName) {
+    if (!confirm(`⚠️ Удалить тег "${tagName}" навсегда?\n\nТег будет удален из всех проводок!`)) {
+        return;
+    }
+    
+    // ✅ БЛОКИРУЕМ КНОПКУ, ЧТОБЫ НЕ БЫЛО ДВОЙНЫХ КЛИКОВ
+    const btns = document.querySelectorAll(`button[onclick*="deleteTagFromSystem('${tagId}']`);
+    btns.forEach(btn => {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    });
+    
+    try {
+        const response = await fetch(`/api/fincore/tags/${tagId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification(`✅ Тег "${tagName}" удален`, 'success');
+            
+            // ✅ ЗАКРЫВАЕМ ВСЕ МОДАЛКИ
+            const tagsModal = bootstrap.Modal.getInstance(document.getElementById('tagsModal'));
+            if (tagsModal) tagsModal.hide();
+            
+            const filterModal = bootstrap.Modal.getInstance(document.getElementById('filterTagsModal'));
+            if (filterModal) filterModal.hide();
+            
+            // ✅ УБИРАЕМ ЗАТЕМНЕНИЕ (если осталось)
+            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            
+            // ✅ ОБНОВЛЯЕМ ТАБЛИЦУ ПРОВОДОК
+            await loadEntries();
+            
+            // ✅ ЕСЛИ ТЕГ БЫЛ В ФИЛЬТРЕ - УБИРАЕМ ЕГО
+            const index = selectedFilterTags.indexOf(tagId);
+            if (index > -1) {
+                selectedFilterTags.splice(index, 1);
+                updateFilterButton();
+            }
+            
+            // ✅ ОБНОВЛЯЕМ КНОПКУ ФИЛЬТРА
+            updateFilterButton();
+            
+            showNotification(`✅ Тег "${tagName}" удален из системы`, 'success');
+            
+        } else {
+            showNotification('❌ Ошибка: ' + (data.error || 'Не удалось удалить тег'), 'error');
+        }
+    } catch(e) {
+        console.error('❌ Ошибка удаления тега:', e);
+        showNotification('❌ Ошибка: ' + e.message, 'error');
+    } finally {
+        // ✅ РАЗБЛОКИРУЕМ КНОПКИ
+        btns.forEach(btn => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-trash"></i>';
+        });
+        
+        // ✅ ЕЩЕ РАЗ УБИРАЕМ ЗАТЕМНЕНИЕ (на всякий случай)
+        setTimeout(() => {
+            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+        }, 300);
+    }
+}
+
+// Удалить все выбранные (отмеченные) теги
+async function deleteSelectedTags() {
+    // ✅ СОБИРАЕМ ВСЕ ВЫБРАННЫЕ ЧЕКБОКСЫ (которые отмечены галочкой)
+    const checkedCheckboxes = document.querySelectorAll('#tagsCheckboxes input[type="checkbox"]:checked');
+    
+    if (checkedCheckboxes.length === 0) {
+        showNotification('⚠️ Нет выбранных тегов для удаления', 'warning');
+        return;
+    }
+    
+    // ✅ ПОЛУЧАЕМ ID И ИМЕНА ТЕГОВ
+    const tagsToDelete = [];
+    checkedCheckboxes.forEach(cb => {
+        const tagName = cb.nextElementSibling?.textContent || 'Тег';
+        tagsToDelete.push({ id: cb.value, name: tagName });
+    });
+    
+    // ✅ ПОДТВЕРЖДЕНИЕ
+    const tagNames = tagsToDelete.map(t => `  • ${t.name}`).join('\n');
+    if (!confirm(`⚠️ Удалить выбранные теги (${tagsToDelete.length} шт.)?\n\n${tagNames}\n\nТеги будут удалены из всех проводок и фильтров!`)) {
+        return;
+    }
+    
+    // ✅ БЛОКИРУЕМ КНОПКУ
+    const btn = document.querySelector('button[onclick="deleteSelectedTags()"]');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Удаление...';
+    }
+    
+    let deletedCount = 0;
+    let failedCount = 0;
+    const failedTags = [];
+    const deletedTagIds = [];
+    
+    try {
+        // ✅ УДАЛЯЕМ КАЖДЫЙ ТЕГ
+        for (let tag of tagsToDelete) {
+            try {
+                const response = await fetch(`/api/fincore/tags/${tag.id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    deletedCount++;
+                    deletedTagIds.push(tag.id);
+                    
+                    // ✅ УДАЛЯЕМ ТЕГ ИЗ ВСЕХ ПРОВОДОК (в allEntries)
+                    for (let entry of allEntries) {
+                        if (entry.tags && Array.isArray(entry.tags)) {
+                            entry.tags = entry.tags.filter(t => t.id !== tag.id);
+                        }
+                    }
+                    
+                    // ✅ УДАЛЯЕМ ТЕГ ИЗ ФИЛЬТРА
+                    const filterIndex = selectedFilterTags.indexOf(tag.id);
+                    if (filterIndex > -1) {
+                        selectedFilterTags.splice(filterIndex, 1);
+                    }
+                    
+                    // ✅ УДАЛЯЕМ ТЕГ ИЗ ОТФИЛЬТРОВАННЫХ ПРОВОДОК
+                    for (let entry of filteredEntries) {
+                        if (entry.tags && Array.isArray(entry.tags)) {
+                            entry.tags = entry.tags.filter(t => t.id !== tag.id);
+                        }
+                    }
+                    
+                } else {
+                    failedCount++;
+                    failedTags.push(tag.name);
+                }
+            } catch(e) {
+                failedCount++;
+                failedTags.push(tag.name);
+                console.error(`❌ Ошибка удаления тега "${tag.name}":`, e);
+            }
+        }
+        
+        // ✅ ЗАКРЫВАЕМ МОДАЛКУ
+        const modal = bootstrap.Modal.getInstance(document.getElementById('tagsModal'));
+        if (modal) modal.hide();
+        
+        // ✅ УБИРАЕМ ЗАТЕМНЕНИЕ
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        
+        // ✅ ПЕРЕСЧИТЫВАЕМ СТАТИСТИКУ
+        updateStats();
+        
+        // ✅ ПЕРЕРИСОВЫВАЕМ ТАБЛИЦУ
+        renderTable();
+        
+        // ✅ ОБНОВЛЯЕМ КНОПКУ ФИЛЬТРА
+        updateFilterButton();
+        
+        // ✅ ОБНОВЛЯЕМ ФИЛЬТР (если открыт)
+        const filterModal = document.getElementById('filterTagsModal');
+        if (filterModal && filterModal.classList.contains('show')) {
+            await showFilterTagsModal();
+        }
+        
+        // ✅ ПОКАЗЫВАЕМ РЕЗУЛЬТАТ
+        if (failedCount === 0) {
+            showNotification(`✅ Удалено ${deletedCount} тегов из всех проводок`, 'success');
+        } else {
+            showNotification(`⚠️ Удалено ${deletedCount} тегов, ошибок: ${failedCount} (${failedTags.join(', ')})`, 'warning');
+        }
+        
+        // ✅ ЕСЛИ ПОСЛЕ УДАЛЕНИЯ НЕ ОСТАЛОСЬ ТЕГОВ - ОБНОВЛЯЕМ СПИСОК
+        if (deletedCount > 0) {
+            const res = await fetch('/api/fincore/tags', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const data = await res.json();
+            if (data.length === 0) {
+                const container = document.getElementById('tagsCheckboxes');
+                if (container) {
+                    container.innerHTML = '<p style="color: #64748b;">Нет созданных тегов. Создайте новый ниже.</p>';
+                }
+            }
+        }
+        
+    } catch(e) {
+        console.error('❌ Ошибка массового удаления:', e);
+        showNotification('❌ Ошибка: ' + e.message, 'error');
+    } finally {
+        // ✅ РАЗБЛОКИРУЕМ КНОПКУ
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-trash"></i> Удалить выбранные';
+        }
+    }
+}
+
+// ========== ГОРЯЧИЕ КЛАВИШИ ==========
+document.addEventListener('keydown', function(e) {
+    // Ctrl+N - Новая проводка
+    if (e.ctrlKey && e.key === 'n') {
+        e.preventDefault();
+        document.querySelector('[data-bs-target="#addEntryModal"]')?.click();
+        showNotification('⌨️ Открыта новая проводка', 'info');
+    }
+    
+    // Ctrl+F - Фокус на поиск
+    if (e.ctrlKey && e.key === 'f') {
+        e.preventDefault();
+        const search = document.getElementById('filterSearch');
+        if (search) {
+            search.focus();
+            search.select();
+            showNotification('⌨️ Поиск активирован', 'info');
+        }
+    }
+    
+    // Ctrl+R - Обновить
+    if (e.ctrlKey && e.key === 'r') {
+        e.preventDefault();
+        loadEntries();
+        showNotification('🔄 Журнал обновлён', 'success');
+    }
+    
+    // Escape - Закрыть модалки
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.modal.show').forEach(modal => {
+            const instance = bootstrap.Modal.getInstance(modal);
+            if (instance) instance.hide();
+        });
+    }
+    
+    // Ctrl+Shift+1 - Переключить тему
+    if (e.ctrlKey && e.shiftKey && e.key === '1') {
+        e.preventDefault();
+        toggleTheme();
+    }
+});
+
+// ========== ПЕРЕКЛЮЧЕНИЕ ТЕМЫ ==========
+function toggleTheme() {
+    const body = document.body;
+    const icon = document.getElementById('themeIcon');
+    
+    if (body.classList.contains('light-theme')) {
+        body.classList.remove('light-theme');
+        icon.className = 'fas fa-moon';
+        localStorage.setItem('theme', 'dark');
+    } else {
+        body.classList.add('light-theme');
+        icon.className = 'fas fa-sun';
+        localStorage.setItem('theme', 'light');
+    }
+}
+
+// Загрузить сохранённую тему
+function loadTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'light') {
+        document.body.classList.add('light-theme');
+        const icon = document.getElementById('themeIcon');
+        if (icon) icon.className = 'fas fa-sun';
+    }
+}
+
+// ========== СОРТИРОВКА ==========
+function sortTable(column) {
+    if (sortColumn === column) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortColumn = column;
+        sortDirection = 'asc';
+    }
+    
+    // Обновляем иконки
+    document.querySelectorAll('.journal-table thead th i.fa-sort').forEach(el => {
+        el.className = 'fas fa-sort';
+    });
+    const icon = document.getElementById(`sort-icon-${column}`);
+    if (icon) {
+        icon.className = `fas fa-sort-${sortDirection === 'asc' ? 'up' : 'down'}`;
+    }
+    
+    // Сортируем
+    filteredEntries.sort((a, b) => {
+        let valA = a[column] || '';
+        let valB = b[column] || '';
+        
+        if (column === 'amount' || column === 'debit_amount' || column === 'credit_amount') {
+            valA = parseFloat(valA) || 0;
+            valB = parseFloat(valB) || 0;
+        }
+        if (column === 'operation_date') {
+            valA = new Date(valA) || 0;
+            valB = new Date(valB) || 0;
+        }
+        if (column === 'tags') {
+            valA = (a.tags && a.tags.length) || 0;
+            valB = (b.tags && b.tags.length) || 0;
+        }
+        
+        if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+        if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+    });
+    
+    currentPage = 1;
+    renderTable();
+}
+
+// ========== ОБНОВЛЕНИЕ ПАГИНАЦИИ ==========
+function updatePagination() {
+    const total = filteredEntries.length;
+    const totalPages = Math.ceil(total / itemsPerPage);
+    const start = (currentPage - 1) * itemsPerPage + 1;
+    const end = Math.min(currentPage * itemsPerPage, total);
+    
+    document.getElementById('paginationInfo').innerText = `Показано ${start}-${end} из ${total}`;
+    
+    document.getElementById('prevPageBtn').style.opacity = currentPage <= 1 ? '0.3' : '1';
+    document.getElementById('nextPageBtn').style.opacity = currentPage >= totalPages ? '0.3' : '1';
+    
+    let pagesHtml = '';
+    const maxVisible = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    
+    if (endPage - startPage < maxVisible - 1) {
+        startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+    
+    if (startPage > 1) {
+        pagesHtml += `<button class="page-btn" onclick="goToPage(1)" style="background: none; border: none; color: #94a3b8; padding: 4px 8px; border-radius: 6px; cursor: pointer;">1</button>`;
+        if (startPage > 2) pagesHtml += `<span style="color: #475569;">…</span>`;
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const active = i === currentPage ? 'background: linear-gradient(135deg, #667eea, #764ba2); color: white;' : '';
+        pagesHtml += `<button class="page-btn" onclick="goToPage(${i})" style="background: none; border: none; color: #94a3b8; padding: 4px 10px; border-radius: 6px; cursor: pointer; ${active}">${i}</button>`;
+    }
+    
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) pagesHtml += `<span style="color: #475569;">…</span>`;
+        pagesHtml += `<button class="page-btn" onclick="goToPage(${totalPages})" style="background: none; border: none; color: #94a3b8; padding: 4px 8px; border-radius: 6px; cursor: pointer;">${totalPages}</button>`;
+    }
+    
+    document.getElementById('paginationPages').innerHTML = pagesHtml;
+}
 </script>  
 </body>
 </html>
@@ -2795,6 +4141,104 @@ async function deleteTemplate(templateId) {
     </div>
 </div>
 
+<!-- ===== ШИКАРНОЕ МОДАЛЬНОЕ ОКНО ДЛЯ ФИЛЬТРА ПО ТЕГАМ ===== -->
+<div class="modal fade" id="filterTagsModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="background: linear-gradient(145deg, #1a1a3e, #0f0f2a) !important; border: 1px solid rgba(102,126,234,0.5) !important; border-radius: 28px !important; overflow: hidden;">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(102,126,234,0.3); padding: 24px 30px; background: linear-gradient(135deg, rgba(102,126,234,0.15), rgba(118,75,162,0.15));">
+                <div class="d-flex align-items-center gap-3">
+                    <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 32px rgba(102,126,234,0.3);">
+                        <i class="fas fa-tags" style="font-size: 22px; color: white;"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title" style="font-size: 22px; font-weight: 700; color: #fff;">Фильтр по тегам</h5>
+                        <p style="color: #94a3b8; font-size: 13px; margin: 0;">Выберите один или несколько тегов для фильтрации проводок</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" style="opacity: 0.7;"></button>
+            </div>
+            <div class="modal-body" style="padding: 30px;">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <span style="color: #94a3b8; font-size: 14px;">
+                        <i class="fas fa-list-ul me-2"></i>Доступные теги
+                    </span>
+                    <span id="filterTagsCount" style="background: rgba(102,126,234,0.2); padding: 4px 14px; border-radius: 20px; color: #a5b4fc; font-size: 13px; font-weight: 600;">0 выбрано</span>
+                </div>
+                <div id="filterTagsList" class="d-flex flex-wrap gap-3" style="min-height: 100px; max-height: 400px; overflow-y: auto; padding: 10px 5px;"></div>
+                <div id="noTagsMessage" style="display: none; text-align: center; padding: 40px 20px;">
+                    <div style="width: 80px; height: 80px; background: rgba(102,126,234,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                        <i class="fas fa-inbox" style="font-size: 36px; color: #475569;"></i>
+                    </div>
+                    <h4 style="color: #94a3b8; font-size: 18px; margin-bottom: 8px;">Нет тегов для фильтрации</h4>
+                    <p style="color: #64748b; font-size: 14px;">Создайте теги в разделе «Управленка» или через кнопку «Теги» у проводки</p>
+                    <button class="btn-gradient mt-3" onclick="bootstrap.Modal.getInstance(document.getElementById('filterTagsModal')).hide();">
+                        <i class="fas fa-arrow-left me-2"></i>Назад
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid rgba(102,126,234,0.2); padding: 20px 30px; background: rgba(0,0,0,0.2);">
+    <div class="d-flex gap-3 w-100 justify-content-between flex-wrap">
+        <div class="d-flex gap-2">
+            <button class="btn-outline" onclick="clearTagFilterSelection()" style="padding: 10px 20px;">
+                <i class="fas fa-undo me-2"></i>Снять все
+            </button>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn-outline" onclick="closeFilterModal()" style="padding: 10px 24px; background: rgba(255,255,255,0.05);">
+                <i class="fas fa-times me-2"></i>Закрыть
+            </button>
+            <button class="btn-gradient" onclick="applyTagFilter()" style="padding: 10px 28px;">
+                <i class="fas fa-check me-2"></i>Применить фильтр
+            </button>
+        </div>
+    </div>
+</div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== МОДАЛЬНОЕ ОКНО ДЛЯ УПРАВЛЕНИЯ ТЕГАМИ У ПРОВОДКИ ===== -->
+<div class="modal fade" id="tagsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-tags me-2" style="color: #a5b4fc;"></i>Управленческие теги</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info small" style="background: rgba(102,126,234,0.15); border-color: #667eea; color: #a5b4fc;">
+                    <i class="fas fa-lightbulb me-2"></i>Теги нужны для управленческого учёта. Они не влияют на бухгалтерский баланс.
+                </div>
+                <div class="mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <label class="form-label" style="margin: 0;">Выберите теги для проводки</label>
+        <button class="btn btn-sm btn-danger" onclick="deleteSelectedTags()" 
+                style="background: rgba(239,68,68,0.2); border: 1px solid #ef4444; color: #ef4444; border-radius: 8px; padding: 4px 12px; font-size: 12px;"
+                onmouseover="this.style.background='rgba(239,68,68,0.4)'"
+                onmouseout="this.style.background='rgba(239,68,68,0.2)'">
+            <i class="fas fa-trash"></i> Удалить выбранные
+        </button>
+    </div>
+    <div id="tagsCheckboxes" class="d-flex flex-wrap gap-2" style="max-height: 300px; overflow-y: auto; padding: 10px 0;"></div>
+</div>
+                <div class="mb-3">
+                    <div class="input-group">
+                        <input type="text" id="newTagInput" class="form-control" placeholder="Новый тег (например: Маркетинг, Административные, ...)" style="flex: 1;">
+                        <button class="btn-gradient" onclick="createTagAndAssign()" style="border-radius: 0 12px 12px 0;">
+                            <i class="fas fa-plus"></i> Создать
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-outline" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn-gradient" onclick="saveTagsForEntry()">
+                    <i class="fas fa-save"></i> Сохранить теги
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>

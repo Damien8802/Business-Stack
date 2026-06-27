@@ -64,8 +64,6 @@
             padding: 40px;
             text-align: center;
         }
-        
-        /* Стили для аватарки */
         .avatar-container {
             position: relative;
             display: inline-block;
@@ -128,7 +126,6 @@
             font-size: 12px;
             color: rgba(255,255,255,0.6);
         }
-        
         .dashboard-row {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -150,7 +147,6 @@
             color: white;
         }
         .dashboard-card h3 i { color: #f59e0b; }
-        
         .active-projects-list, .activity-list {
             max-height: 300px;
             overflow-y: auto;
@@ -177,7 +173,6 @@
         .project-title { font-weight: 600; margin-bottom: 8px; color: white; }
         .project-progress { height: 4px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin-top: 8px; }
         .project-progress-fill { height: 100%; background: linear-gradient(90deg, #4f46e5, #7c3aed); border-radius: 4px; }
-        
         .profile-info {
             padding: 30px;
         }
@@ -252,51 +247,42 @@
         }
         .badge-owner { background: linear-gradient(135deg, #f59e0b, #ea580c); color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; display: inline-block; }
         .badge-admin { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; display: inline-block; }
-        
         @media (max-width: 768px) {
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
             .dashboard-row { grid-template-columns: 1fr; }
             .info-row { flex-direction: column; gap: 5px; }
             .info-label { width: 100%; }
         }
-/* ========== ЯРКИЕ ЦВЕТА ДЛЯ ВИДИМОСТИ ========== */
-.dashboard-card h3 {
-    color: #f59e0b !important;
-    font-size: 20px;
-    font-weight: 700;
-}
-
-.project-title {
-    color: #ffffff !important;
-    font-weight: 600;
-}
-
-.activity-text div {
-    color: #e2e8f0 !important;
-    font-weight: 500;
-}
-
-.activity-text small {
-    color: #94a3b8 !important;
-}
-
-.active-projects-list, .activity-list {
-    color: #ffffff;
-}
-
-.dashboard-card {
-    background: rgba(15, 23, 42, 0.9) !important;
-    border: 1px solid rgba(245, 158, 11, 0.3) !important;
-}
+        .dashboard-card h3 {
+            color: #f59e0b !important;
+            font-size: 20px;
+            font-weight: 700;
+        }
+        .project-title {
+            color: #ffffff !important;
+            font-weight: 600;
+        }
+        .activity-text div {
+            color: #e2e8f0 !important;
+            font-weight: 500;
+        }
+        .activity-text small {
+            color: #94a3b8 !important;
+        }
+        .active-projects-list, .activity-list {
+            color: #ffffff;
+        }
+        .dashboard-card {
+            background: rgba(15, 23, 42, 0.9) !important;
+            border: 1px solid rgba(245, 158, 11, 0.3) !important;
+        }
     </style>
 </head>
 <body>
-
     <div class="bg-animation"></div>
     <div class="container">
         <div class="profile-card">
             <div class="profile-header">
-                <!-- Аватарка с кнопкой загрузки -->
                 <div class="avatar-container">
                     <div id="avatarDisplay" class="profile-avatar">
                         <span id="avatarInitial">М</span>
@@ -306,28 +292,24 @@
                     </button>
                 </div>
                 <input type="file" id="avatarInput" accept="image/*" style="display: none;">
-                
                 <h1 class="profile-name" id="userName">Максим</h1>
                 <div>
                     <span class="badge-owner">👑 ВЛАДЕЛЕЦ</span>
                     <span class="badge-admin">🛡️ Администратор</span>
                 </div>
-
                 <div style="margin-top: 25px;">
                     <a href="/dashboard-improved" class="btn btn-dashboard" style="display: inline-flex; align-items: center; gap: 10px; padding: 12px 28px; border-radius: 50px; text-decoration: none; font-weight: 600;">
                         <i class="fas fa-chart-line"></i> 📊 Дашборд
                     </a>
                 </div>
             </div>
-            
             <div class="stats-grid">
                 <div class="stat-item"><div class="stat-number" id="projectsCount">0</div><div class="stat-label">Проектов</div></div>
                 <div class="stat-item"><div class="stat-number" id="activeServices">0</div><div class="stat-label">Активных</div></div>
                 <div class="stat-item"><div class="stat-number">99.9%</div><div class="stat-label">Аптайм</div></div>
                 <div class="stat-item"><div class="stat-number">24/7</div><div class="stat-label">Поддержка</div></div>
             </div>
-
-<div style="margin: 20px 30px;">
+            <div style="margin: 20px 30px;">
                 <a href="/marketplace-app" style="display: block; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 18px 24px; border-radius: 20px; text-decoration: none; text-align: center; font-weight: 700; font-size: 18px; transition: transform 0.2s, box-shadow 0.2s;">
                     <div style="display: flex; align-items: center; justify-content: center; gap: 15px;">
                         <i class="fas fa-download" style="font-size: 24px;"></i>
@@ -339,7 +321,6 @@
                     </div>
                 </a>
             </div>
-            
             <div class="dashboard-row">
                 <div class="dashboard-card">
                     <h3><i class="fas fa-tasks"></i> Активные проекты</h3>
@@ -350,43 +331,32 @@
                     <div class="activity-list" id="recentActivityList">Загрузка...</div>
                 </div>
             </div>
-            
             <div class="profile-info">
                 <div class="info-title"><i class="fas fa-user"></i> Личная информация</div>
                 <div class="info-row"><div class="info-label">Email</div><div class="info-value" id="userEmail">dev@businesstack.ru</div></div>
                 <div class="info-row"><div class="info-label">Имя</div><div class="info-value" id="userLogin">Максим</div></div>
                 <div class="info-row"><div class="info-label">Дата регистрации</div><div class="info-value">15 марта 2025</div></div>
-                
                 <div class="info-title" style="margin-top:30px;"><i class="fas fa-shield-alt"></i> Безопасность</div>
                 <div class="info-row"><div class="info-label">2FA статус</div><div class="info-value"><span style="color:#10b981;">✓ Включена</span></div></div>
                 <div class="info-row"><div class="info-label">Trusted devices</div><div class="info-value">2 устройства</div></div>
-                
                 <div class="action-buttons">
                     <a href="/settings" class="btn btn-primary"><i class="fas fa-sliders-h"></i> Настройки</a>
                     <a href="/developer/admin" class="btn btn-admin"><i class="fas fa-shield-alt"></i> 🔐 Админ-панель</a>
                     <a href="/" class="btn btn-outline"><i class="fas fa-home"></i> На главную</a>
-    </a>
                 </div>
             </div>
         </div>
     </div>
-    
     <script>
         let currentAvatarUrl = '';
 
-        // Функция для обновления отображения аватарки
         function updateAvatarDisplay(url) {
             const avatarDiv = document.getElementById('avatarDisplay');
-            const initialSpan = document.getElementById('avatarInitial');
-            
             if (url && url !== '') {
-                // Показываем картинку
                 avatarDiv.style.background = 'none';
                 avatarDiv.style.fontSize = '0';
                 avatarDiv.innerHTML = `<img src="${url}?t=${Date.now()}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
-                document.getElementById('deleteAvatarBtn')?.classList.remove('hidden');
             } else {
-                // Показываем инициалы
                 const token = localStorage.getItem('token');
                 let initial = 'М';
                 if (token) {
@@ -402,25 +372,19 @@
             }
         }
 
-        // Загрузка аватарки
         async function uploadAvatar() {
             const fileInput = document.getElementById('avatarInput');
             const file = fileInput.files[0];
             if (!file) return;
-            
             const formData = new FormData();
             formData.append('avatar', file);
-            
             try {
                 const response = await fetch('/api/avatar/upload', {
                     method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    },
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
                     body: formData
                 });
                 const data = await response.json();
-                
                 if (data.success) {
                     currentAvatarUrl = data.avatar_url;
                     updateAvatarDisplay(currentAvatarUrl);
@@ -434,34 +398,25 @@
             }
         }
 
-        // Загрузка существующей аватарки
         async function loadProfileAvatar() {
             const token = localStorage.getItem('token');
             if (!token) return;
-            
             try {
                 const payload = JSON.parse(atob(token.split('.')[1]));
                 const response = await fetch(`/api/avatar/${payload.user_id}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await response.json();
-                
                 if (data.avatar_url && data.avatar_url !== '') {
                     currentAvatarUrl = data.avatar_url;
                     updateAvatarDisplay(currentAvatarUrl);
                 }
-            } catch(e) {
-                console.error('Ошибка загрузки аватарки:', e);
-            }
+            } catch(e) { console.error('Ошибка загрузки аватарки:', e); }
         }
 
-        // Обработчик выбора файла
         document.getElementById('avatarInput').addEventListener('change', uploadAvatar);
-        
-        // Загружаем аватарку при старте
         loadProfileAvatar();
 
-        // Получение токена и заголовков
         function getAuthHeaders() {
             const token = localStorage.getItem('token');
             if (token) {
@@ -470,7 +425,6 @@
             return { 'Content-Type': 'application/json' };
         }
 
-        // Загрузка данных пользователя
         async function loadUserData() {
             try {
                 const headers = getAuthHeaders();
@@ -482,59 +436,76 @@
             } catch(e) { console.log(e); }
         }
 
-        // Загрузка активных проектов
-        async function loadActiveProjects() {
-            try {
-                const headers = getAuthHeaders();
-                const res = await fetch('/api/orders/list', { headers });
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-                const orders = await res.json();
-                const container = document.getElementById('activeProjectsList');
-                if (!container) return;
-                
-                if (!orders || orders.length === 0) {
-                    container.innerHTML = '<div style="text-align:center; padding:20px;">Нет активных проектов</div>';
-                    return;
-                }
-                
-                const activeProjects = orders.filter(o => o.work_status === 'in_progress' || o.status === 'new').slice(0, 5);
-                if (activeProjects.length === 0) {
-                    container.innerHTML = '<div style="text-align:center; padding:20px;">Нет активных проектов</div>';
-                    return;
-                }
-                
-                function escapeHtml(str) {
-                    if (!str) return '';
-                    return str.replace(/[&<>]/g, function(m) {
-                        if (m === '&') return '&amp;';
-                        if (m === '<') return '&lt;';
-                        if (m === '>') return '&gt;';
-                        return m;
-                    });
-                }
-                
-                container.innerHTML = activeProjects.map(p => `
-                    <div class="project-item">
-                        <div class="project-title">${escapeHtml(p.name) || 'Проект'}</div>
-                        <div style="display:flex; justify-content:space-between; font-size:12px;">
-                            <span>💰 ${(p.budget || 0).toLocaleString()} ₽</span>
-                            <span>📞 ${escapeHtml(p.contact) || '—'}</span>
-                        </div>
-                        <div class="project-progress"><div class="project-progress-fill" style="width:${p.work_status === 'in_progress' ? 50 : 10}%"></div></div>
-                    </div>
-                `).join('');
-                
-                document.getElementById('projectsCount').innerText = orders.length;
-                const activeCount = orders.filter(o => o.status === 'active' || o.work_status === 'in_progress').length;
-                document.getElementById('activeServices').innerText = activeCount;
-            } catch(e) { 
-                console.error('loadActiveProjects error:', e);
-                const container = document.getElementById('activeProjectsList');
-                if (container) container.innerHTML = '<div style="text-align:center; padding:20px; color:#f87171;">Ошибка загрузки</div>';
-            }
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
         }
 
-        // Загрузка последних действий
+      async function loadActiveProjects() {
+    try {
+        const headers = getAuthHeaders();
+        const res = await fetch('/api/orders/list', { headers });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const orders = await res.json();
+        const container = document.getElementById('activeProjectsList');
+        if (!container) return;
+        
+        console.log('📋 Все заявки (profile.html):', orders);
+        console.log('📊 Количество заявок:', orders ? orders.length : 0);
+        
+        // ✅ СЧИТАЕМ ВСЕ ЗАЯВКИ (включая индивидуальные, без фильтрации по бюджету)
+        const totalOrders = orders ? orders.length : 0;
+        document.getElementById('projectsCount').innerText = totalOrders;
+        console.log('📊 projectsCount обновлен:', totalOrders);
+        
+        if (!orders || orders.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:20px; color:#94a3b8;">Нет активных проектов</div>';
+            return;
+        }
+        
+        // Показываем все заявки (без фильтрации по бюджету)
+        const allProjects = orders.slice(0, 5);
+        
+     container.innerHTML = allProjects.map(p => {
+    const sourceIcon = p.source === 'individual' ? '👤' : '📋';
+    const sourceLabel = p.source === 'individual' ? 'Индивидуальный' : 'Заявка';
+    const statusText = p.status === 'new' ? '🆕 Новая' : (p.work_status === 'in_progress' ? '🔧 В работе' : '📋');
+    const progressWidth = p.work_status === 'completed' ? 100 : (p.work_status === 'in_progress' ? 50 : 10);
+    
+    return `
+    <div class="project-item">
+        <div class="project-title">
+            ${sourceIcon} ${escapeHtml(p.name) || 'Проект'} 
+            <span style="font-size:11px; color:rgba(255,255,255,0.4);">${sourceLabel}</span>
+            <span style="font-size:11px; color:rgba(255,255,255,0.3); float:right;">${statusText}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:12px;">
+            <span>💰 ${(p.budget || 0).toLocaleString()} ₽</span>
+            <span>📞 ${escapeHtml(p.contact) || '—'}</span>
+        </div>
+        ${p.description ? `<div style="margin-top:8px; color: rgba(255,255,255,0.6); font-size:13px;">📝 ${escapeHtml(p.description)}</div>` : ''}
+        <div class="project-progress"><div class="project-progress-fill" style="width:${progressWidth}%"></div></div>
+    </div>
+    `;
+}).join('');
+
+        // Активные = все, у кого статус 'new' или 'in_progress'
+        const activeCount = orders.filter(o => o.work_status === 'in_progress' || o.status === 'new' || o.status === 'active').length;
+        document.getElementById('activeServices').innerText = activeCount;
+        console.log('📊 activeServices обновлен:', activeCount);
+        
+    } catch(e) { 
+        console.error('loadActiveProjects error:', e);
+        const container = document.getElementById('activeProjectsList');
+        if (container) container.innerHTML = '<div style="text-align:center; padding:20px; color:#f87171;">Ошибка загрузки</div>';
+    }
+}
+
         async function loadRecentActivity() {
             try {
                 const headers = getAuthHeaders();
@@ -543,33 +514,26 @@
                 const orders = await res.json();
                 const container = document.getElementById('recentActivityList');
                 if (!container) return;
-                
                 if (!orders || orders.length === 0) {
                     container.innerHTML = '<div style="text-align:center; padding:20px;">Нет активности</div>';
                     return;
                 }
-                
-                function escapeHtml(str) {
-                    if (!str) return '';
-                    return str.replace(/[&<>]/g, function(m) {
-                        if (m === '&') return '&amp;';
-                        if (m === '<') return '&lt;';
-                        if (m === '>') return '&gt;';
-                        return m;
-                    });
-                }
-                
-                const recent = orders.slice(0, 5);
-                container.innerHTML = recent.map(a => `
-                    <div class="activity-item">
-                        <div class="activity-icon"><i class="fas fa-file-alt"></i></div>
-                        <div class="activity-text">
-                            <div>${a.status === 'new' ? '🆕 Новая заявка' : '📝 Обновление заявки'}</div>
-                            <div><strong>${escapeHtml(a.name) || 'Клиент'}</strong> | ${(a.budget || 0).toLocaleString()} ₽</div>
-                            <small>${a.date || '—'}</small>
-                        </div>
-                    </div>
-                `).join('');
+               const recent = orders.slice(0, 5);
+container.innerHTML = recent.map(a => {
+    const sourceIcon = a.source === 'individual' ? '👤' : '📋';
+    const statusText = a.status === 'new' ? '🆕 Новая' : '📝 Обновлена';
+    return `
+    <div class="activity-item">
+        <div class="activity-icon"><i class="fas fa-file-alt"></i></div>
+        <div class="activity-text">
+            <div>${sourceIcon} ${statusText}</div>
+            <div><strong>${escapeHtml(a.name) || 'Клиент'}</strong> | ${(a.budget || 0).toLocaleString()} ₽</div>
+            ${a.description ? `<div style="color: rgba(255,255,255,0.6); font-size:12px; margin-top:3px;">📝 ${escapeHtml(a.description)}</div>` : ''}
+            <small>${a.date || '—'}</small>
+        </div>
+    </div>
+`;
+}).join('');
             } catch(e) { 
                 console.error('loadRecentActivity error:', e);
                 const container = document.getElementById('recentActivityList');
@@ -577,12 +541,11 @@
             }
         }
 
-        // Запуск всех функций
+        // Запуск
         loadUserData();
         loadActiveProjects();
         loadRecentActivity();
         
-        // Обновление каждые 30 секунд
         setInterval(() => {
             loadActiveProjects();
             loadRecentActivity();

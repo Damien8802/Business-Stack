@@ -1091,8 +1091,28 @@ func ExportActivityLog(c *gin.Context) {
 // ==================== УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ (CRUD) ====================
 
 // GetAllUsers - получить список всех пользователей (только для админов)
+// GetAllUsers - получить список всех пользователей
 func GetAllUsers(c *gin.Context) {
+    // ✅ Берем tenant_id из контекста (уже есть от TenantMiddleware)
     tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        c.JSON(400, gin.H{"error": "Tenant ID not found in context"})
+        return
+    }
+    
+    // ✅ Берем user_id из контекста для проверки прав
+    userID := c.GetString("user_id")
+    if userID == "" {
+        c.JSON(401, gin.H{"error": "Unauthorized"})
+        return
+    }
+    
+    // Проверяем роль пользователя
+    role := c.GetString("role")
+    if role != "admin" && role != "developer" && role != "owner" {
+        c.JSON(403, gin.H{"error": "Access denied. Admin role required"})
+        return
+    }
     
     rows, err := database.Pool.Query(c.Request.Context(), `
         SELECT id, name, email, role, COALESCE(login, '') as login, 
@@ -1132,10 +1152,28 @@ func GetAllUsers(c *gin.Context) {
     
     c.JSON(200, gin.H{"users": users, "total": len(users)})
 }
-
 // CreateUser - создать нового пользователя
 func CreateUser(c *gin.Context) {
+    // ✅ Берем tenant_id из контекста
     tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        c.JSON(400, gin.H{"error": "Tenant ID not found in context"})
+        return
+    }
+    
+    // ✅ Берем user_id из контекста
+    userID := c.GetString("user_id")
+    if userID == "" {
+        c.JSON(401, gin.H{"error": "Unauthorized"})
+        return
+    }
+    
+    // Проверяем роль
+    role := c.GetString("role")
+    if role != "admin" && role != "developer" && role != "owner" {
+        c.JSON(403, gin.H{"error": "Access denied. Admin role required"})
+        return
+    }
     
     var req struct {
         Name     string `json:"name" binding:"required"`
@@ -1151,11 +1189,12 @@ func CreateUser(c *gin.Context) {
         return
     }
     
-    // Проверяем существование email
+    // Проверяем существование email в рамках tenant
     var exists bool
-    database.Pool.QueryRow(c.Request.Context(), "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)", req.Email).Scan(&exists)
+    database.Pool.QueryRow(c.Request.Context(), 
+        "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND tenant_id = $2)", req.Email, tenantID).Scan(&exists)
     if exists {
-        c.JSON(400, gin.H{"error": "Email already exists"})
+        c.JSON(400, gin.H{"error": "Email already exists in this organization"})
         return
     }
     
@@ -1170,12 +1209,12 @@ func CreateUser(c *gin.Context) {
         req.Role = "user"
     }
     
-    var userID string
+    var newUserID string
     err = database.Pool.QueryRow(c.Request.Context(), `
         INSERT INTO users (name, email, password_hash, role, login, phone, tenant_id, created_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
         RETURNING id
-    `, req.Name, req.Email, string(hashedPassword), req.Role, req.Login, req.Phone, tenantID).Scan(&userID)
+    `, req.Name, req.Email, string(hashedPassword), req.Role, req.Login, req.Phone, tenantID).Scan(&newUserID)
     
     if err != nil {
         c.JSON(500, gin.H{"error": err.Error()})
@@ -1183,15 +1222,35 @@ func CreateUser(c *gin.Context) {
     }
     
     // Логируем действие
-    LogActivity(c.GetString("user_id"), "create_user", "users", userID, gin.H{"email": req.Email}, c.ClientIP(), c.Request.UserAgent())
+    LogActivity(userID, "create_user", "users", newUserID, 
+        gin.H{"email": req.Email, "role": req.Role}, c.ClientIP(), c.Request.UserAgent())
     
-    c.JSON(200, gin.H{"success": true, "user_id": userID, "message": "User created successfully"})
+    c.JSON(200, gin.H{"success": true, "user_id": newUserID, "message": "User created successfully"})
 }
-
 // UpdateUser - обновить данные пользователя
 func UpdateUser(c *gin.Context) {
-    userID := c.Param("id")
+    targetUserID := c.Param("id")
+    
+    // ✅ Берем tenant_id из контекста
     tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        c.JSON(400, gin.H{"error": "Tenant ID not found in context"})
+        return
+    }
+    
+    // ✅ Берем текущего пользователя
+    currentUserID := c.GetString("user_id")
+    if currentUserID == "" {
+        c.JSON(401, gin.H{"error": "Unauthorized"})
+        return
+    }
+    
+    // Проверяем роль
+    role := c.GetString("role")
+    if role != "admin" && role != "developer" && role != "owner" {
+        c.JSON(403, gin.H{"error": "Access denied"})
+        return
+    }
     
     var req struct {
         Name  string `json:"name"`
@@ -1213,50 +1272,100 @@ func UpdateUser(c *gin.Context) {
             login = COALESCE($4, login),
             updated_at = NOW()
         WHERE id = $5 AND tenant_id = $6
-    `, req.Name, req.Role, req.Phone, req.Login, userID, tenantID)
+    `, req.Name, req.Role, req.Phone, req.Login, targetUserID, tenantID)
     
     if err != nil {
         c.JSON(500, gin.H{"error": err.Error()})
         return
     }
     
-    LogActivity(c.GetString("user_id"), "update_user", "users", userID, gin.H{"updates": req}, c.ClientIP(), c.Request.UserAgent())
+    LogActivity(currentUserID, "update_user", "users", targetUserID, 
+        gin.H{"updates": req}, c.ClientIP(), c.Request.UserAgent())
     
     c.JSON(200, gin.H{"success": true, "message": "User updated"})
 }
-
 // DeleteUser - мягкое удаление пользователя
 func DeleteUser(c *gin.Context) {
-    userID := c.Param("id")
+    targetUserID := c.Param("id")
+    
+    // ✅ Берем tenant_id из контекста
     tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        c.JSON(400, gin.H{"error": "Tenant ID not found in context"})
+        return
+    }
+    
+    // ✅ Берем текущего пользователя
+    currentUserID := c.GetString("user_id")
+    if currentUserID == "" {
+        c.JSON(401, gin.H{"error": "Unauthorized"})
+        return
+    }
+    
+    // Проверяем роль
+    role := c.GetString("role")
+    if role != "admin" && role != "developer" && role != "owner" {
+        c.JSON(403, gin.H{"error": "Access denied"})
+        return
+    }
+    
+    // Нельзя удалить себя
+    if targetUserID == currentUserID {
+        c.JSON(400, gin.H{"error": "Cannot delete yourself"})
+        return
+    }
     
     _, err := database.Pool.Exec(c.Request.Context(), `
         UPDATE users SET deleted_at = NOW() WHERE id = $1 AND tenant_id = $2
-    `, userID, tenantID)
+    `, targetUserID, tenantID)
     
     if err != nil {
         c.JSON(500, gin.H{"error": err.Error()})
         return
     }
     
-    // Также отзываем все сессии
+    // Отзываем все сессии пользователя
     database.Pool.Exec(c.Request.Context(), `
         UPDATE user_sessions SET revoked = true WHERE user_id = $1
-    `, userID)
+    `, targetUserID)
     
-    LogActivity(c.GetString("user_id"), "delete_user", "users", userID, gin.H{}, c.ClientIP(), c.Request.UserAgent())
+    LogActivity(currentUserID, "delete_user", "users", targetUserID, 
+        gin.H{}, c.ClientIP(), c.Request.UserAgent())
     
     c.JSON(200, gin.H{"success": true, "message": "User deleted"})
 }
-
 // BlockUser - заблокировать пользователя
 func BlockUser(c *gin.Context) {
-    userID := c.Param("id")
+    targetUserID := c.Param("id")
+    
+    // ✅ Берем tenant_id из контекста
     tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        c.JSON(400, gin.H{"error": "Tenant ID not found in context"})
+        return
+    }
+    
+    currentUserID := c.GetString("user_id")
+    if currentUserID == "" {
+        c.JSON(401, gin.H{"error": "Unauthorized"})
+        return
+    }
+    
+    role := c.GetString("role")
+    if role != "admin" && role != "developer" && role != "owner" {
+        c.JSON(403, gin.H{"error": "Access denied"})
+        return
+    }
+    
+    // Нельзя заблокировать себя
+    if targetUserID == currentUserID {
+        c.JSON(400, gin.H{"error": "Cannot block yourself"})
+        return
+    }
     
     _, err := database.Pool.Exec(c.Request.Context(), `
         UPDATE users SET blocked = true, blocked_at = NOW() WHERE id = $1 AND tenant_id = $2
-    `, userID, tenantID)
+    `, targetUserID, tenantID)
     
     if err != nil {
         c.JSON(500, gin.H{"error": err.Error()})
@@ -1266,36 +1375,72 @@ func BlockUser(c *gin.Context) {
     // Отзываем все сессии
     database.Pool.Exec(c.Request.Context(), `
         UPDATE user_sessions SET revoked = true WHERE user_id = $1
-    `, userID)
+    `, targetUserID)
     
-    LogActivity(c.GetString("user_id"), "block_user", "users", userID, gin.H{}, c.ClientIP(), c.Request.UserAgent())
+    LogActivity(currentUserID, "block_user", "users", targetUserID, 
+        gin.H{}, c.ClientIP(), c.Request.UserAgent())
     
     c.JSON(200, gin.H{"success": true, "message": "User blocked"})
 }
-
 // UnblockUser - разблокировать пользователя
 func UnblockUser(c *gin.Context) {
-    userID := c.Param("id")
+    targetUserID := c.Param("id")
+    
+    // ✅ Берем tenant_id из контекста
     tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        c.JSON(400, gin.H{"error": "Tenant ID not found in context"})
+        return
+    }
+    
+    currentUserID := c.GetString("user_id")
+    if currentUserID == "" {
+        c.JSON(401, gin.H{"error": "Unauthorized"})
+        return
+    }
+    
+    role := c.GetString("role")
+    if role != "admin" && role != "developer" && role != "owner" {
+        c.JSON(403, gin.H{"error": "Access denied"})
+        return
+    }
     
     _, err := database.Pool.Exec(c.Request.Context(), `
         UPDATE users SET blocked = false, blocked_at = NULL WHERE id = $1 AND tenant_id = $2
-    `, userID, tenantID)
+    `, targetUserID, tenantID)
     
     if err != nil {
         c.JSON(500, gin.H{"error": err.Error()})
         return
     }
     
-    LogActivity(c.GetString("user_id"), "unblock_user", "users", userID, gin.H{}, c.ClientIP(), c.Request.UserAgent())
+    LogActivity(currentUserID, "unblock_user", "users", targetUserID, 
+        gin.H{}, c.ClientIP(), c.Request.UserAgent())
     
     c.JSON(200, gin.H{"success": true, "message": "User unblocked"})
 }
-
 // ChangeUserRole - изменить роль пользователя
 func ChangeUserRole(c *gin.Context) {
-    userID := c.Param("id")
+    targetUserID := c.Param("id")
+    
+    // ✅ Берем tenant_id из контекста
     tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        c.JSON(400, gin.H{"error": "Tenant ID not found in context"})
+        return
+    }
+    
+    currentUserID := c.GetString("user_id")
+    if currentUserID == "" {
+        c.JSON(401, gin.H{"error": "Unauthorized"})
+        return
+    }
+    
+    role := c.GetString("role")
+    if role != "admin" && role != "developer" && role != "owner" {
+        c.JSON(403, gin.H{"error": "Access denied"})
+        return
+    }
     
     var req struct {
         Role string `json:"role" binding:"required"`
@@ -1308,18 +1453,18 @@ func ChangeUserRole(c *gin.Context) {
     
     _, err := database.Pool.Exec(c.Request.Context(), `
         UPDATE users SET role = $1, updated_at = NOW() WHERE id = $2 AND tenant_id = $3
-    `, req.Role, userID, tenantID)
+    `, req.Role, targetUserID, tenantID)
     
     if err != nil {
         c.JSON(500, gin.H{"error": err.Error()})
         return
     }
     
-    LogActivity(c.GetString("user_id"), "change_role", "users", userID, gin.H{"new_role": req.Role}, c.ClientIP(), c.Request.UserAgent())
+    LogActivity(currentUserID, "change_role", "users", targetUserID, 
+        gin.H{"new_role": req.Role}, c.ClientIP(), c.Request.UserAgent())
     
     c.JSON(200, gin.H{"success": true, "message": "Role changed"})
 }
-
 // ==================== API ИНТЕГРАЦИИ (REST API для внешних сервисов) ====================
 
 // VerifyToken - проверка токена (для внешних API)

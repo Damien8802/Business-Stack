@@ -5,169 +5,791 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Заказать разработку | Business Stack</title>
+    <title>Индивидуальные разработки | Business Stack</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0b1e;
             min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
         }
-        .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
-        .header { text-align: center; margin-bottom: 48px; }
-        .header h1 { font-size: 42px; font-weight: 800; color: white; margin-bottom: 16px; }
-        .header p { font-size: 18px; color: rgba(255,255,255,0.8); }
         
-        .categories { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 24px; margin-bottom: 48px; }
-        .category-card { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 24px; cursor: pointer; text-align: center; transition: all 0.3s; border: 1px solid rgba(255,255,255,0.2); }
-        .category-card:hover { transform: translateY(-5px); background: rgba(255,255,255,0.2); }
-        .category-card.selected { background: linear-gradient(135deg, #667eea, #764ba2); border-color: white; }
-        .category-icon { font-size: 48px; margin-bottom: 16px; }
-        .category-name { font-size: 18px; font-weight: 600; color: white; margin-bottom: 8px; }
-        .category-desc { font-size: 12px; color: rgba(255,255,255,0.7); }
+        /* Динамический фон */
+        .bg-gradient {
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at 20% 50%, #1a1f4e 0%, transparent 60%),
+                        radial-gradient(ellipse at 80% 20%, #2d1b69 0%, transparent 50%),
+                        radial-gradient(ellipse at 50% 80%, #1a3a5c 0%, transparent 50%);
+            z-index: 0;
+            animation: bgFloat 20s ease-in-out infinite;
+        }
         
-        .order-form { background: rgba(255,255,255,0.95); border-radius: 24px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
-        .form-group { margin-bottom: 20px; }
-        label { font-weight: 600; color: #333; margin-bottom: 8px; display: block; }
-        input, textarea, select { width: 100%; padding: 12px 16px; border: 1px solid #ddd; border-radius: 12px; font-size: 14px; }
-        input:focus, textarea:focus, select:focus { outline: none; border-color: #667eea; }
-        .price-card { background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 16px; padding: 20px; text-align: center; margin-bottom: 24px; color: white; }
-        .price-value { font-size: 36px; font-weight: 800; }
-        .btn-submit { width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
-        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(102,126,234,0.3); }
-        .back-btn { display: inline-block; margin-bottom: 20px; color: white; text-decoration: none; }
-        .back-btn:hover { color: #ddd; }
+        @keyframes bgFloat {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(5deg) scale(1.1); }
+        }
+        
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px 60px;
+        }
+        
+        /* Анимированные частицы */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            animation: floatParticle 15s infinite linear;
+        }
+        .particle:nth-child(1) { left: 10%; animation-duration: 18s; animation-delay: 0s; }
+        .particle:nth-child(2) { left: 25%; animation-duration: 22s; animation-delay: 2s; width: 6px; height: 6px; }
+        .particle:nth-child(3) { left: 40%; animation-duration: 16s; animation-delay: 4s; }
+        .particle:nth-child(4) { left: 55%; animation-duration: 20s; animation-delay: 1s; width: 5px; height: 5px; }
+        .particle:nth-child(5) { left: 70%; animation-duration: 24s; animation-delay: 3s; }
+        .particle:nth-child(6) { left: 85%; animation-duration: 19s; animation-delay: 5s; width: 7px; height: 7px; }
+        .particle:nth-child(7) { left: 50%; animation-duration: 21s; animation-delay: 2.5s; }
+        .particle:nth-child(8) { left: 15%; animation-duration: 17s; animation-delay: 4.5s; }
+        .particle:nth-child(9) { left: 75%; animation-duration: 23s; animation-delay: 1.5s; }
+        .particle:nth-child(10) { left: 35%; animation-duration: 25s; animation-delay: 3.5s; }
+        
+        @keyframes floatParticle {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+        }
+        
+        /* Кнопка назад */
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 10px 20px;
+            border-radius: 14px;
+            background: rgba(255,255,255,0.06);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.06);
+            transition: all 0.3s ease;
+            margin-bottom: 30px;
+        }
+        .back-btn:hover {
+            color: white;
+            background: rgba(255,255,255,0.12);
+            transform: translateX(-4px);
+        }
+        .back-btn i { transition: 0.3s; }
+        .back-btn:hover i { transform: translateX(-4px); }
+        
+        /* Шапка */
+        .header {
+            text-align: center;
+            margin-bottom: 48px;
+            animation: fadeUp 0.8s ease;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .header .badge-top {
+            display: inline-block;
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(20px);
+            padding: 6px 18px;
+            border-radius: 30px;
+            color: rgba(255,255,255,0.7);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            border: 1px solid rgba(255,255,255,0.06);
+            margin-bottom: 16px;
+        }
+        .header .badge-top i { color: #ffd700; margin-right: 6px; }
+        
+        .header h1 {
+            font-size: 52px;
+            font-weight: 900;
+            color: white;
+            margin-bottom: 12px;
+            letter-spacing: -1px;
+        }
+        .header h1 .highlight {
+            background: linear-gradient(135deg, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header h1 i {
+            background: linear-gradient(135deg, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header p {
+            font-size: 18px;
+            color: rgba(255,255,255,0.6);
+            max-width: 500px;
+            margin: 0 auto 16px;
+            line-height: 1.6;
+        }
+        
+        .header .badge-main {
+            display: inline-block;
+            background: linear-gradient(135deg, rgba(129, 140, 248, 0.2), rgba(192, 132, 252, 0.2));
+            backdrop-filter: blur(20px);
+            padding: 10px 28px;
+            border-radius: 30px;
+            color: #c084fc;
+            font-weight: 700;
+            font-size: 15px;
+            border: 1px solid rgba(192, 132, 252, 0.2);
+            animation: pulseGlow 3s ease-in-out infinite;
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(192, 132, 252, 0.1); }
+            50% { box-shadow: 0 0 40px rgba(192, 132, 252, 0.2); }
+        }
+        .header .badge-main i { color: #ffd700; margin-right: 8px; }
+        
+        /* Сетка услуг */
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+        
+        .service-card {
+            position: relative;
+            background: rgba(255,255,255,0.04);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 24px 18px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 1px solid rgba(255,255,255,0.06);
+            color: white;
+            overflow: hidden;
+            animation: fadeUp 0.6s ease backwards;
+        }
+        .service-card:nth-child(1) { animation-delay: 0.05s; }
+        .service-card:nth-child(2) { animation-delay: 0.1s; }
+        .service-card:nth-child(3) { animation-delay: 0.15s; }
+        .service-card:nth-child(4) { animation-delay: 0.2s; }
+        .service-card:nth-child(5) { animation-delay: 0.25s; }
+        .service-card:nth-child(6) { animation-delay: 0.3s; }
+        .service-card:nth-child(7) { animation-delay: 0.35s; }
+        .service-card:nth-child(8) { animation-delay: 0.4s; }
+        .service-card:nth-child(9) { animation-delay: 0.45s; }
+        .service-card:nth-child(10) { animation-delay: 0.5s; }
+        .service-card:nth-child(11) { animation-delay: 0.55s; }
+        .service-card:nth-child(12) { animation-delay: 0.6s; }
+        .service-card:nth-child(13) { animation-delay: 0.65s; }
+        .service-card:nth-child(14) { animation-delay: 0.7s; }
+        .service-card:nth-child(15) { animation-delay: 0.75s; }
+        .service-card:nth-child(16) { animation-delay: 0.8s; }
+        
+        .service-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 20px;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent, rgba(255,255,255,0.05));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+        
+        .service-card:hover {
+            transform: translateY(-6px) scale(1.02);
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.15);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .service-card.selected {
+            background: rgba(129, 140, 248, 0.15);
+            border-color: #818cf8;
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: 0 20px 60px rgba(129, 140, 248, 0.15);
+        }
+        .service-card.selected::after {
+            content: '✓';
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            font-size: 14px;
+            color: #818cf8;
+            font-weight: 700;
+        }
+        
+        .service-card .icon-wrapper {
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 12px;
+            background: linear-gradient(135deg, rgba(129, 140, 248, 0.15), rgba(192, 132, 252, 0.15));
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            transition: 0.4s;
+        }
+        .service-card:hover .icon-wrapper {
+            transform: scale(1.1) rotate(-5deg);
+            background: linear-gradient(135deg, rgba(129, 140, 248, 0.25), rgba(192, 132, 252, 0.25));
+        }
+        .service-card.selected .icon-wrapper {
+            background: linear-gradient(135deg, rgba(129, 140, 248, 0.3), rgba(192, 132, 252, 0.3));
+        }
+        .service-card .icon-wrapper i { color: #c084fc; }
+        
+        .service-card .service-name {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #e2e8f0;
+        }
+        .service-card .service-price {
+            font-size: 20px;
+            font-weight: 800;
+            color: #ffd700;
+            letter-spacing: -0.5px;
+        }
+        .service-card .service-price small {
+            font-size: 12px;
+            font-weight: 400;
+            color: rgba(255,255,255,0.4);
+        }
+        .service-card .badge {
+            font-size: 10px;
+            background: rgba(255,215,0,0.12);
+            color: #ffd700;
+            padding: 2px 12px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-top: 6px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        
+        /* Форма */
+        .order-form {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(30px);
+            border-radius: 28px;
+            padding: 40px;
+            border: 1px solid rgba(255,255,255,0.06);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.3);
+            animation: fadeUp 0.8s ease 0.3s backwards;
+        }
+        
+        .order-form .form-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .order-form .form-header .icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #818cf8, #c084fc);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+        }
+        .order-form .form-header h3 {
+            font-size: 22px;
+            font-weight: 700;
+            color: white;
+            margin: 0;
+        }
+        .order-form .form-header h3 small {
+            display: block;
+            font-size: 14px;
+            font-weight: 400;
+            color: rgba(255,255,255,0.5);
+        }
+        
+        .price-card {
+            background: linear-gradient(135deg, rgba(129, 140, 248, 0.15), rgba(192, 132, 252, 0.15));
+            border: 1px solid rgba(129, 140, 248, 0.15);
+            border-radius: 16px;
+            padding: 20px 24px;
+            text-align: center;
+            margin-bottom: 28px;
+            backdrop-filter: blur(10px);
+        }
+        .price-card .price-label {
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .price-card .price-value {
+            font-size: 40px;
+            font-weight: 900;
+            color: #ffd700;
+            letter-spacing: -1px;
+        }
+        .price-card .price-sources {
+            font-size: 12px;
+            color: rgba(255,255,255,0.3);
+            margin-top: 4px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            font-weight: 600;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 8px;
+            display: block;
+            font-size: 14px;
+        }
+        .form-group label .required {
+            color: #f87171;
+        }
+        
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 14px 18px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px;
+            font-size: 14px;
+            color: white;
+            transition: all 0.3s;
+            font-family: 'Inter', sans-serif;
+        }
+        .form-group input::placeholder,
+        .form-group textarea::placeholder {
+            color: rgba(255,255,255,0.3);
+        }
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #818cf8;
+            background: rgba(255,255,255,0.08);
+            box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.1);
+        }
+        .form-group textarea { min-height: 100px; resize: vertical; }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #818cf8, #c084fc);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 4px;
+        }
+        .btn-submit:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 16px 40px rgba(129, 140, 248, 0.3);
+        }
+        .btn-submit:active { transform: scale(0.98); }
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .success-message {
+            display: none;
+            margin-top: 16px;
+            padding: 16px 20px;
+            background: rgba(52, 211, 153, 0.1);
+            border: 1px solid rgba(52, 211, 153, 0.15);
+            border-radius: 14px;
+            color: #34d399;
+            text-align: center;
+            font-weight: 600;
+            animation: fadeUp 0.5s ease;
+        }
+        
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 36px;
+            padding: 16px;
+            background: rgba(255,255,255,0.03);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.04);
+        }
+        .stats-bar .stat {
+            text-align: center;
+        }
+        .stats-bar .stat .number {
+            font-size: 24px;
+            font-weight: 800;
+            color: white;
+        }
+        .stats-bar .stat .label {
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+            font-weight: 500;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 { font-size: 32px; }
+            .services-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+            .service-card { padding: 18px 14px; }
+            .service-card .icon-wrapper { width: 44px; height: 44px; font-size: 22px; }
+            .service-card .service-name { font-size: 12px; }
+            .service-card .service-price { font-size: 17px; }
+            .form-row { grid-template-columns: 1fr; }
+            .order-form { padding: 24px; }
+            .stats-bar { gap: 20px; flex-wrap: wrap; }
+            .stats-bar .stat .number { font-size: 18px; }
+        }
+        
+        @media (max-width: 420px) {
+            .services-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+            .service-card { padding: 14px 10px; }
+            .service-card .icon-wrapper { width: 36px; height: 36px; font-size: 18px; }
+            .service-card .service-price { font-size: 15px; }
+            .header h1 { font-size: 26px; }
+            .price-card .price-value { font-size: 30px; }
+        }
     </style>
 </head>
 <body>
+
+    <!-- Фон -->
+    <div class="bg-gradient"></div>
+    
+    <!-- Частицы -->
+    <div class="particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
     <div class="container">
-        <a href="/" class="back-btn"><i class="fas fa-arrow-left"></i> На главную</a>
+        <a href="/" class="back-btn">
+            <i class="fas fa-arrow-left"></i> На главную
+        </a>
         
         <div class="header">
-            <h1><i class="fas fa-code"></i> Заказать разработку</h1>
-            <p>Выберите тип проекта и получите расчёт стоимости</p>
+            <div class="badge-top">
+                <i class="fas fa-star"></i> 500+ проектов реализовано
+            </div>
+            <h1>
+                <i class="fas fa-rocket"></i> Индивидуальные<br><span class="highlight">разработки</span>
+            </h1>
+            <p>Выберите услугу и получите точный расчёт стоимости</p>
+            <span class="badge-main">
+                <i class="fas fa-fire"></i> Цены от 15 000 ₽
+            </span>
         </div>
         
-        <div class="categories">
-            <div class="category-card" onclick="selectCategory(this, 'telegram-bot', 'Telegram бот', 50000)">
-                <div class="category-icon">🤖</div>
-                <div class="category-name">Telegram бот</div>
-                <div class="category-desc">Бот для бизнеса с админ-панелью</div>
+        <!-- Статистика -->
+        <div class="stats-bar">
+            <div class="stat">
+                <div class="number">16</div>
+                <div class="label">Услуг</div>
             </div>
-            <div class="category-card" onclick="selectCategory(this, 'chat-bot', 'Чат-бот с ИИ', 70000)">
-                <div class="category-icon">💬</div>
-                <div class="category-name">Чат-бот с ИИ</div>
-                <div class="category-desc">Нейросеть для общения с клиентами</div>
+            <div class="stat">
+                <div class="number">500+</div>
+                <div class="label">Проектов</div>
             </div>
-            <div class="category-card" onclick="selectCategory(this, 'internet-shop', 'Интернет-магазин', 150000)">
-                <div class="category-icon">🛒</div>
-                <div class="category-name">Интернет-магазин</div>
-                <div class="category-desc">Под ключ с оплатой и доставкой</div>
+            <div class="stat">
+                <div class="number">97%</div>
+                <div class="label">Довольных клиентов</div>
             </div>
-            <div class="category-card" onclick="selectCategory(this, 'crm', 'CRM система', 200000)">
-                <div class="category-icon">📊</div>
-                <div class="category-name">CRM система</div>
-                <div class="category-desc">Управление клиентами и продажами</div>
-            </div>
-            <div class="category-card" onclick="selectCategory(this, 'landing', 'Лендинг', 30000)">
-                <div class="category-icon">🌐</div>
-                <div class="category-name">Лендинг</div>
-                <div class="category-desc">Продающая страница под ключ</div>
-            </div>
-            <div class="category-card" onclick="selectCategory(this, 'mobile-app', 'Мобильное приложение', 300000)">
-                <div class="category-icon">📱</div>
-                <div class="category-name">Мобильное приложение</div>
-                <div class="category-desc">iOS / Android / Cross-platform</div>
+            <div class="stat">
+                <div class="number">24/7</div>
+                <div class="label">Поддержка</div>
             </div>
         </div>
         
-        <div class="order-form" id="orderForm" style="display: none;">
-            <h3 id="selectedServiceName" style="margin-bottom: 20px;"></h3>
+        <!-- Сетка услуг -->
+        <div class="services-grid">
+            <div class="service-card" onclick="selectService(this, 'Telegram Бот', 15000)">
+                <div class="icon-wrapper"><i class="fab fa-telegram"></i></div>
+                <div class="service-name">Telegram Бот</div>
+                <div class="service-price">от 15 000 <small>₽</small></div>
+                <span class="badge">🔥 Популярно</span>
+            </div>
             
-            <div class="price-card" id="priceCard">
+            <div class="service-card" onclick="selectService(this, 'Интернет-магазин', 30000)">
+                <div class="icon-wrapper"><i class="fas fa-store"></i></div>
+                <div class="service-name">Интернет-магазин</div>
+                <div class="service-price">от 30 000 <small>₽</small></div>
+                <span class="badge">🛒 Full-stack</span>
+            </div>
+            
+            <div class="service-card" onclick="selectService(this, 'Мобильное приложение', 80000)">
+                <div class="icon-wrapper"><i class="fas fa-mobile-alt"></i></div>
+                <div class="service-name">Мобильное приложение</div>
+                <div class="service-price">от 80 000 <small>₽</small></div>
+                <span class="badge">📱 iOS / Android</span>
+            </div>
+            
+            <div class="service-card" onclick="selectService(this, 'CRM-система', 120000)">
+                <div class="icon-wrapper"><i class="fas fa-users-cog"></i></div>
+                <div class="service-name">CRM-система</div>
+                <div class="service-price">от 120 000 <small>₽</small></div>
+                <span class="badge">📊 Бизнес</span>
+            </div>
+            
+            <div class="service-card" onclick="selectService(this, 'Сайт-визитка', 25000)">
+                <div class="icon-wrapper"><i class="fas fa-globe"></i></div>
+                <div class="service-name">Сайт-визитка</div>
+                <div class="service-price">от 25 000 <small>₽</small></div>
+                <span class="badge">🌐 Landing</span>
+            </div>
+            
+            <div class="service-card" onclick="selectService(this, 'API Интеграция', 35000)">
+                <div class="icon-wrapper"><i class="fas fa-plug"></i></div>
+                <div class="service-name">API Интеграция</div>
+                <div class="service-price">от 35 000 <small>₽</small></div>
+                <span class="badge">🔌 REST / GraphQL</span>
+            </div>
+            
+            <div class="service-card" onclick="selectService(this, 'Корпоративный портал', 150000)">
+                <div class="icon-wrapper"><i class="fas fa-building"></i></div>
+                <div class="service-name">Корпоративный портал</div>
+                <div class="service-price">от 150 000 <small>₽</small></div>
+                <span class="badge">🏢 Enterprise</span>
+            </div>
+            
+            <div class="service-card" onclick="selectService(this, 'ERP-система', 200000)">
+                <div class="icon-wrapper"><i class="fas fa-cubes"></i></div>
+                <div class="service-name">ERP-система</div>
+                <div class="service-price">от 200 000 <small>₽</small></div>
+                <span class="badge">🧩 Комплекс</span>
+            </div>
+            
+            <div class="service-card" onclick="selectService(this, 'Чат-бот с ИИ', 50000)">
+                <div class="icon-wrapper"><i class="fas fa-robot"></i></div>
+                <div class="service-name">Чат-бот с ИИ</div>
+                <div class="service-price">от 50 000 <small>₽</small></div>
+                <span class="badge">🤖 AI</span>
+            </div>
+            
+            <div class="service-card" onclick="selectService(this, 'Платформа для курсов', 60000)">
+                <div class="icon-wrapper"><i class="fas fa-graduation-cap"></i></div>
+                <div class="service-name">Платформа для курсов</div>
+                <div class="service-price">от 60 000 <small>₽</small></div>
+                <span class="badge">📚 EdTech</span>
+            </div>
+            
+            <div class="service-card" onclick="selectService(this, 'Доска объявлений', 40000)">
+                <div class="icon-wrapper"><i class="fas fa-list-ul"></i></div>
+                <div class="service-name">Доска объявлений</div>
+                <div class="service-price">от 40 000 <small>₽</small></div>
+                <span class="badge">📋 Marketplace</span>
+            </div>
+            
+            <div class="service-card" onclick="selectService(this, 'Admin Panel', 55000)">
+                <div class="icon-wrapper"><i class="fas fa-tachometer-alt"></i></div>
+                <div class="service-name">Admin Panel</div>
+                <div class="service-price">от 55 000 <small>₽</small></div>
+                <span class="badge">📊 Dashboard</span>
+            </div>
+            
+            <div class="service-card" onclick="selectService(this, 'Интеграция с 1С', 50000)">
+                <div class="icon-wrapper"><i class="fas fa-exchange-alt"></i></div>
+                <div class="service-name">Интеграция с 1С</div>
+                <div class="service-price">от 50 000 <small>₽</small></div>
+                <span class="badge">📈 Бухгалтерия</span>
+            </div>
+            
+            <div class="service-card" onclick="selectService(this, 'Интеграция Telegram API', 20000)">
+                <div class="icon-wrapper"><i class="fab fa-telegram-plane"></i></div>
+                <div class="service-name">Интеграция Telegram API</div>
+                <div class="service-price">от 20 000 <small>₽</small></div>
+                <span class="badge">✈️ Messenger</span>
+            </div>
+            
+            <div class="service-card" onclick="selectService(this, 'Интеграция WhatsApp', 25000)">
+                <div class="icon-wrapper"><i class="fab fa-whatsapp"></i></div>
+                <div class="service-name">Интеграция WhatsApp</div>
+                <div class="service-price">от 25 000 <small>₽</small></div>
+                <span class="badge">💬 Business API</span>
+            </div>
+            
+            <div class="service-card" onclick="selectService(this, 'Платформа для фриланса', 70000)">
+                <div class="icon-wrapper"><i class="fas fa-users"></i></div>
+                <div class="service-name">Платформа для фриланса</div>
+                <div class="service-price">от 70 000 <small>₽</small></div>
+                <span class="badge">👥 Freelance</span>
+            </div>
+        </div>
+        
+        <!-- Форма -->
+        <div class="order-form" id="orderForm" style="display: none;">
+            <div class="form-header">
+                <div class="icon"><i class="fas fa-pen-fancy"></i></div>
+                <h3>
+                    Оставьте заявку
+                    <small>Заполните форму, и мы свяжемся с вами</small>
+                </h3>
+            </div>
+            
+            <div class="price-card">
                 <div class="price-label">💰 Ориентировочная стоимость</div>
                 <div class="price-value" id="priceValue">0 ₽</div>
-                <div class="price-sources" style="font-size: 12px; opacity: 0.9;">*точная цена после обсуждения ТЗ</div>
+                <div class="price-sources">* Точная цена после обсуждения ТЗ</div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Ваше имя <span class="required">*</span></label>
+                    <input type="text" id="clientName" placeholder="Иван Иванов">
+                </div>
+                <div class="form-group">
+                    <label>Телефон или Telegram <span class="required">*</span></label>
+                    <input type="text" id="clientContact" placeholder="+7 999 123-45-67 или @username">
+                </div>
             </div>
             
             <div class="form-group">
-                <label>Ваше имя *</label>
-                <input type="text" id="clientName" placeholder="Иван Иванов">
-            </div>
-            
-            <div class="form-group">
-                <label>Телефон или Telegram *</label>
-                <input type="text" id="clientContact" placeholder="+7 999 123-45-67 или @username">
-            </div>
-            
-            <div class="form-group">
-                <label>Описание проекта *</label>
+                <label>Описание проекта <span class="required">*</span></label>
                 <textarea id="requirements" rows="4" placeholder="Опишите подробно, что нужно разработать..."></textarea>
             </div>
             
             <button class="btn-submit" onclick="submitOrder()">
                 <i class="fas fa-paper-plane"></i> Отправить заявку
             </button>
+            
+            <div class="success-message" id="successMessage">
+                <i class="fas fa-check-circle"></i> Заявка отправлена! Мы свяжемся с вами в ближайшее время.
+            </div>
         </div>
     </div>
     
     <script>
-        let currentService = { id: '', name: '', price: 0 };
+        let currentService = { name: '', price: 0 };
         
-        function selectCategory(card, id, name, price) {
-            document.querySelectorAll('.category-card').forEach(c => c.classList.remove('selected'));
+        function selectService(card, name, price) {
+            document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
             card.classList.add('selected');
             
-            currentService = { id, name, price };
-            document.getElementById('selectedServiceName').innerHTML = `<i class="fas fa-check-circle" style="color: #10b981;"></i> Вы выбрали: ${name}`;
+            currentService = { name, price };
+            
             document.getElementById('priceValue').innerHTML = `${price.toLocaleString()} ₽`;
             document.getElementById('orderForm').style.display = 'block';
+            document.getElementById('orderForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
         
-        async function submitOrder() {
-            const name = document.getElementById('clientName').value;
-            const contact = document.getElementById('clientContact').value;
-            const requirements = document.getElementById('requirements').value;
-            
-            if (!name) { alert('Введите ваше имя'); return; }
-            if (!contact) { alert('Введите телефон или Telegram'); return; }
-            if (!requirements) { alert('Опишите требования к проекту'); return; }
-            if (!currentService.name) { alert('Выберите тип проекта'); return; }
-            
-            const btn = document.querySelector('.btn-submit');
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...';
-            btn.disabled = true;
-            
-            try {
-                const response = await fetch('/api/individual-order', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        service_name: currentService.name,
-                        requirements: requirements,
-                        estimated_price: currentService.price,
-                        client_name: name,
-                        client_phone: contact,
-                        client_email: '',
-                        client_telegram: contact.startsWith('@') ? contact : ''
-                    })
-                });
-                
-                if (response.ok) {
-                    alert('✅ Заявка отправлена! Мы свяжемся с вами в ближайшее время.');
-                    window.location.href = '/';
-                } else {
-                    alert('❌ Ошибка отправки. Попробуйте позже.');
-                }
-            } catch(err) {
-                alert('❌ Ошибка: ' + err.message);
-            } finally {
+async function submitOrder() {
+    const name = document.getElementById('clientName').value.trim();
+    const contact = document.getElementById('clientContact').value.trim();
+    const requirements = document.getElementById('requirements').value.trim();
+    
+    if (!name) { alert('Введите ваше имя'); return; }
+    if (!contact) { alert('Введите телефон или Telegram'); return; }
+    if (!requirements) { alert('Опишите требования к проекту'); return; }
+    if (!currentService.name) { alert('Выберите тип проекта'); return; }
+    
+    const btn = document.querySelector('.btn-submit');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...';
+    btn.disabled = true;
+    
+    try {
+        const response = await fetch('/api/individual-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({
+    service_name: currentService.name,
+    requirements: requirements,
+    estimated_price: currentService.price,
+    budget: currentService.price,        // ← ДОБАВИТЬ ЭТУ СТРОКУ!
+    client_name: name,
+    client_phone: contact,
+    client_email: '',
+    client_telegram: contact.startsWith('@') ? contact : ''
+})
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            document.getElementById('successMessage').style.display = 'block';
+            document.getElementById('clientName').value = '';
+            document.getElementById('clientContact').value = '';
+            document.getElementById('requirements').value = '';
+            btn.innerHTML = '<i class="fas fa-check"></i> Отправлено!';
+            setTimeout(() => {
                 btn.innerHTML = '<i class="fas fa-paper-plane"></i> Отправить заявку';
                 btn.disabled = false;
-            }
+            }, 3000);
+        } else {
+            alert('❌ Ошибка: ' + (result.error || 'Не удалось отправить заявку'));
+            btn.innerHTML = '<i class="fas fa-paper-plane"></i> Отправить заявку';
+            btn.disabled = false;
         }
+    } catch(err) {
+        alert('❌ Ошибка соединения. Попробуйте позже.');
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Отправить заявку';
+        btn.disabled = false;
+    }
+}
     </script>
 </body>
 </html>

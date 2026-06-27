@@ -9,7 +9,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap');
+        * { box-sizing: border-box; }
         body {
             font-family: 'Inter', sans-serif;
             background: linear-gradient(145deg, #667eea 0%, #764ba2 100%);
@@ -22,39 +23,78 @@
         }
         .login-card {
             background: rgba(255,255,255,0.98);
-            backdrop-filter: blur(10px);
-            border-radius: 32px;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            backdrop-filter: blur(20px);
+            border-radius: 40px;
+            box-shadow: 0 40px 80px -20px rgba(0,0,0,0.35);
             width: 100%;
-            max-width: 480px;
+            max-width: 500px;
             overflow: hidden;
-            animation: fadeIn 0.5s ease;
+            animation: slideUp 0.5s ease;
+            border: 1px solid rgba(255,255,255,0.15);
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
         .card-header {
-            background: linear-gradient(145deg, #f8f9fe, #eef2f9);
-            padding: 2rem 2rem 1.5rem;
+            background: linear-gradient(135deg, #fafbff 0%, #f0f2ff 100%);
+            padding: 2.2rem 2.5rem 1.5rem;
             text-align: center;
             border-bottom: none;
+            position: relative;
+            overflow: hidden;
+        }
+        .card-header::before {
+            content: '';
+            position: absolute;
+            top: -80px;
+            right: -80px;
+            width: 280px;
+            height: 280px;
+            background: radial-gradient(circle, rgba(102,126,234,0.08) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+        .card-header .icon-wrapper {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.8rem;
+            box-shadow: 0 12px 35px rgba(102,126,234,0.35);
+            position: relative;
+            z-index: 1;
+        }
+        .card-header .icon-wrapper i {
+            font-size: 2rem;
+            color: white;
         }
         .card-header h1 {
-            font-weight: 700;
-            color: #2d3748;
-            margin-bottom: 0.25rem;
+            font-weight: 900;
+            color: #1a202c;
             font-size: 2rem;
+            letter-spacing: -1px;
+            position: relative;
+            z-index: 1;
         }
-        .card-body {
-            padding: 2rem;
+        .card-header .subtitle {
+            color: #718096;
+            font-size: 0.9rem;
+            font-weight: 400;
+            position: relative;
+            z-index: 1;
         }
+        .card-body { padding: 1.8rem 2.5rem 2.2rem; }
+        
         .nav-tabs {
-            border-bottom: 2px solid #e9ecef;
+            border-bottom: 2px solid #eef2f9;
             margin-bottom: 1.5rem;
-            gap: 8px;
+            gap: 4px;
             display: flex;
             justify-content: center;
+            flex-wrap: wrap;
         }
         .nav-tabs .nav-link {
             border: none;
@@ -63,126 +103,292 @@
             font-weight: 600;
             color: #6c757d;
             transition: all 0.3s;
-            background: #f8f9fa;
-            font-size: 14px;
+            background: transparent;
+            font-size: 13px;
         }
         .nav-tabs .nav-link:hover {
-            background: #e9ecef;
+            background: #f0f2ff;
             color: #667eea;
         }
         .nav-tabs .nav-link.active {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            box-shadow: 0 4px 12px rgba(102,126,234,0.3);
+            box-shadow: 0 6px 20px rgba(102,126,234,0.35);
         }
-        .form-floating {
-            margin-bottom: 1.25rem;
+        .nav-tabs .nav-link i { margin-right: 6px; }
+        
+        .form-floating { margin-bottom: 1.1rem; }
+        .form-floating label {
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 0.9rem;
         }
+        .form-floating label i { color: #a0aec0; width: 18px; }
         .form-control {
             border-radius: 16px;
-            border: 1.5px solid #e9edf4;
-            padding: 0.75rem 1rem;
+            border: 2px solid #edf2f7;
+            padding: 0.8rem 1rem;
             height: auto;
-            font-size: 1rem;
-            transition: all 0.2s;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+            background: #fafbfc;
         }
         .form-control:focus {
             border-color: #667eea;
             box-shadow: 0 0 0 4px rgba(102,126,234,0.1);
+            background: white;
         }
-        .password-wrapper {
-            position: relative;
-        }
-        .password-wrapper .form-control {
-            padding-right: 50px;
-        }
+        .password-wrapper { position: relative; }
+        .password-wrapper .form-control { padding-right: 46px; }
         .toggle-password {
             position: absolute;
-            right: 16px;
+            right: 14px;
             top: 50%;
             transform: translateY(-50%);
             cursor: pointer;
-            color: #6c757d;
-            font-size: 1.2rem;
+            color: #a0aec0;
+            font-size: 1.1rem;
             z-index: 10;
+            transition: all 0.3s;
         }
-        .toggle-password:hover {
-            color: #667eea;
-        }
+        .toggle-password:hover { color: #667eea; }
+        
         .btn-login {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
             border-radius: 16px;
-            padding: 0.85rem;
-            font-weight: 600;
-            font-size: 1.1rem;
+            padding: 0.9rem;
+            font-weight: 700;
+            font-size: 1rem;
             color: white;
             width: 100%;
-            transition: all 0.2s;
-            margin-top: 0.5rem;
+            transition: all 0.3s;
+            margin-top: 0.3rem;
+            position: relative;
+            overflow: hidden;
         }
+        .btn-login::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        .btn-login:hover::before { left: 100%; }
         .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(102,126,234,0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px -8px rgba(102,126,234,0.5);
         }
+        .btn-login:disabled { opacity: 0.7; transform: none; }
+        
         .btn-outline-secondary {
             border-radius: 50px;
-            padding: 8px 16px;
-            font-size: 13px;
+            padding: 6px 18px;
+            font-size: 12px;
+            border-color: #e2e8f0;
+            color: #4a5568;
+            transition: all 0.3s;
         }
-        .qr-container {
-            text-align: center;
-            padding: 10px 0;
+        .btn-outline-secondary:hover {
+            background: #f7fafc;
+            border-color: #667eea;
+            color: #667eea;
         }
-        .qr-code {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 20px;
+        
+        .remember-device {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(135deg, #f8fafe, #f0f2ff);
+            padding: 12px 18px;
+            border-radius: 16px;
+            margin: 12px 0 10px;
+            border: 2px solid #edf2f7;
+            transition: all 0.3s;
+        }
+        .remember-device:hover {
+            border-color: #667eea;
+            background: #f5f7ff;
+        }
+        .remember-device input {
+            width: 18px;
+            height: 18px;
+            accent-color: #667eea;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .remember-device label {
+            margin: 0;
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .remember-device .hint {
+            font-size: 0.7rem;
+            color: #a0aec0;
+            font-weight: 400;
+            margin-left: 4px;
+        }
+        
+        .forgot-link {
+            text-align: right;
+            margin-top: -6px;
+            margin-bottom: 10px;
+        }
+        .forgot-link a {
+            color: #a0aec0;
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        .forgot-link a:hover { color: #667eea; }
+        
+        .qr-container { text-align: center; padding: 5px 0; }
+        .qr-wrapper {
+            position: relative;
             display: inline-block;
-            margin: 10px 0;
+            background: white;
+            padding: 16px;
+            border-radius: 20px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+            border: 2px solid #f0f2ff;
+            min-height: 210px;
+            min-width: 210px;
+            transition: all 0.3s;
+            margin: 5px 0;
         }
-        .qr-code img {
-            width: 200px;
-            height: 200px;
-            border-radius: 10px;
+        .qr-wrapper:hover {
+            border-color: #667eea;
+            box-shadow: 0 12px 40px rgba(102,126,234,0.12);
         }
+        .qr-wrapper img { 
+            width: 180px; 
+            height: 180px; 
+            border-radius: 12px;
+            display: block;
+        }
+        .qr-wrapper .spinner-border {
+            width: 2.5rem;
+            height: 2.5rem;
+        }
+        .qr-logo {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 48px;
+            height: 48px;
+            background: white;
+            border-radius: 12px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            border: 2px solid #f0f2ff;
+            pointer-events: none;
+            z-index: 5;
+            font-weight: 900;
+            font-size: 26px;
+            font-family: 'Inter', sans-serif;
+        }
+        .qr-logo span {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        @media (max-width: 576px) {
+            .qr-wrapper img { width: 150px; height: 150px; }
+            .qr-wrapper { min-height: 170px; min-width: 170px; padding: 12px; }
+            .qr-logo { width: 40px; height: 40px; font-size: 20px; }
+        }
+        
         .status-badge {
             padding: 8px 20px;
             border-radius: 50px;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             display: inline-block;
-            margin-top: 10px;
+            margin-top: 8px;
+            transition: all 0.3s;
         }
-        .status-pending { background: #fff3cd; color: #856404; }
-        .status-scanned { background: #cce5ff; color: #004085; }
-        .status-approved { background: #d4edda; color: #155724; }
-        .status-expired { background: #f8d7da; color: #721c24; }
+        .status-pending { background: #fff8e1; color: #f57c00; }
+        .status-scanned { background: #e3f2fd; color: #0d47a1; }
+        .status-approved { background: #e8f5e9; color: #1b5e20; }
+        .status-expired { background: #fce4ec; color: #b71c1c; }
+        
         .footer-links {
             text-align: center;
-            margin-top: 1.75rem;
-            font-size: 0.95rem;
+            margin-top: 1.5rem;
+            padding-top: 1.2rem;
+            border-top: 2px solid #f0f2ff;
+            font-size: 0.9rem;
         }
         .footer-links a {
             color: #667eea;
             text-decoration: none;
-            font-weight: 600;
+            font-weight: 700;
+            transition: all 0.3s;
+            position: relative;
         }
+        .footer-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s;
+        }
+        .footer-links a:hover::after { width: 100%; }
+        .footer-links a:hover { color: #764ba2; }
+        
+        .card-footer-decoration {
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
+            background-size: 200% 100%;
+            animation: shimmer 3s ease-in-out infinite;
+        }
+        @keyframes shimmer {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        .tab-pane { animation: tabFade 0.3s ease; }
+        @keyframes tabFade {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .alert-success {
+            border-radius: 14px;
+            padding: 10px 16px;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        
         @media (max-width: 576px) {
             body { padding: 12px; }
-            .card-header { padding: 1.5rem 1.5rem 1rem; }
-            .card-body { padding: 1.5rem; }
+            .card-header { padding: 1.5rem 1.2rem 1rem; }
+            .card-body { padding: 1.2rem; }
+            .card-header .icon-wrapper { width: 54px; height: 54px; }
+            .card-header .icon-wrapper i { font-size: 1.5rem; }
+            .card-header h1 { font-size: 1.5rem; }
         }
     </style>
 </head>
 <body>
     <div class="login-card">
         <div class="card-header">
-            <div class="mb-3">
-                <i class="fas fa-sign-in-alt fa-3x" style="color: #667eea;"></i>
+            <div class="icon-wrapper">
+                <i class="fas fa-sign-in-alt"></i>
             </div>
             <h1>Business Stack</h1>
-            <p class="text-muted mb-0">Войдите в свой аккаунт</p>
+            <p class="subtitle">Войдите в свой аккаунт</p>
         </div>
         <div class="card-body">
             <ul class="nav nav-tabs" id="loginTab" role="tablist">
@@ -204,42 +410,47 @@
             </ul>
             
             <div class="tab-content">
+                <!-- EMAIL - С ЗАПОМИНАНИЕМ -->
                 <div class="tab-pane fade show active" id="email-login" role="tabpanel">
                     <form id="loginForm">
                         <div class="form-floating">
-                            <input type="email" class="form-control" id="email" placeholder="name@example.com" required>
-                            <label for="email"><i class="fas fa-envelope me-2 text-secondary"></i>Email</label>
+                            <input type="email" class="form-control" id="email" placeholder="name@example.com" required autocomplete="email">
+                            <label for="email"><i class="fas fa-envelope me-2"></i>Email</label>
                         </div>
                         <div class="form-floating">
                             <div class="password-wrapper">
-                                <input type="password" class="form-control" id="password" placeholder="Пароль" required>
+                                <input type="password" class="form-control" id="password" placeholder="Пароль" required autocomplete="current-password">
                                 <i class="fas fa-eye-slash toggle-password" id="togglePassword"></i>
-                                <label for="password"><i class="fas fa-lock me-2 text-secondary"></i>Пароль</label>
+                                <label for="password"><i class="fas fa-lock me-2"></i>Пароль</label>
                             </div>
                         </div>
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="remember">
-                                <label class="form-check-label text-muted small" for="remember">Запомнить меня</label>
-                            </div>
-                            <a href="/forgot-password" class="text-decoration-none small">Забыли пароль?</a>
+                        <div class="forgot-link">
+                            <a href="/forgot-password">Забыли пароль?</a>
                         </div>
-                        <button type="submit" class="btn btn-login">
+                        <div class="remember-device">
+                            <input type="checkbox" id="rememberDevice" checked>
+                            <label for="rememberDevice">
+                                <i class="fas fa-laptop me-1"></i> Запомнить устройство 
+                                <span class="hint">(не запрашивать код при входе)</span>
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-login" id="loginBtn">
                             <i class="fas fa-arrow-right-to-bracket me-2"></i>Войти
                         </button>
                     </form>
                 </div>
                 
+                <!-- ТЕЛЕФОН - БЕЗ ЗАПОМИНАНИЯ -->
                 <div class="tab-pane fade" id="phone-login" role="tabpanel">
                     <form id="phoneLoginForm">
                         <div class="form-floating">
                             <input type="tel" class="form-control" id="phoneNumber" placeholder="+7 999 123-45-67" required>
-                            <label for="phoneNumber"><i class="fas fa-phone me-2 text-secondary"></i>Номер телефона</label>
+                            <label for="phoneNumber"><i class="fas fa-phone me-2"></i>Номер телефона</label>
                         </div>
                         <div id="phoneCodeSection" style="display: none;">
                             <div class="form-floating">
                                 <input type="text" class="form-control" id="phoneCode" placeholder="Код подтверждения">
-                                <label for="phoneCode"><i class="fas fa-key me-2 text-secondary"></i>Код подтверждения</label>
+                                <label for="phoneCode"><i class="fas fa-key me-2"></i>Код подтверждения</label>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-login" id="phoneSubmitBtn">
@@ -248,25 +459,31 @@
                     </form>
                 </div>
                 
+                <!-- QR - С ЛОГОТИПОМ B, БЕЗ ЗАПОМИНАНИЯ -->
                 <div class="tab-pane fade" id="qr-login" role="tabpanel">
                     <div class="qr-container">
-                        <div id="qrCodeContainer" class="qr-code">
-                            <div class="spinner-border text-primary" role="status">
+                        <div class="qr-wrapper" id="qrWrapper">
+                            <div id="qrSpinner" class="spinner-border text-primary" role="status">
                                 <span class="visually-hidden">Загрузка...</span>
                             </div>
+                            <img id="qrImage" src="" alt="QR Code" style="width:180px;height:180px;border-radius:12px;display:none;">
+                            <div class="qr-logo" id="qrLogo">
+                                <span>B</span>
+                            </div>
                         </div>
+                        
                         <div id="qrStatus">
                             <div class="status-badge status-pending" id="qrStatusBadge">
                                 <i class="fas fa-hourglass-half"></i> Генерация QR кода...
                             </div>
                         </div>
                         <div id="qrSuccess" style="display: none;">
-                            <div class="alert alert-success mt-3">
-                                <i class="fas fa-check-circle"></i> Вход выполнен! Перенаправление...
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle me-2"></i> Вход выполнен! Перенаправление...
                             </div>
                         </div>
-                        <button type="button" class="btn btn-outline-secondary mt-3" onclick="refreshQR()">
-                            <i class="fas fa-sync-alt"></i> Обновить QR
+                        <button type="button" class="btn btn-outline-secondary mt-2" onclick="refreshQR()">
+                            <i class="fas fa-sync-alt me-1"></i> Обновить
                         </button>
                     </div>
                 </div>
@@ -276,14 +493,14 @@
                 Нет аккаунта? <a href="/register">Зарегистрироваться</a>
             </div>
         </div>
+        <div class="card-footer-decoration"></div>
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // ========== ГЛАЗИК ДЛЯ ПОКАЗА/СКРЫТИЯ ПАРОЛЯ ==========
+        // ========== ГЛАЗИК ==========
         const togglePassword = document.getElementById('togglePassword');
         const passwordInput = document.getElementById('password');
-        
         if (togglePassword && passwordInput) {
             togglePassword.addEventListener('click', function() {
                 const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
@@ -293,32 +510,43 @@
             });
         }
         
-        // ========== EMAIL ВХОД ==========
+        // ========== DEVICE ID ==========
+        function getDeviceId() {
+            let deviceId = localStorage.getItem('device_id');
+            if (!deviceId) {
+                deviceId = 'device_' + Math.random().toString(36).substring(2, 12) + Date.now().toString(36);
+                localStorage.setItem('device_id', deviceId);
+            }
+            return deviceId;
+        }
+        
+        // ========== EMAIL ВХОД (С ЗАПОМИНАНИЕМ) ==========
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const btn = e.target.querySelector('button');
+            const rememberDevice = document.getElementById('rememberDevice').checked;
+            const btn = document.getElementById('loginBtn');
             
             btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Вход...';
             btn.disabled = true;
             
             try {
+                const deviceId = getDeviceId();
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify({ email, password, device_id: deviceId, remember_device: rememberDevice })
                 });
                 const data = await response.json();
                 
                 if (response.ok && data.access_token) {
-                    // СОХРАНЯЕМ ТОКЕН
                     localStorage.setItem('token', data.access_token);
                     localStorage.setItem('user_email', email);
                     localStorage.setItem('user_name', data.user?.name || email.split('@')[0]);
-                    localStorage.setItem('is_Разработчик', data.user?.is_Разработчик || false);
-                    
-                    // Перенаправляем на дашборд
+                    localStorage.setItem('is_developer', data.user?.is_developer || false);
+                    if (rememberDevice) localStorage.setItem('device_trusted', 'true');
+                    else localStorage.removeItem('device_trusted');
                     window.location.href = '/dashboard-improved';
                 } else {
                     alert('Ошибка входа: ' + (data.error || 'Неверный email или пароль'));
@@ -326,16 +554,14 @@
                     btn.disabled = false;
                 }
             } catch (error) {
-                console.error('Login error:', error);
                 alert('Сетевая ошибка. Попробуйте позже.');
                 btn.innerHTML = '<i class="fas fa-arrow-right-to-bracket me-2"></i>Войти';
                 btn.disabled = false;
             }
         });
         
-        // ========== ТЕЛЕФОННЫЙ ВХОД ==========
+        // ========== ТЕЛЕФОН (БЕЗ ЗАПОМИНАНИЯ) ==========
         let phoneCodeSent = false;
-        
         document.getElementById('phoneLoginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const phone = document.getElementById('phoneNumber').value;
@@ -346,7 +572,6 @@
             if (!phoneCodeSent) {
                 submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Отправка...';
                 submitBtn.disabled = true;
-                
                 try {
                     const response = await fetch('/api/auth/send-code', {
                         method: 'POST',
@@ -354,7 +579,6 @@
                         body: JSON.stringify({ phone })
                     });
                     const data = await response.json();
-                    
                     if (response.ok) {
                         phoneCodeSent = true;
                         codeSection.style.display = 'block';
@@ -372,14 +596,9 @@
                     submitBtn.disabled = false;
                 }
             } else {
-                if (!code) {
-                    alert('Введите код подтверждения');
-                    return;
-                }
-                
+                if (!code) { alert('Введите код подтверждения'); return; }
                 submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Проверка...';
                 submitBtn.disabled = true;
-                
                 try {
                     const response = await fetch('/api/auth/verify-code', {
                         method: 'POST',
@@ -387,10 +606,11 @@
                         body: JSON.stringify({ phone, code })
                     });
                     const data = await response.json();
-                    
                     if (response.ok && data.access_token) {
                         localStorage.setItem('token', data.access_token);
                         localStorage.setItem('user_phone', phone);
+                        localStorage.setItem('user_name', data.user?.name || phone);
+                        localStorage.setItem('is_developer', data.user?.is_developer || false);
                         window.location.href = '/dashboard-improved';
                     } else {
                         alert(data.error || 'Неверный код');
@@ -405,165 +625,153 @@
             }
         });
         
-        // ========== QR КОД ВХОД ==========
-        let qrWebSocket = null;
+        // ========== QR - С ЛОГОТИПОМ B, БЕЗ ЗАПОМИНАНИЯ ==========
+        let qrPollingInterval = null;
         let qrSessionToken = null;
         let qrRefreshTimer = null;
         let qrGenerating = false;
+        let qrCompleted = false;
         
-        async function loadQR() {
-            if (qrGenerating) {
-                console.log('QR already generating, skipping...');
-                return;
-            }
-            
+        const qrImage = document.getElementById('qrImage');
+        const qrSpinner = document.getElementById('qrSpinner');
+        const qrLogo = document.getElementById('qrLogo');
+        const statusBadge = document.getElementById('qrStatusBadge');
+        const successDiv = document.getElementById('qrSuccess');
+        
+        function showQRImage(url) {
+            qrImage.src = url;
+            qrImage.style.display = 'block';
+            qrSpinner.style.display = 'none';
+            qrLogo.style.display = 'flex';
+        }
+        
+        function showSpinner() {
+            qrImage.style.display = 'none';
+            qrSpinner.style.display = 'inline-block';
+            qrLogo.style.display = 'none';
+        }
+        
+        function loadQR() {
+            if (qrGenerating || qrCompleted) return;
             qrGenerating = true;
-            const container = document.getElementById('qrCodeContainer');
-            const statusBadge = document.getElementById('qrStatusBadge');
             
-            container.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div>';
+            showSpinner();
             statusBadge.innerHTML = '<i class="fas fa-hourglass-half"></i> Генерация QR кода...';
             statusBadge.className = 'status-badge status-pending';
+            successDiv.style.display = 'none';
             
-            try {
-                const response = await fetch('/api/qr/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                const data = await response.json();
-                
-                if (response.ok) {
+            if (qrPollingInterval) {
+                clearInterval(qrPollingInterval);
+                qrPollingInterval = null;
+            }
+            
+            const deviceId = getDeviceId();
+            
+            fetch('/api/qr/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    mode: 'login', 
+                    device_id: deviceId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                qrGenerating = false;
+                if (data.session_token) {
                     qrSessionToken = data.session_token;
-                    const qrUrl = `${data.qr_data_url}&_=${Date.now()}`;
-                    container.innerHTML = `<img src="${qrUrl}" alt="QR Code" style="width: 200px; height: 200px; border-radius: 10px;" onload="onQRLoaded()" onerror="onQRError()">`;
+                    const qrUrl = data.qr_data_url + '&_=' + Date.now();
+                    showQRImage(qrUrl);
                     statusBadge.innerHTML = '<i class="fas fa-hourglass-half"></i> Ожидание сканирования';
                     statusBadge.className = 'status-badge status-pending';
                     
-                    if (qrWebSocket) {
-                        try { qrWebSocket.close(); } catch(e) {}
-                    }
-                    
-                    setTimeout(() => {
-                        connectQRWebSocket(qrSessionToken);
-                    }, 500);
+                    startQRPolling(qrSessionToken);
                     
                     if (qrRefreshTimer) clearTimeout(qrRefreshTimer);
                     qrRefreshTimer = setTimeout(() => {
-                        refreshQR();
-                    }, (data.expires_in - 10) * 1000);
-                    
+                        if (!qrCompleted) refreshQR();
+                    }, (data.expires_in - 5) * 1000);
                 } else {
-                    container.innerHTML = '<div class="alert alert-danger">Ошибка загрузки QR кода</div>';
                     statusBadge.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Ошибка, попробуйте обновить';
                 }
-            } catch (error) {
-                console.error('QR error:', error);
-                container.innerHTML = '<div class="alert alert-danger">Ошибка соединения</div>';
-                statusBadge.innerHTML = '<i class="fas fa-wifi"></i> Нет соединения';
-            } finally {
+            })
+            .catch(() => {
                 qrGenerating = false;
-            }
+                statusBadge.innerHTML = '<i class="fas fa-wifi"></i> Нет соединения';
+            });
         }
         
-        function onQRLoaded() {
-            console.log('QR image loaded successfully');
-        }
-        
-        function onQRError() {
-            console.error('QR image failed to load');
-            const statusBadge = document.getElementById('qrStatusBadge');
-            statusBadge.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Ошибка загрузки QR, обновляю...';
-            setTimeout(() => refreshQR(), 2000);
-        }
-        
-        function connectQRWebSocket(token) {
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${protocol}//${window.location.host}/api/qr/status?token=${token}&mode=login`;
+        function startQRPolling(token) {
+            if (qrPollingInterval) clearInterval(qrPollingInterval);
             
-            qrWebSocket = new WebSocket(wsUrl);
-            
-            qrWebSocket.onopen = function() {
-                console.log('WebSocket connected for QR login');
-            };
-            
-            qrWebSocket.onmessage = function(event) {
-                try {
-                    const data = JSON.parse(event.data);
-                    const statusBadge = document.getElementById('qrStatusBadge');
-                    const successDiv = document.getElementById('qrSuccess');
-                    
-                    switch(data.status) {
-                        case 'scanned':
+            qrPollingInterval = setInterval(() => {
+                if (qrCompleted) {
+                    clearInterval(qrPollingInterval);
+                    qrPollingInterval = null;
+                    return;
+                }
+                
+                fetch(`/api/qr/status?token=${token}&mode=login`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'scanned') {
                             statusBadge.innerHTML = '<i class="fas fa-check-circle"></i> QR код отсканирован! Подтвердите вход в приложении';
                             statusBadge.className = 'status-badge status-scanned';
-                            break;
-                        case 'approved':
+                        } else if (data.status === 'approved') {
+                            qrCompleted = true;
                             statusBadge.innerHTML = '<i class="fas fa-check-circle"></i> Вход выполнен! Перенаправление...';
                             statusBadge.className = 'status-badge status-approved';
                             successDiv.style.display = 'block';
-                            if (response.ok && data.access_token) {
-                               localStorage.setItem('token', data.access_token);
-                                setTimeout(() => {
-                                    window.location.href = '/dashboard-improved';
-                                }, 1500);
+                            
+                            if (data.access_token) {
+                                localStorage.setItem('token', data.access_token);
+                                localStorage.setItem('user_name', data.user?.name || 'Пользователь');
+                                localStorage.setItem('is_developer', data.user?.is_developer || false);
                             }
-                            break;
-                        case 'expired':
+                            
+                            if (qrPollingInterval) {
+                                clearInterval(qrPollingInterval);
+                                qrPollingInterval = null;
+                            }
+                            
+                            setTimeout(() => {
+                                window.location.href = '/dashboard-improved';
+                            }, 1500);
+                        } else if (data.status === 'expired') {
                             statusBadge.innerHTML = '<i class="fas fa-exclamation-triangle"></i> QR код истек, обновляем...';
                             statusBadge.className = 'status-badge status-expired';
-                            setTimeout(() => refreshQR(), 1000);
-                            break;
-                        default:
-                            if (data.status !== 'pending') {
-                                statusBadge.innerHTML = '<i class="fas fa-hourglass-half"></i> ' + (data.message || 'Ожидание сканирования');
+                            if (qrPollingInterval) {
+                                clearInterval(qrPollingInterval);
+                                qrPollingInterval = null;
                             }
-                            statusBadge.className = 'status-badge status-pending';
-                    }
-                } catch (e) {
-                    console.error('Error parsing WebSocket message:', e);
-                }
-            };
-            
-            qrWebSocket.onerror = function(error) {
-                console.error('WebSocket error:', error);
-                const statusBadge = document.getElementById('qrStatusBadge');
-                statusBadge.innerHTML = '<i class="fas fa-wifi"></i> Ошибка соединения, переподключаюсь...';
-                setTimeout(() => {
-                    if (qrSessionToken) {
-                        connectQRWebSocket(qrSessionToken);
-                    }
-                }, 2000);
-            };
+                            setTimeout(() => refreshQR(), 1000);
+                        }
+                    })
+                    .catch(() => {});
+            }, 2000);
         }
         
         function refreshQR() {
-            console.log('Refreshing QR code...');
             qrGenerating = false;
-            if (qrWebSocket) {
-                try { qrWebSocket.close(); } catch(e) {}
-                qrWebSocket = null;
+            qrCompleted = false;
+            if (qrPollingInterval) {
+                clearInterval(qrPollingInterval);
+                qrPollingInterval = null;
             }
-            if (qrRefreshTimer) {
-                clearTimeout(qrRefreshTimer);
-                qrRefreshTimer = null;
-            }
-            loadQR();
+            if (qrRefreshTimer) clearTimeout(qrRefreshTimer);
+            statusBadge.innerHTML = '<i class="fas fa-sync-alt"></i> Обновление...';
+            setTimeout(() => loadQR(), 300);
         }
         
+        // ========== ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ==========
         const qrTabButton = document.querySelector('button[data-bs-target="#qr-login"]');
         if (qrTabButton) {
             qrTabButton.addEventListener('shown.bs-tab', function() {
+                qrCompleted = false;
+                qrGenerating = false;
                 setTimeout(() => {
-                    if (!qrSessionToken || (qrWebSocket && qrWebSocket.readyState !== WebSocket.OPEN)) {
-                        loadQR();
-                    }
-                }, 100);
-            });
-            
-            qrTabButton.addEventListener('mouseenter', function() {
-                if (!qrSessionToken && !qrGenerating) {
                     loadQR();
-                }
+                }, 100);
             });
         }
         
@@ -578,60 +786,26 @@
             document.getElementById('phoneSubmitBtn').innerHTML = '<i class="fas fa-paper-plane me-2"></i> Продолжить';
         });
         
-        // ========== ПЕРЕХВАТЧИК FETCH ДЛЯ ДОБАВЛЕНИЯ ТОКЕНА ==========
+        // ========== ПЕРЕХВАТЧИК FETCH ==========
         const originalFetch = window.fetch;
         window.fetch = function(...args) {
             const token = localStorage.getItem('token');
-            
-            if (token && args[0] && args[0].includes('/api/')) {
-                if (!args[1]) {
-                    args[1] = {};
-                }
-                if (!args[1].headers) {
-                    args[1].headers = {};
-                }
+            if (token && args[0] && typeof args[0] === 'string' && args[0].includes('/api/')) {
+                if (!args[1]) args[1] = {};
+                if (!args[1].headers) args[1].headers = {};
                 args[1].headers['Authorization'] = 'Bearer ' + token;
             }
-            
             return originalFetch.apply(this, args);
         };
         
-        // Функция для выхода
         window.logout = function() {
             localStorage.removeItem('token');
             localStorage.removeItem('user_email');
             localStorage.removeItem('user_name');
-            localStorage.removeItem('is_Разработчик');
+            localStorage.removeItem('is_developer');
+            localStorage.removeItem('device_trusted');
             window.location.href = '/';
         };
     </script>
-    <style>
-        .back-button {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            transition: all 0.3s;
-            z-index: 1000;
-            cursor: pointer;
-        }
-        .back-button:hover {
-            transform: scale(1.1);
-            background: linear-gradient(135deg, #764ba2, #667eea);
-            color: white;
-        }
-    </style>
-    <a href="javascript:history.back()" class="back-button" title="Go Back">
-        <i class="fas fa-arrow-left fa-lg"></i>
-    </a>
 </body>
 </html>

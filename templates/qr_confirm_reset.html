@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=yes">
+    <title>Подтверждение | Business Stack</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(145deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .confirm-card {
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(40px);
+            border-radius: 32px;
+            box-shadow: 0 30px 60px -20px rgba(0,0,0,0.4);
+            width: 100%;
+            max-width: 400px;
+            overflow: hidden;
+            animation: slideUp 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .card-header {
+            background: linear-gradient(145deg, #fafbff 0%, #f0f3ff 100%);
+            padding: 1.5rem 1.5rem 1rem;
+            text-align: center;
+            border-bottom: none;
+        }
+        .card-header .icon-wrapper {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.5rem;
+            box-shadow: 0 12px 30px rgba(102,126,234,0.3);
+        }
+        .card-header .icon-wrapper i {
+            font-size: 1.6rem;
+            color: white;
+        }
+        .card-header h1 {
+            font-weight: 800;
+            color: #1a202c;
+            font-size: 1.3rem;
+            letter-spacing: -0.3px;
+            margin-bottom: 0.1rem;
+        }
+        .card-header .subtitle {
+            color: #718096;
+            font-size: 0.8rem;
+            font-weight: 400;
+        }
+        .card-header .brand-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-size: 0.6rem;
+            font-weight: 700;
+            padding: 2px 12px;
+            border-radius: 50px;
+            margin-top: 4px;
+            box-shadow: 0 4px 12px rgba(102,126,234,0.2);
+        }
+        .card-body {
+            padding: 1rem 1.5rem 1.5rem;
+            text-align: center;
+        }
+        .device-info {
+            background: #f8fafe;
+            border-radius: 14px;
+            padding: 12px 16px;
+            margin-bottom: 14px;
+            border: 1px solid #edf2f7;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .device-info .device-icon {
+            font-size: 1.4rem;
+            color: #667eea;
+        }
+        .device-info .device-name {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 0.85rem;
+        }
+        .device-info .device-desc {
+            font-size: 0.7rem;
+            color: #718096;
+        }
+        .account-card {
+            background: linear-gradient(135deg, #f0f4ff, #e8edfe);
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin: 14px 0 18px;
+            border: 2px solid #667eea;
+            box-shadow: 0 6px 20px rgba(102,126,234,0.1);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .account-card .avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(102,126,234,0.25);
+        }
+        .account-card .account-info {
+            flex: 1;
+            text-align: left;
+        }
+        .account-card .account-info .email {
+            font-weight: 700;
+            color: #2d3748;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .account-card .account-info .email .verified {
+            color: #48bb78;
+            font-size: 0.8rem;
+        }
+        .account-card .account-info .hint {
+            font-size: 0.75rem;
+            color: #718096;
+            margin-top: 2px;
+        }
+        .account-card .account-info .device-tag {
+            display: inline-block;
+            background: rgba(102,126,234,0.1);
+            color: #667eea;
+            font-size: 0.6rem;
+            font-weight: 600;
+            padding: 2px 10px;
+            border-radius: 50px;
+            margin-top: 2px;
+        }
+        .btn-confirm {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            border: none;
+            border-radius: 14px;
+            padding: 0.8rem;
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: white;
+            width: 100%;
+            transition: all 0.3s;
+        }
+        .btn-confirm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px -8px rgba(72,187,120,0.4);
+        }
+        .btn-confirm:disabled {
+            opacity: 0.7;
+            transform: none;
+        }
+        .btn-confirm i { margin-right: 8px; }
+        .btn-cancel {
+            background: transparent;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 0.7rem;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #718096;
+            width: 100%;
+            transition: all 0.3s;
+            margin-top: 8px;
+        }
+        .btn-cancel:hover {
+            border-color: #e53e3e;
+            color: #e53e3e;
+            background: #fff5f5;
+        }
+        .success-content {
+            text-align: center;
+            padding: 10px 0;
+        }
+        .success-content .check-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            box-shadow: 0 12px 30px rgba(72,187,120,0.25);
+            animation: checkPop 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        @keyframes checkPop {
+            0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .success-content .check-icon i {
+            font-size: 2rem;
+            color: white;
+        }
+        .success-content h3 {
+            font-weight: 800;
+            color: #1a202c;
+            font-size: 1.1rem;
+            margin-bottom: 4px;
+        }
+        .success-content p {
+            color: #718096;
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+        }
+        .footer-decoration {
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
+            background-size: 200% 100%;
+            animation: shimmer 3s ease-in-out infinite;
+        }
+        @keyframes shimmer {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        @media (max-width: 576px) {
+            body { padding: 12px; }
+            .card-header { padding: 1.2rem 1.2rem 0.8rem; }
+            .card-body { padding: 0.8rem 1.2rem 1.2rem; }
+            .card-header .icon-wrapper { width: 48px; height: 48px; }
+            .card-header .icon-wrapper i { font-size: 1.3rem; }
+            .card-header h1 { font-size: 1.1rem; }
+            .confirm-card { max-width: 100%; }
+            .account-card { padding: 12px 14px; }
+            .account-card .avatar { width: 40px; height: 40px; font-size: 1rem; }
+            .account-card .account-info .email { font-size: 0.85rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="confirm-card">
+    <div class="card-header">
+        <div class="icon-wrapper">
+            <i class="fas fa-shield-alt"></i>
+        </div>
+        <h1>Вход на компьютер</h1>
+        <p class="subtitle">Подтвердите вход на компьютере</p>
+        <div class="brand-badge">
+            <i class="fas fa-key me-1"></i> Business Stack
+        </div>
+    </div>
+
+    <div class="card-body">
+
+        <div class="device-info">
+            <div class="device-icon">
+                <i class="fas fa-laptop"></i>
+            </div>
+            <div>
+                <div class="device-name" id="deviceName">Компьютер</div>
+                <div class="device-desc">Вы запросили сброс пароля</div>
+            </div>
+        </div>
+
+        <div id="accountSection">
+            <div class="account-card" id="accountCard">
+                <div class="avatar" id="avatar">U</div>
+                <div class="account-info">
+                    <div class="email" id="userEmail">
+                        <span id="emailText">{{.Email}}</span>
+                        <span class="verified"><i class="fas fa-check-circle"></i></span>
+                    </div>
+                    <div class="hint" id="userName">{{.Name}}</div>
+                    <div class="device-tag"><i class="fas fa-mobile-alt me-1"></i> Это устройство</div>
+                </div>
+            </div>
+
+            <button type="button" class="btn-confirm" id="confirmBtn">
+                <i class="fas fa-check-circle"></i> Подтвердить вход
+            </button>
+            <button type="button" class="btn-cancel" id="cancelBtn">
+                <i class="fas fa-times"></i> Отмена
+            </button>
+        </div>
+
+        <div id="successContent" style="display: none;">
+            <div class="success-content">
+                <div class="check-icon">
+                    <i class="fas fa-check"></i>
+                </div>
+                <h3>✅ Вход подтверждён!</h3>
+                <p>Страница сброса пароля откроется на компьютере.</p>
+                <div class="spinner-border text-success" role="status">
+                    <span class="visually-hidden">Перенаправление...</span>
+                </div>
+                <p class="mt-2" style="font-size: 0.7rem; color: #a0aec0;">Закройте эту страницу</p>
+            </div>
+        </div>
+
+    </div>
+    <div class="footer-decoration"></div>
+</div>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    // ===== ПОЛУЧАЕМ ДАННЫЕ ПОЛЬЗОВАТЕЛЯ ИЗ QR-ТОКЕНА =====
+    async function loadUserFromToken() {
+        try {
+            const response = await fetch('/api/auth/current-user-for-qr')
+            const data = await response.json();
+
+            if (response.ok && data.user) {
+                document.getElementById('emailText').textContent = data.user.email;
+                document.getElementById('userName').textContent = data.user.name || 'Пользователь';
+                const avatar = document.getElementById('avatar');
+                avatar.textContent = data.user.name ? data.user.name.charAt(0).toUpperCase() : data.user.email.charAt(0).toUpperCase();
+                
+                document.getElementById('confirmBtn').dataset.userId = data.user.id;
+                document.getElementById('confirmBtn').dataset.email = data.user.email;
+            } else {
+                // Если не нашли пользователя
+                document.getElementById('accountSection').style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки пользователя:', error);
+            document.getElementById('accountSection').style.display = 'none';
+        }
+    }
+
+    // ===== ПОДТВЕРДИТЬ ВХОД =====
+    document.getElementById('confirmBtn').addEventListener('click', async function() {
+        const userId = this.dataset.userId;
+        const email = this.dataset.email;
+
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Подтверждение...';
+
+        try {
+            const response = await fetch('/api/qr/confirm-reset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session_token: token,
+                    user_id: userId,
+                    email: email
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                document.getElementById('accountSection').style.display = 'none';
+                document.getElementById('successContent').style.display = 'block';
+            } else {
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-check-circle"></i> Подтвердить вход';
+                console.error('Ошибка:', data.error);
+            }
+        } catch (error) {
+            console.error('Ошибка:', error);
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-check-circle"></i> Подтвердить вход';
+        }
+    });
+
+    // ===== ОТМЕНА =====
+    document.getElementById('cancelBtn').addEventListener('click', function() {
+        if (confirm('Вы уверены, что хотите отменить сброс пароля?')) {
+            window.location.href = '/';
+        }
+    });
+
+    // ===== ИНИЦИАЛИЗАЦИЯ =====
+    if (!token) {
+        document.getElementById('accountSection').style.display = 'none';
+    } else {
+        loadUserFromToken();
+    }
+</script>
+
+</body>
+</html>

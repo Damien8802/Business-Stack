@@ -184,3 +184,4 @@ func UnifiedDashboardHandler(c *gin.Context) {
         "IsРазработчик":   isDeveloper,
     })
 }
+

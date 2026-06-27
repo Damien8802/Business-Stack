@@ -9,7 +9,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap');
+        * { box-sizing: border-box; }
         body {
             font-family: 'Inter', sans-serif;
             background: linear-gradient(145deg, #667eea 0%, #764ba2 100%);
@@ -19,318 +20,476 @@
             justify-content: center;
             padding: 20px;
             margin: 0;
+            position: relative;
+        }
+        /* Декоративные фоновые элементы */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            right: -20%;
+            width: 600px;
+            height: 600px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float 8s ease-in-out infinite;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -40%;
+            left: -10%;
+            width: 500px;
+            height: 500px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float 10s ease-in-out infinite reverse;
+        }
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(30px, -30px); }
         }
         .register-card {
             background: rgba(255,255,255,0.98);
-            backdrop-filter: blur(10px);
-            border-radius: 32px;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            backdrop-filter: blur(20px);
+            border-radius: 40px;
+            box-shadow: 0 40px 80px -20px rgba(0,0,0,0.35);
             width: 100%;
-            max-width: 520px;
+            max-width: 500px;
             overflow: hidden;
-            animation: fadeIn 0.5s ease;
+            animation: slideUp 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative;
+            z-index: 1;
+            border: 1px solid rgba(255,255,255,0.15);
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(40px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
         .card-header {
-            background: linear-gradient(145deg, #f8f9fe, #eef2f9);
-            padding: 2rem 2rem 1.5rem;
+            background: linear-gradient(135deg, #fafbff 0%, #f0f2ff 100%);
+            padding: 2.8rem 2.5rem 2rem;
             text-align: center;
             border-bottom: none;
+            position: relative;
+            overflow: hidden;
+        }
+        .card-header::before {
+            content: '';
+            position: absolute;
+            top: -80px;
+            right: -80px;
+            width: 280px;
+            height: 280px;
+            background: radial-gradient(circle, rgba(102,126,234,0.08) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+        .card-header::after {
+            content: '';
+            position: absolute;
+            bottom: -60px;
+            left: -60px;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(118,75,162,0.06) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+        .card-header .icon-wrapper {
+            width: 76px;
+            height: 76px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            box-shadow: 0 12px 35px rgba(102,126,234,0.35);
+            position: relative;
+            z-index: 1;
+            transition: all 0.4s;
+        }
+        .card-header .icon-wrapper:hover {
+            transform: rotate(-8deg) scale(1.05);
+        }
+        .card-header .icon-wrapper i {
+            font-size: 2.2rem;
+            color: white;
         }
         .card-header h1 {
-            font-weight: 700;
-            color: #2d3748;
-            margin-bottom: 0.25rem;
-            font-size: 2rem;
+            font-weight: 900;
+            color: #1a202c;
+            margin-bottom: 0.1rem;
+            font-size: 2.1rem;
+            letter-spacing: -1px;
+            position: relative;
+            z-index: 1;
         }
-        .card-body {
-            padding: 2rem;
+        .card-header .subtitle {
+            color: #718096;
+            margin-top: 0.5rem;
+            font-size: 0.95rem;
+            font-weight: 400;
+            position: relative;
+            z-index: 1;
         }
-        .nav-tabs {
-            border-bottom: 2px solid #e9ecef;
-            margin-bottom: 1.5rem;
-            gap: 8px;
-            display: flex;
-            justify-content: center;
-        }
-        .nav-tabs .nav-link {
-            border: none;
-            border-radius: 50px;
-            padding: 8px 20px;
+        .card-body { padding: 2rem 2.5rem 2.5rem; }
+        
+        .form-floating { margin-bottom: 1.25rem; }
+        .form-floating label {
             font-weight: 600;
-            color: #6c757d;
-            transition: all 0.3s;
-            background: #f8f9fa;
-            font-size: 14px;
+            color: #4a5568;
         }
-        .nav-tabs .nav-link:hover {
-            background: #e9ecef;
-            color: #667eea;
-        }
-        .nav-tabs .nav-link.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            box-shadow: 0 4px 12px rgba(102,126,234,0.3);
-        }
-        .form-floating {
-            margin-bottom: 1.25rem;
+        .form-floating label i {
+            color: #a0aec0;
+            width: 18px;
         }
         .form-control {
-            border-radius: 16px;
-            border: 1.5px solid #e9edf4;
-            padding: 0.75rem 1rem;
+            border-radius: 18px;
+            border: 2px solid #edf2f7;
+            padding: 0.9rem 1.1rem;
             height: auto;
             font-size: 1rem;
-            transition: all 0.2s;
+            transition: all 0.3s;
+            background: #fafbfc;
         }
         .form-control:focus {
             border-color: #667eea;
-            box-shadow: 0 0 0 4px rgba(102,126,234,0.1);
+            box-shadow: 0 0 0 5px rgba(102,126,234,0.12);
+            background: white;
+            transform: translateY(-1px);
+        }
+        .form-control::placeholder {
+            color: #b0b8c8;
+            font-weight: 300;
         }
         .btn-register {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
-            border-radius: 16px;
-            padding: 0.85rem;
-            font-weight: 600;
+            border-radius: 18px;
+            padding: 1.05rem;
+            font-weight: 700;
             font-size: 1.1rem;
             color: white;
             width: 100%;
-            transition: all 0.2s;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
             margin-top: 0.5rem;
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.3px;
+        }
+        .btn-register::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.6s;
+        }
+        .btn-register:hover::before {
+            left: 100%;
         }
         .btn-register:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(102,126,234,0.4);
+            transform: translateY(-4px);
+            box-shadow: 0 16px 40px -10px rgba(102,126,234,0.5);
         }
-        .btn-outline-secondary {
-            border-radius: 50px;
-            padding: 8px 16px;
-            font-size: 13px;
+        .btn-register:active {
+            transform: translateY(-1px);
         }
+        .btn-register:disabled {
+            opacity: 0.7;
+            transform: none;
+        }
+        
         .checkbox-group {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin: 15px 0;
+            gap: 14px;
+            margin: 14px 0 18px;
+            padding: 6px 0;
         }
         .checkbox-group input {
-            width: 18px;
-            height: 18px;
-            margin: 0;
+            width: 20px;
+            height: 20px;
+            accent-color: #667eea;
+            cursor: pointer;
+            flex-shrink: 0;
         }
         .checkbox-group label {
             margin: 0;
             cursor: pointer;
-            font-weight: 500;
-            color: #2d3748;
-        }
-        .org-fields {
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-        .org-fields.show {
-            display: block;
-        }
-        .qr-container {
-            text-align: center;
-            padding: 10px 0;
-        }
-        .qr-code {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 20px;
-            display: inline-block;
-            margin: 10px 0;
-        }
-        .qr-code img {
-            width: 200px;
-            height: 200px;
-            border-radius: 10px;
-        }
-        .status-badge {
-            padding: 8px 20px;
-            border-radius: 50px;
-            font-size: 13px;
             font-weight: 600;
-            display: inline-block;
-            margin-top: 10px;
+            color: #2d3748;
+            font-size: 0.95rem;
         }
-        .status-pending { background: #fff3cd; color: #856404; }
-        .status-scanned { background: #cce5ff; color: #004085; }
-        .status-approved { background: #d4edda; color: #155724; }
-        .status-expired { background: #f8d7da; color: #721c24; }
+        .checkbox-group label i {
+            color: #667eea;
+            margin-right: 8px;
+        }
+        .org-fields { 
+            display: none; 
+            animation: expandIn 0.35s ease; 
+        }
+        .org-fields.show { display: block; }
+        @keyframes expandIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
         .footer-links {
             text-align: center;
-            margin-top: 1.75rem;
+            margin-top: 1.8rem;
+            padding-top: 1.5rem;
+            border-top: 2px solid #f0f2ff;
             font-size: 0.95rem;
         }
         .footer-links a {
             color: #667eea;
             text-decoration: none;
-            font-weight: 600;
+            font-weight: 700;
+            transition: all 0.3s;
+            position: relative;
+        }
+        .footer-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s;
+        }
+        .footer-links a:hover::after {
+            width: 100%;
+        }
+        .footer-links a:hover {
+            color: #764ba2;
         }
         .terms {
             font-size: 0.8rem;
-            color: #718096;
+            color: #a0aec0;
             text-align: center;
             margin-top: 1rem;
         }
+        .terms i {
+            color: #667eea;
+        }
+        .remember-device {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: linear-gradient(135deg, #f8fafe, #f0f2ff);
+            padding: 14px 20px;
+            border-radius: 18px;
+            margin: 18px 0 14px;
+            border: 2px solid #edf2f7;
+            transition: all 0.3s;
+        }
+        .remember-device:hover {
+            border-color: #667eea;
+            background: #f5f7ff;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(102,126,234,0.08);
+        }
+        .remember-device input {
+            width: 20px;
+            height: 20px;
+            accent-color: #667eea;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .remember-device label {
+            margin: 0;
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+        .remember-device .hint {
+            font-size: 0.75rem;
+            color: #a0aec0;
+            font-weight: 400;
+            margin-left: 4px;
+        }
+        .field-with-domain {
+            display: flex;
+            gap: 12px;
+            align-items: stretch;
+        }
+        .field-with-domain .form-floating {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        .domain-suffix-box {
+            background: linear-gradient(135deg, #f0f2ff, #e8ebf9);
+            border: 2px solid #e2e8f0;
+            border-radius: 18px;
+            padding: 0.9rem 1.2rem;
+            display: flex;
+            align-items: center;
+            font-weight: 700;
+            font-size: 0.95rem;
+            white-space: nowrap;
+            min-width: 120px;
+            justify-content: center;
+            color: #667eea;
+            transition: all 0.3s;
+        }
+        .domain-suffix-box i {
+            color: #667eea;
+            margin-right: 8px;
+            font-size: 1.1rem;
+        }
+        .domain-suffix-box:hover {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #e8ebf9, #dce1f5);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(102,126,234,0.1);
+        }
+        
+        .form-check {
+            margin-top: 12px;
+        }
+        .form-check-input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .form-check-input:checked {
+            background-color: #667eea;
+            border-color: #667eea;
+        }
+        .form-check-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102,126,234,0.2);
+        }
+        .form-check-label {
+            color: #4a5568;
+            font-weight: 500;
+        }
+        .form-check-label a {
+            color: #667eea;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .form-check-label a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+        
+        /* Декоративная полоса внизу */
+        .card-footer-decoration {
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
+            background-size: 200% 100%;
+            animation: shimmer 3s ease-in-out infinite;
+        }
+        @keyframes shimmer {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
         @media (max-width: 576px) {
             body { padding: 12px; }
-            .card-header { padding: 1.5rem 1.5rem 1rem; }
+            .card-header { padding: 1.8rem 1.5rem 1.2rem; }
             .card-body { padding: 1.5rem; }
+            .field-with-domain { flex-direction: column; }
+            .domain-suffix-box { 
+                min-width: unset; 
+                width: 100%;
+                padding: 0.7rem 1rem;
+            }
+            .card-header .icon-wrapper {
+                width: 60px;
+                height: 60px;
+            }
+            .card-header .icon-wrapper i {
+                font-size: 1.6rem;
+            }
+            .card-header h1 {
+                font-size: 1.6rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="register-card">
         <div class="card-header">
-            <div class="mb-3">
-                <i class="fas fa-user-plus fa-3x" style="color: #667eea;"></i>
+            <div class="icon-wrapper">
+                <i class="fas fa-rocket"></i>
             </div>
             <h1>Business Stack</h1>
-            <p class="text-muted mb-0">Выберите удобный способ регистрации</p>
+            <p class="subtitle">Создайте аккаунт для работы с бизнес-инструментами</p>
         </div>
         <div class="card-body">
-            <ul class="nav-tabs" id="registerTab" role="tablist">
-                <li class="nav-item">
-                    <button class="nav-link active" id="email-tab" data-bs-toggle="tab" data-bs-target="#email-reg" type="button">
-                        <i class="fas fa-envelope"></i> Email
-                    </button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link" id="phone-tab" data-bs-toggle="tab" data-bs-target="#phone-reg" type="button">
-                        <i class="fas fa-phone"></i> Телефон
-                    </button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link" id="qr-tab" data-bs-toggle="tab" data-bs-target="#qr-reg" type="button">
-                        <i class="fas fa-qrcode"></i> QR код
-                    </button>
-                </li>
-            </ul>
-            
-            <div class="tab-content">
-                <!-- EMAIL РЕГИСТРАЦИЯ с организацией -->
-                <div class="tab-pane fade show active" id="email-reg" role="tabpanel">
-                    <form id="registerForm">
-                        <div class="form-floating">
-                            <input type="text" class="form-control" id="name" placeholder="Ваше имя" required>
-                            <label for="name"><i class="fas fa-user me-2 text-secondary"></i>Имя и фамилия *</label>
-                        </div>
-                        
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="isOrganization">
-                            <label for="isOrganization"><i class="fas fa-building"></i> Я регистрирую организацию/компанию</label>
-                        </div>
-                        
-                        <div id="orgFields" class="org-fields">
-                            <div class="form-floating">
-                                <input type="text" class="form-control" id="organizationName" placeholder="Название организации">
-                                <label for="organizationName"><i class="fas fa-building me-2 text-secondary"></i>Название организации</label>
-                            </div>
-                            <div class="form-floating">
-                                <input type="text" class="form-control" id="organizationInn" placeholder="ИНН">
-                                <label for="organizationInn"><i class="fas fa-id-card me-2 text-secondary"></i>ИНН организации (опционально)</label>
-                            </div>
-                        </div>
-                        
-                        <div class="form-floating">
-                            <input type="email" class="form-control" id="email" placeholder="name@example.com" required>
-                            <label for="email"><i class="fas fa-envelope me-2 text-secondary"></i>Email *</label>
-                        </div>
-                        <div class="form-floating">
-                            <input type="tel" class="form-control" id="phone" placeholder="Телефон">
-                            <label for="phone"><i class="fas fa-phone me-2 text-secondary"></i>Телефон</label>
-                        </div>
-                        <div class="form-floating">
-                            <input type="password" class="form-control" id="password" placeholder="Пароль" required>
-                            <label for="password"><i class="fas fa-lock me-2 text-secondary"></i>Пароль *</label>
-                        </div>
-                        <div class="form-floating">
-                            <input type="password" class="form-control" id="confirmPassword" placeholder="Подтверждение" required>
-                            <label for="confirmPassword"><i class="fas fa-check-circle me-2 text-secondary"></i>Подтвердите пароль *</label>
-                        </div>
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" id="agree" required>
-                            <label class="form-check-label text-muted small" for="agree">
-                                Я принимаю <a href="#" class="text-decoration-none">условия использования</a>
-                            </label>
-                        </div>
-                        <button type="submit" class="btn btn-register">
-                            <i class="fas fa-user-check me-2"></i>Создать аккаунт
-                        </button>
-                    </form>
+            <form id="registerForm" autocomplete="off">
+                <div class="form-floating">
+                    <input type="text" class="form-control" id="name" placeholder="Ваше имя" required autocomplete="off">
+                    <label for="name"><i class="fas fa-user me-2"></i>Имя и фамилия *</label>
                 </div>
                 
-                <!-- ТЕЛЕФОН РЕГИСТРАЦИЯ -->
-                <div class="tab-pane fade" id="phone-reg" role="tabpanel">
-                    <form id="phoneRegisterForm">
-                        <div class="form-floating">
-                            <input type="text" class="form-control" id="phoneName" placeholder="Ваше имя" required>
-                            <label for="phoneName"><i class="fas fa-user me-2 text-secondary"></i>Имя и фамилия *</label>
-                        </div>
-                        
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="phoneIsOrganization">
-                            <label for="phoneIsOrganization"><i class="fas fa-building"></i> Я регистрирую организацию/компанию</label>
-                        </div>
-                        
-                        <div id="phoneOrgFields" class="org-fields">
-                            <div class="form-floating">
-                                <input type="text" class="form-control" id="phoneOrganizationName" placeholder="Название организации">
-                                <label for="phoneOrganizationName"><i class="fas fa-building me-2 text-secondary"></i>Название организации</label>
-                            </div>
-                            <div class="form-floating">
-                                <input type="text" class="form-control" id="phoneOrganizationInn" placeholder="ИНН">
-                                <label for="phoneOrganizationInn"><i class="fas fa-id-card me-2 text-secondary"></i>ИНН организации</label>
-                            </div>
-                        </div>
-                        
-                        <div class="form-floating">
-                            <input type="tel" class="form-control" id="phoneNumber" placeholder="+7 999 123-45-67" required>
-                            <label for="phoneNumber"><i class="fas fa-phone me-2 text-secondary"></i>Номер телефона *</label>
-                        </div>
-                        <div id="phoneCodeSection" style="display: none;">
-                            <div class="form-floating">
-                                <input type="text" class="form-control" id="phoneCode" placeholder="Код подтверждения">
-                                <label for="phoneCode"><i class="fas fa-key me-2 text-secondary"></i>Код подтверждения</label>
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-register" id="phoneSubmitBtn">
-                            <i class="fas fa-paper-plane me-2"></i>Продолжить
-                        </button>
-                    </form>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="isOrganization">
+                    <label for="isOrganization"><i class="fas fa-building"></i> Я регистрирую организацию/компанию</label>
                 </div>
                 
-                <!-- QR КОД РЕГИСТРАЦИЯ -->
-                <div class="tab-pane fade" id="qr-reg" role="tabpanel">
-                    <div class="qr-container">
-                        <div id="qrCodeContainer" class="qr-code">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Загрузка...</span>
-                            </div>
-                        </div>
-                        <div id="qrStatus">
-                            <div class="status-badge status-pending" id="qrStatusBadge">
-                                <i class="fas fa-hourglass-half"></i> Генерация QR кода...
-                            </div>
-                        </div>
-                        <div id="qrSuccess" style="display: none;">
-                            <div class="alert alert-success mt-3">
-                                <i class="fas fa-check-circle"></i> Регистрация успешна! Перенаправление...
-                            </div>
-                        </div>
-                        <button type="button" class="btn btn-outline-secondary mt-3" onclick="refreshQR()">
-                            <i class="fas fa-sync-alt"></i> Обновить QR
-                        </button>
+                <div id="orgFields" class="org-fields">
+                    <div class="form-floating">
+                        <input type="text" class="form-control" id="organizationName" placeholder="Название организации" autocomplete="off">
+                        <label for="organizationName"><i class="fas fa-building me-2"></i>Название организации</label>
+                    </div>
+                    <div class="form-floating">
+                        <input type="text" class="form-control" id="organizationInn" placeholder="ИНН" autocomplete="off">
+                        <label for="organizationInn"><i class="fas fa-id-card me-2"></i>ИНН организации <span class="text-muted" style="font-weight:400;">(опционально)</span></label>
                     </div>
                 </div>
-            </div>
+                
+                <div class="field-with-domain">
+                    <div class="form-floating">
+                        <input type="email" class="form-control" id="email" placeholder="name@example.com" required autocomplete="off">
+                        <label for="email"><i class="fas fa-envelope me-2"></i>Email *</label>
+                    </div>
+                    <div class="domain-suffix-box">
+                        <i class="fas fa-at"></i> @bstack.ru
+                    </div>
+                </div>
+                
+                <div class="form-floating">
+                    <input type="tel" class="form-control" id="phone" placeholder="Телефон" autocomplete="off">
+                    <label for="phone"><i class="fas fa-phone me-2"></i>Телефон <span class="text-muted" style="font-weight:400;">(опционально)</span></label>
+                </div>
+                <div class="form-floating">
+                    <input type="password" class="form-control" id="password" placeholder="Пароль" required autocomplete="new-password">
+                    <label for="password"><i class="fas fa-lock me-2"></i>Пароль *</label>
+                </div>
+                <div class="form-floating">
+                    <input type="password" class="form-control" id="confirmPassword" placeholder="Подтверждение" required autocomplete="new-password">
+                    <label for="confirmPassword"><i class="fas fa-check-circle me-2"></i>Подтвердите пароль *</label>
+                </div>
+                
+                <div class="remember-device">
+                    <input type="checkbox" id="rememberDevice" checked>
+                    <label for="rememberDevice">
+                        <i class="fas fa-laptop me-1"></i> Запомнить устройство 
+                        <span class="hint">(не запрашивать код при входе)</span>
+                    </label>
+                </div>
+                
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="agree" required>
+                    <label class="form-check-label" for="agree">
+                        Я принимаю <a href="#">условия использования</a> и <a href="#">политику конфиденциальности</a>
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-register" id="submitBtn">
+                    <i class="fas fa-user-check me-2"></i>Создать аккаунт
+                </button>
+            </form>
             
             <div class="footer-links">
                 Уже есть аккаунт? <a href="/login">Войти</a>
@@ -339,62 +498,73 @@
                 <i class="fas fa-shield-alt me-1"></i> Ваши данные защищены
             </div>
         </div>
+        <div class="card-footer-decoration"></div>
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Показываем/скрываем поля организации для Email регистрации
+        // ========== ПОКАЗ/СКРЫТИЕ ПОЛЕЙ ОРГАНИЗАЦИИ ==========
         const isOrgCheckbox = document.getElementById('isOrganization');
         const orgFields = document.getElementById('orgFields');
-        
         if (isOrgCheckbox) {
             isOrgCheckbox.addEventListener('change', function() {
-                if (this.checked) {
-                    orgFields.classList.add('show');
-                } else {
-                    orgFields.classList.remove('show');
-                }
+                orgFields.classList.toggle('show', this.checked);
             });
         }
         
-        // Показываем/скрываем поля организации для Телефон регистрации
-        const phoneIsOrgCheckbox = document.getElementById('phoneIsOrganization');
-        const phoneOrgFields = document.getElementById('phoneOrgFields');
-        
-        if (phoneIsOrgCheckbox) {
-            phoneIsOrgCheckbox.addEventListener('change', function() {
-                if (this.checked) {
-                    phoneOrgFields.classList.add('show');
-                } else {
-                    phoneOrgFields.classList.remove('show');
-                }
-            });
+        // ========== ОЧИСТКА ФОРМЫ ==========
+        function clearRegisterForm() {
+            const form = document.getElementById('registerForm');
+            form.reset();
+            orgFields.classList.remove('show');
+            document.getElementById('isOrganization').checked = false;
+            document.getElementById('agree').checked = false;
         }
         
         // ========== EMAIL РЕГИСТРАЦИЯ ==========
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            
+            const name = document.getElementById('name').value.trim();
+            if (!name) {
+                alert('Введите имя и фамилию');
+                document.getElementById('name').focus();
+                return;
+            }
+            
             const password = document.getElementById('password').value;
             const confirm = document.getElementById('confirmPassword').value;
             if (password !== confirm) {
                 alert('Пароли не совпадают!');
+                document.getElementById('confirmPassword').focus();
+                return;
+            }
+            if (password.length < 6) {
+                alert('Пароль должен содержать минимум 6 символов');
+                document.getElementById('password').focus();
                 return;
             }
             
-            const name = document.getElementById('name').value;
-            if (!name) {
-                alert('Введите имя и фамилию');
+            const email = document.getElementById('email').value.trim();
+            if (!email) {
+                alert('Введите email');
+                document.getElementById('email').focus();
                 return;
             }
             
-            const email = document.getElementById('email').value;
-            const phone = document.getElementById('phone').value || '';
+            if (!document.getElementById('agree').checked) {
+                alert('Примите условия использования');
+                return;
+            }
+            
+            const phone = document.getElementById('phone').value.trim() || '';
             const isOrganization = document.getElementById('isOrganization').checked;
-            const organizationName = isOrganization ? document.getElementById('organizationName').value : '';
-            const organizationInn = isOrganization ? document.getElementById('organizationInn').value : '';
+            const organizationName = isOrganization ? document.getElementById('organizationName').value.trim() : '';
+            const organizationInn = isOrganization ? document.getElementById('organizationInn').value.trim() : '';
+            const rememberDevice = document.getElementById('rememberDevice').checked;
             
-            const btn = e.target.querySelector('button');
-            
+            const btn = document.getElementById('submitBtn');
+            const originalText = btn.innerHTML;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Регистрация...';
             btn.disabled = true;
             
@@ -403,273 +573,35 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        email, 
-                        password, 
-                        name,
-                        phone,
+                        email, password, name, phone,
                         is_organization: isOrganization,
                         organization_name: organizationName,
-                        organization_inn: organizationInn
+                        organization_inn: organizationInn,
+                        remember_device: rememberDevice
                     })
                 });
                 const data = await response.json();
+                
                 if (response.ok) {
                     if (data.token) {
                         localStorage.setItem('token', data.token);
                     }
+                    clearRegisterForm();
                     alert('✅ Регистрация успешна! Перенаправление...');
-                    setTimeout(() => {
-                        window.location.href = '/dashboard-improved';
+                    setTimeout(() => { 
+                        window.location.href = '/dashboard-improved'; 
                     }, 1500);
                 } else {
-                    alert('Ошибка регистрации: ' + (data.error || 'неизвестная ошибка'));
-                    btn.innerHTML = '<i class="fas fa-user-check me-2"></i>Создать аккаунт';
+                    alert('❌ ' + (data.error || 'Ошибка регистрации'));
+                    btn.innerHTML = originalText;
                     btn.disabled = false;
                 }
             } catch (error) {
-                alert('Сетевая ошибка. Попробуйте позже.');
-                btn.innerHTML = '<i class="fas fa-user-check me-2"></i>Создать аккаунт';
+                alert('❌ Сетевая ошибка. Проверьте подключение к интернету.');
+                btn.innerHTML = originalText;
                 btn.disabled = false;
             }
         });
-        
-        // ========== ТЕЛЕФОН РЕГИСТРАЦИЯ ==========
-        let phoneCodeSent = false;
-        
-        document.getElementById('phoneRegisterForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('phoneName').value;
-            if (!name) {
-                alert('Введите имя и фамилию');
-                return;
-            }
-            const phone = document.getElementById('phoneNumber').value;
-            const code = document.getElementById('phoneCode').value;
-            const codeSection = document.getElementById('phoneCodeSection');
-            const submitBtn = document.getElementById('phoneSubmitBtn');
-            
-            const isOrganization = document.getElementById('phoneIsOrganization').checked;
-            const organizationName = isOrganization ? document.getElementById('phoneOrganizationName').value : '';
-            const organizationInn = isOrganization ? document.getElementById('phoneOrganizationInn').value : '';
-            
-            if (!phoneCodeSent) {
-                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Отправка...';
-                submitBtn.disabled = true;
-                
-                try {
-                    const response = await fetch('/api/auth/send-code', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ phone })
-                    });
-                    const data = await response.json();
-                    
-                    if (response.ok) {
-                        phoneCodeSent = true;
-                        codeSection.style.display = 'block';
-                        submitBtn.innerHTML = '<i class="fas fa-check me-2"></i> Подтвердить код';
-                        submitBtn.disabled = false;
-                        alert('Код подтверждения отправлен на телефон');
-                    } else {
-                        alert(data.error || 'Ошибка отправки кода');
-                        submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Продолжить';
-                        submitBtn.disabled = false;
-                    }
-                } catch (error) {
-                    alert('Ошибка: ' + error.message);
-                    submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Продолжить';
-                    submitBtn.disabled = false;
-                }
-            } else {
-                if (!code) {
-                    alert('Введите код подтверждения');
-                    return;
-                }
-                
-                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Проверка...';
-                submitBtn.disabled = true;
-                
-                try {
-                    const response = await fetch('/api/auth/verify-code', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            phone, 
-                            code, 
-                            name,
-                            is_organization: isOrganization,
-                            organization_name: organizationName,
-                            organization_inn: organizationInn
-                        })
-                    });
-                    const data = await response.json();
-                    
-                    if (response.ok) {
-                        if (data.token) {
-                            localStorage.setItem('token', data.token);
-                        }
-                        alert('✅ Регистрация успешна! Перенаправление...');
-                        setTimeout(() => {
-                            window.location.href = '/dashboard-improved';
-                        }, 1500);
-                    } else {
-                        alert(data.error || 'Неверный код');
-                        submitBtn.innerHTML = '<i class="fas fa-check me-2"></i> Подтвердить код';
-                        submitBtn.disabled = false;
-                    }
-                } catch (error) {
-                    alert('Ошибка: ' + error.message);
-                    submitBtn.innerHTML = '<i class="fas fa-check me-2"></i> Подтвердить код';
-                    submitBtn.disabled = false;
-                }
-            }
-        });
-        
-        // ========== QR КОД РЕГИСТРАЦИЯ ==========
-        let qrWebSocket = null;
-        let qrSessionToken = null;
-        let qrRefreshTimer = null;
-        let qrGenerating = false;
-        
-        async function loadQR() {
-            if (qrGenerating) return;
-            qrGenerating = true;
-            const container = document.getElementById('qrCodeContainer');
-            const statusBadge = document.getElementById('qrStatusBadge');
-            
-            container.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div>';
-            statusBadge.innerHTML = '<i class="fas fa-hourglass-half"></i> Генерация QR кода...';
-            statusBadge.className = 'status-badge status-pending';
-            
-            try {
-                const response = await fetch('/api/qr/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                const data = await response.json();
-                
-                if (response.ok) {
-                    qrSessionToken = data.session_token;
-                    const qrUrl = `${data.qr_data_url}&_=${Date.now()}`;
-                    container.innerHTML = `<img src="${qrUrl}" alt="QR Code" style="width: 200px; height: 200px; border-radius: 10px;">`;
-                    statusBadge.innerHTML = '<i class="fas fa-hourglass-half"></i> Ожидание сканирования';
-                    statusBadge.className = 'status-badge status-pending';
-                    
-                    if (qrWebSocket) {
-                        try { qrWebSocket.close(); } catch(e) {}
-                    }
-                    
-                    setTimeout(() => {
-                        connectQRWebSocket(qrSessionToken);
-                    }, 500);
-                    
-                    if (qrRefreshTimer) clearTimeout(qrRefreshTimer);
-                    qrRefreshTimer = setTimeout(() => {
-                        refreshQR();
-                    }, (data.expires_in - 10) * 1000);
-                } else {
-                    container.innerHTML = '<div class="alert alert-danger">Ошибка загрузки QR кода</div>';
-                    statusBadge.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Ошибка, попробуйте обновить';
-                }
-            } catch (error) {
-                console.error('QR error:', error);
-                container.innerHTML = '<div class="alert alert-danger">Ошибка соединения</div>';
-                statusBadge.innerHTML = '<i class="fas fa-wifi"></i> Нет соединения';
-            } finally {
-                qrGenerating = false;
-            }
-        }
-        
-        function connectQRWebSocket(token) {
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${protocol}//${window.location.host}/api/qr/status?token=${token}&mode=register`;
-            
-            qrWebSocket = new WebSocket(wsUrl);
-            
-            qrWebSocket.onmessage = function(event) {
-                try {
-                    const data = JSON.parse(event.data);
-                    const statusBadge = document.getElementById('qrStatusBadge');
-                    const successDiv = document.getElementById('qrSuccess');
-                    
-                    switch(data.status) {
-                        case 'scanned':
-                            statusBadge.innerHTML = '<i class="fas fa-check-circle"></i> QR код отсканирован! Создание аккаунта...';
-                            statusBadge.className = 'status-badge status-scanned';
-                            break;
-                        case 'approved':
-                            statusBadge.innerHTML = '<i class="fas fa-check-circle"></i> Регистрация успешна! Перенаправление...';
-                            statusBadge.className = 'status-badge status-approved';
-                            successDiv.style.display = 'block';
-                            if (data.token) {
-                                localStorage.setItem('token', data.token);
-                                setTimeout(() => {
-                                    window.location.href = '/dashboard-improved';
-                                }, 1500);
-                            }
-                            break;
-                        case 'expired':
-                            statusBadge.innerHTML = '<i class="fas fa-exclamation-triangle"></i> QR код истек, обновляем...';
-                            statusBadge.className = 'status-badge status-expired';
-                            setTimeout(() => refreshQR(), 1000);
-                            break;
-                    }
-                } catch (e) {}
-            };
-            
-            qrWebSocket.onerror = function() {
-                const statusBadge = document.getElementById('qrStatusBadge');
-                statusBadge.innerHTML = '<i class="fas fa-wifi"></i> Ошибка соединения, переподключаюсь...';
-                setTimeout(() => {
-                    if (qrSessionToken) connectQRWebSocket(qrSessionToken);
-                }, 2000);
-            };
-        }
-        
-        function refreshQR() {
-            qrGenerating = false;
-            if (qrWebSocket) { try { qrWebSocket.close(); } catch(e) {} }
-            if (qrRefreshTimer) clearTimeout(qrRefreshTimer);
-            loadQR();
-        }
-        
-        const qrTabButton = document.querySelector('button[data-bs-target="#qr-reg"]');
-        if (qrTabButton) {
-            qrTabButton.addEventListener('shown.bs-tab', () => setTimeout(() => loadQR(), 100));
-        }
-        
-        if (document.querySelector('#qr-reg').classList.contains('show')) {
-            setTimeout(() => loadQR(), 200);
-        }
     </script>
-    
-    <style>
-        .back-button {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            transition: all 0.3s;
-            z-index: 1000;
-            cursor: pointer;
-        }
-        .back-button:hover {
-            transform: scale(1.1);
-            background: linear-gradient(135deg, #764ba2, #667eea);
-            color: white;
-        }
-    </style>
-    <a href="javascript:history.back()" class="back-button" title="Назад">
-        <i class="fas fa-arrow-left fa-lg"></i>
-    </a>
 </body>
 </html>

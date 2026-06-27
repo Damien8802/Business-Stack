@@ -122,7 +122,12 @@ func WebAppAuthHandler(c *gin.Context) {
         randomPass := uuid.New().String()[:12]
 
         // Создаём пользователя
-        newUser, err := models.CreateUser(email, randomPass, name)
+        tenantID := c.GetString("tenant_id")
+if tenantID == "" {
+    tenantID = uuid.New().String()
+}
+newUser, err := models.CreateUser(email, randomPass, name, tenantID)
+
         if err != nil {
             c.JSON(500, gin.H{"error": "failed to create user"})
             return
